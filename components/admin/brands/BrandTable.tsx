@@ -166,21 +166,24 @@ export default function BrandTable() {
 
   return (
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5">
-      <div className="flex border-b border-[#e8e6f0]/40 pb-0 overflow-x-auto shrink-0 scrollbar-none">
-        {(["All", "Active", "Suspended", "Pending"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={cn(
-              "px-5 py-3 text-xs font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap",
-              activeTab === tab
-                ? "border-brand-pink text-brand-pink"
-                : "border-transparent text-[#7a7a9a] hover:text-[#1a1a2e]",
-            )}
-          >
-            {tab}
-          </button>
-        ))}
+      <div className="flex items-center gap-1 bg-[#f4f3f6] border border-[#e8e6f0]/80 p-1 rounded-xl w-fit self-start max-w-full overflow-x-auto scrollbar-none">
+        {(["All", "Active", "Suspended", "Pending"] as const).map((tab) => {
+          const active = activeTab === tab;
+          return (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={cn(
+                "px-4.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
+                active
+                  ? "bg-brand-pink text-white shadow-sm"
+                  : "bg-transparent text-[#5a5a7a] hover:text-[#1a1a2e]",
+              )}
+            >
+              {tab}
+            </button>
+          );
+        })}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -383,9 +386,9 @@ export default function BrandTable() {
                 <td className="py-3.5 text-right pr-2">
                   <button
                     onClick={() => setSelectedBrandId(b.id)}
-                    className="p-1.5 hover:bg-[#f4f3f6] rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1 text-[10px] font-bold text-brand-pink"
+                    className="h-8 px-3.5 bg-[#eff6ff] text-[#2563eb] rounded-xl hover:bg-[#dbeafe] transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 text-[10px] font-bold shrink-0"
                   >
-                    <Eye size={12} /> View
+                    <Eye size={12} className="shrink-0" /> View
                   </button>
                 </td>
               </tr>

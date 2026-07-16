@@ -94,7 +94,7 @@ export default function SocialGrid() {
   return (
     <div className="flex flex-col gap-5 text-left">
       {/* Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-1">
+      <div className="flex items-center gap-1 bg-[#f4f3f6] border border-[#e8e6f0]/80 p-1 rounded-xl w-fit self-start max-w-full overflow-x-auto scrollbar-none">
         {[
           { label: "All", count: 5 },
           { label: "Live", count: 3 },
@@ -109,10 +109,10 @@ export default function SocialGrid() {
                 setActiveTab(t.label as "All" | "Live" | "Draft" | "Completed")
               }
               className={cn(
-                "px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
+                "px-4.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
                 active
                   ? "bg-brand-pink text-white shadow-sm"
-                  : "bg-[#f4f3f6] text-[#5a5a7a] hover:bg-[#e8e6f0]",
+                  : "bg-transparent text-[#5a5a7a] hover:text-[#1a1a2e]",
               )}
             >
               {t.label} ({t.count})
@@ -183,7 +183,7 @@ export default function SocialGrid() {
               <div className="grid grid-cols-3 gap-2 mt-2">
                 <Link
                   href={`/admin/campaigns/${c.id}`}
-                  className="h-8.5 rounded-xl border border-[#e8e6f0] text-[10px] font-bold text-[#5a5a7a] hover:bg-[#faf9fc] flex items-center justify-center gap-1"
+                  className="h-8 px-3 bg-[#eff6ff] text-[#2563eb] rounded-xl hover:bg-[#dbeafe] transition-all cursor-pointer flex items-center justify-center gap-1.5 text-[10px] font-bold shrink-0"
                 >
                   <Eye size={12} /> View
                 </Link>

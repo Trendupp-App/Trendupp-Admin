@@ -101,7 +101,7 @@ export default function CampaignApplicationsTab() {
               </div>
             </div>
 
-            <button className="h-9 px-4.5 border border-[#e8e6f0] text-xs font-bold text-[#5a5a7a] rounded-xl hover:bg-[#faf9fc] shrink-0 transition-colors cursor-pointer flex items-center gap-1.5">
+            <button className="h-9 px-4.5 border bg-[#f4f3f6] text-xs font-bold text-[#5a5a7a] rounded-lg hover:bg-[#faf9fc] shrink-0 transition-colors cursor-pointer flex items-center gap-1.5">
               View application <ArrowRight size={13} />
             </button>
           </div>

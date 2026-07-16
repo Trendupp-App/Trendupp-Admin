@@ -267,7 +267,7 @@ export default function CampaignTable({
       )}
 
       {/* Status tab pills row */}
-      <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-1">
+      <div className="flex items-center gap-1 border-[#e8e6f0]/80 p-1 rounded-xl w-fit self-start max-w-full overflow-x-auto scrollbar-none">
         {[
           { label: "All", count: 7 },
           { label: "Draft", count: 1 },
@@ -282,10 +282,10 @@ export default function CampaignTable({
               key={t.label}
               onClick={() => onSelectStatus(t.label)}
               className={cn(
-                "px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
+                "px-4.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
                 active
                   ? "bg-brand-pink text-white shadow-sm"
-                  : "bg-[#f4f3f6] text-[#5a5a7a] hover:bg-[#e8e6f0]",
+                  : "bg-transparent text-[#5a5a7a] hover:text-[#1a1a2e]",
               )}
             >
               {t.label} ({t.count})
@@ -338,7 +338,7 @@ export default function CampaignTable({
                 <td className="py-3.5 text-right pr-2">
                   <Link
                     href={`/admin/campaigns/${c.id}`}
-                    className="p-1.5 hover:bg-[#f4f3f6] rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1 text-[10px] font-bold text-brand-pink"
+                    className="h-8 px-3.5 bg-[#eff6ff] text-[#2563eb] rounded-xl hover:bg-[#dbeafe] transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 text-[10px] font-bold shrink-0"
                   >
                     <Eye size={12} /> View
                   </Link>
