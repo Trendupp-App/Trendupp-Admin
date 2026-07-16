@@ -21,7 +21,7 @@ export default function BrandManagementPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-6 md:p-8">
+    <div className="flex flex-col gap-6 p-6 md:p-8 animate-fade-in-up">
       <div className="flex justify-between items-center gap-4">
         <div>
           <h1 className="text-xl font-semibold text-[#1a1a2e]">

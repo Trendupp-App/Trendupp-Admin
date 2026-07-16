@@ -8,7 +8,7 @@ interface ComingSoonPageProps {
 
 export default function ComingSoonPage({ title }: ComingSoonPageProps) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 text-center">
+    <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 text-center animate-fade-in-up">
       <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-8 max-w-sm w-full flex flex-col items-center gap-4 shadow-sm">
         <div className="w-12 h-12 rounded-full bg-[#fdf2f6] text-brand-pink flex items-center justify-center border border-[#fae2ec]">
           <Construction size={20} />

@@ -8,7 +8,7 @@ export default function PaidCampaignsPage() {
   const [selectedStatus, setSelectedStatus] = useState("All");
 
   return (
-    <div className="flex flex-col gap-6 p-6 md:p-8">
+    <div className="flex flex-col gap-6 p-6 md:p-8 animate-fade-in-up">
       <div>
         <h1 className="text-xl font-semibold text-[#1a1a2e]">Campaigns</h1>
       </div>

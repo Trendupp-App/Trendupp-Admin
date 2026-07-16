@@ -325,7 +325,7 @@ export default function AdminDisputesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf9fc] text-[#1a1a2e] p-6 md:p-12 flex flex-col items-center">
+    <div className="min-h-screen bg-[#faf9fc] text-[#1a1a2e] p-6 md:p-12 flex flex-col items-center animate-fade-in-up">
       <div
         className={cn(
           "w-full transition-all duration-300 flex flex-col items-stretch gap-6",

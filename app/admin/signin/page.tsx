@@ -65,7 +65,7 @@ export default function AdminSigninPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf9fc] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-[#faf9fc] flex items-center justify-center p-4 relative overflow-hidden animate-fade-in-up">
       {/* Decorative Gradients */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-brand-pink/5 blur-[120px]" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#7c3aed]/5 blur-[120px]" />

@@ -91,7 +91,7 @@ const ROW2 = [
 
 export default function AdminDashboardPage() {
   return (
-    <div className="flex flex-col gap-5 p-6 md:p-7">
+    <div className="flex flex-col gap-5 p-6 md:p-7 animate-fade-in-up">
       {/* KPI Row 1 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {ROW1.map((card) => (

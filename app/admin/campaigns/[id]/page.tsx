@@ -48,7 +48,7 @@ export default function CampaignDetailsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-6 md:p-8 relative min-h-screen">
+    <div className="flex flex-col gap-6 p-6 md:p-8 relative min-h-screen animate-fade-in-up">
       {/* Header */}
       <div className="flex justify-between items-start gap-4">
         <div className="flex items-center gap-3">

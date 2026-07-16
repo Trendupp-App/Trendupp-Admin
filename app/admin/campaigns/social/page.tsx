@@ -9,7 +9,7 @@ export default function SocialImpactCampaignsPage() {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
   return (
-    <div className="flex flex-col gap-6 p-6 md:p-8">
+    <div className="flex flex-col gap-6 p-6 md:p-8 animate-fade-in-up">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div className="flex flex-col text-left">
