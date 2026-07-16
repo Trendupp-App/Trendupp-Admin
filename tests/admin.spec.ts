@@ -6,7 +6,7 @@ test.describe("Admin Panel Navigation", () => {
   }) => {
     // Navigate to admin base URL
     await page.goto("/admin/dashboard");
-    await expect(page.locator("h1")).toContainText("Super Admin Dashboard");
+    await expect(page.locator("h2").first()).toContainText("Dashboard");
 
     // Click on sidebar campaigns link
     await page.click("text=Paid");

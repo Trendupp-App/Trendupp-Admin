@@ -2,204 +2,291 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Eye, Pause, Trash2, AlertTriangle } from "lucide-react";
+import {
+  Megaphone,
+  Tag,
+  FileEdit,
+  Trash2,
+  AlertTriangle,
+  Eye,
+  Pause,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface CampaignCard {
+interface CampaignItem {
   id: string;
   title: string;
   niche: string;
-  tier: string;
-  tokens: string;
-  applicants: number;
-  timeLeft: string;
-  status: "Live" | "Revision" | "Completed" | "Draft";
-  bgGradient: string;
+  editedTime?: string;
+  progress?: string;
+  status: "Draft" | "Live" | "Active" | "Completed";
+  participants?: string;
+  tokens?: string;
 }
 
-const MOCK_SOCIAL_CAMPAIGNS: CampaignCard[] = [
+const MOCK_SOCIAL_CAMPAIGNS: CampaignItem[] = [
+  // Drafts (3 items)
   {
-    id: "1",
-    title: "Summer Style Collection",
-    niche: "Sport",
-    tier: "Micro",
-    tokens: "100 Tokens",
-    applicants: 47,
-    timeLeft: "4 days left",
-    status: "Live",
-    bgGradient: "from-pink-500 to-rose-600",
+    id: "d1",
+    title: "Jollof Cook-off Promo",
+    niche: "Food & Lifestyle",
+    editedTime: "Last edited 20 min ago",
+    progress: "3/5 sections",
+    status: "Draft",
   },
   {
-    id: "2",
+    id: "d2",
+    title: "Summer Style Collection",
+    niche: "Lifestyle",
+    editedTime: "Last edited 2 hours ago",
+    progress: "2/5 sections",
+    status: "Draft",
+  },
+  {
+    id: "d3",
+    title: "New Year Skincare Push",
+    niche: "Beauty",
+    editedTime: "Last edited 1 hours ago",
+    progress: "1/5 sections",
+    status: "Draft",
+  },
+  // Live (12 items)
+  {
+    id: "l1",
     title: "Lagos Tech Week Coverage",
     niche: "Technology",
-    tier: "Micro",
-    tokens: "100 Tokens",
-    applicants: 47,
-    timeLeft: "31 hour left",
-    status: "Revision",
-    bgGradient: "from-blue-600 to-indigo-700",
-  },
-  {
-    id: "3",
-    title: "Summer Style Collection",
-    niche: "Technology",
-    tier: "Micro",
-    tokens: "100 Tokens",
-    applicants: 47,
-    timeLeft: "4 days left",
+    editedTime: "Live 2 days ago",
+    progress: "Active participation open",
     status: "Live",
-    bgGradient: "from-amber-500 to-orange-600",
+    participants: "450",
+    tokens: "45,000",
   },
   {
-    id: "4",
-    title: "Summer Style Collection",
-    niche: "Sport",
-    tier: "Micro",
-    tokens: "100 Tokens",
-    applicants: 47,
-    timeLeft: "4 days left",
+    id: "l2",
+    title: "Naija Music Awards Promo",
+    niche: "Entertainment",
+    editedTime: "Live 5 hours ago",
+    progress: "Submissions processing",
     status: "Live",
-    bgGradient: "from-emerald-500 to-teal-600",
+    participants: "1,200",
+    tokens: "120,000",
   },
   {
-    id: "5",
-    title: "Lagos Tech Week Coverage",
-    niche: "Technology",
-    tier: "Micro",
-    tokens: "100 Tokens",
-    applicants: 47,
-    timeLeft: "31 hour left",
-    status: "Revision",
-    bgGradient: "from-violet-500 to-purple-600",
+    id: "l3",
+    title: "Eco Green Revolution Campaign",
+    niche: "Sustainability",
+    editedTime: "Live 1 day ago",
+    progress: "Accepting submissions",
+    status: "Live",
+    participants: "180",
+    tokens: "18,000",
+  },
+  {
+    id: "l4",
+    title: "Campus Ambassador Hunt 2026",
+    niche: "Education",
+    editedTime: "Live 4 days ago",
+    progress: "Open to students",
+    status: "Live",
+    participants: "320",
+    tokens: "32,000",
+  },
+  ...Array.from({ length: 8 }, (_, idx) => ({
+    id: `l-extra-${idx}`,
+    title: `Live Promotion Campaign ${idx + 5}`,
+    niche: idx % 2 === 0 ? "Marketing" : "Creativity",
+    editedTime: "Live recently",
+    progress: "Participation live",
+    status: "Live" as const,
+    participants: "120",
+    tokens: "12,000",
+  })),
+  // Active (6 items)
+  ...Array.from({ length: 6 }, (_, idx) => ({
+    id: `a-${idx}`,
+    title: `Active Brand Push Campaign ${idx + 1}`,
+    niche: idx % 2 === 0 ? "Retail" : "Healthcare",
+    editedTime: "Updated 1 day ago",
+    progress: "Currently in progress",
+    status: "Active" as const,
+    participants: "245",
+    tokens: "24,500",
+  })),
+  // Completed (3 items)
+  {
+    id: "c1",
+    title: "Easter Egg Hunt Special",
+    niche: "Community",
+    editedTime: "Ended 2 weeks ago",
+    progress: "All tokens distributed",
+    status: "Completed",
+    participants: "850",
+    tokens: "85,000",
+  },
+  {
+    id: "c2",
+    title: "Christmas Charity Drive 2025",
+    niche: "Charity",
+    editedTime: "Ended 1 month ago",
+    progress: "Completed successfully",
+    status: "Completed",
+    participants: "1,500",
+    tokens: "150,000",
+  },
+  {
+    id: "c3",
+    title: "Back to School Giveaway",
+    niche: "Education",
+    editedTime: "Ended 3 weeks ago",
+    progress: "Tokens fully distributed",
+    status: "Completed",
+    participants: "980",
+    tokens: "98,000",
   },
 ];
 
 export default function SocialGrid() {
-  const [activeTab, setActiveTab] = useState<
-    "All" | "Live" | "Draft" | "Completed"
-  >("All");
+  const [activeTab, setActiveTab] = useState<CampaignItem["status"]>("Draft");
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
-  const filtered = MOCK_SOCIAL_CAMPAIGNS.filter((c) => {
-    if (activeTab === "All") return true;
-    if (
-      activeTab === "Live" &&
-      (c.status === "Live" || c.status === "Revision")
-    )
-      return true;
-    return c.status === activeTab;
-  });
+  const filtered = MOCK_SOCIAL_CAMPAIGNS.filter((c) => c.status === activeTab);
+
+  const counts = {
+    Draft: MOCK_SOCIAL_CAMPAIGNS.filter((c) => c.status === "Draft").length,
+    Live: MOCK_SOCIAL_CAMPAIGNS.filter((c) => c.status === "Live").length,
+    Active: MOCK_SOCIAL_CAMPAIGNS.filter((c) => c.status === "Active").length,
+    Completed: MOCK_SOCIAL_CAMPAIGNS.filter((c) => c.status === "Completed")
+      .length,
+  };
+
+  const TABS = [
+    { id: "Draft" as const, label: "Draft", count: counts.Draft },
+    { id: "Live" as const, label: "Live", count: counts.Live },
+    { id: "Active" as const, label: "Active", count: counts.Active },
+    { id: "Completed" as const, label: "Completed", count: counts.Completed },
+  ];
 
   return (
-    <div className="flex flex-col gap-5 text-left">
-      {/* Tabs */}
-      <div className="flex items-center gap-1 bg-[#f4f3f6] border border-[#e8e6f0]/80 p-1 rounded-xl w-fit self-start max-w-full overflow-x-auto scrollbar-none">
-        {[
-          { label: "All", count: 5 },
-          { label: "Live", count: 3 },
-          { label: "Draft", count: 1 },
-          { label: "Completed", count: 1 },
-        ].map((t) => {
-          const active = activeTab === t.label;
+    <div className="flex flex-col gap-6 text-left">
+      {/* Tab Row (Underline layout) */}
+      <div className="flex items-center gap-6 border-b border-[#e8e6f0]/60 w-full pb-0 overflow-x-auto scrollbar-none">
+        {TABS.map((t) => {
+          const active = activeTab === t.id;
           return (
             <button
-              key={t.label}
-              onClick={() =>
-                setActiveTab(t.label as "All" | "Live" | "Draft" | "Completed")
-              }
+              key={t.id}
+              onClick={() => setActiveTab(t.id)}
               className={cn(
-                "px-4.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
+                "pb-3 px-1 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 select-none",
                 active
-                  ? "bg-brand-pink text-white shadow-sm"
-                  : "bg-transparent text-[#5a5a7a] hover:text-[#1a1a2e]",
+                  ? "border-brand-pink text-brand-pink"
+                  : "border-transparent text-[#7a7a9a] hover:text-[#1a1a2e]",
               )}
             >
-              {t.label} ({t.count})
+              <span>{t.label}</span>
+              <span
+                className={cn(
+                  "px-2 py-0.5 text-[9px] font-bold rounded-full inline-flex items-center justify-center min-w-5 h-4.5 transition-colors",
+                  active
+                    ? "bg-brand-pink text-white shadow-sm"
+                    : "bg-[#f4f3f6] text-[#7a7a9a]",
+                )}
+              >
+                {t.count}
+              </span>
             </button>
           );
         })}
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Campaigns List Layout */}
+      <div className="flex flex-col gap-4">
         {filtered.map((c) => (
           <div
             key={c.id}
-            className="bg-white border border-[#e8e6f0]/60 rounded-3xl overflow-hidden shadow-sm flex flex-col"
+            className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-all animate-fade-in-up"
           >
-            {/* Cover image area */}
-            <div
-              className={cn(
-                "h-40 bg-gradient-to-br relative p-4 flex flex-col justify-between",
-                c.bgGradient,
-              )}
-            >
-              <div className="absolute inset-0 bg-black/10" />
-              {/* Overlays */}
-              <div className="relative flex justify-between items-center w-full z-10">
-                <span className="px-2.5 py-1 rounded-full text-[9px] font-bold text-white bg-black/45 backdrop-blur-[2px]">
-                  🕒 {c.timeLeft}
-                </span>
-                <span
-                  className={cn(
-                    "px-2.5 py-1 rounded-full text-[9px] font-bold border backdrop-blur-[2px]",
-                    c.status === "Live"
-                      ? "bg-[#f0fdf4]/85 text-[#16a34a] border-[#dcfce7]/40"
-                      : "bg-[#fff7ed]/85 text-[#ea580c] border-[#ffedd5]/40",
+            {/* Left Info Section */}
+            <div className="flex items-center gap-4 text-left">
+              {/* Megaphone icon box */}
+              <div className="w-14 h-14 rounded-2xl bg-[#eff6ff] border border-[#dbeafe]/40 text-[#2563eb] flex items-center justify-center shrink-0">
+                <Megaphone size={18} />
+              </div>
+
+              <div className="flex flex-col gap-1 text-left">
+                <h4 className="text-sm font-bold text-[#1a1a2e] leading-snug">
+                  {c.title}
+                </h4>
+
+                <div className="flex items-center gap-2 text-[10px] text-[#5a5a7a] flex-wrap">
+                  {/* Tag */}
+                  <span className="flex items-center gap-1 font-bold text-[#5a5a7a] bg-[#f4f3f6]/60 px-2 py-0.5 rounded-lg border border-[#e8e6f0]/40 text-[9px] uppercase tracking-wider">
+                    <Tag size={10} className="text-[#9a99b0]" />
+                    {c.niche}
+                  </span>
+
+                  <span className="text-[#9a99b0] font-medium">•</span>
+
+                  {/* Last Edited or Status time */}
+                  <span className="text-[#9a99b0] font-medium">
+                    {c.editedTime}
+                  </span>
+                </div>
+
+                {/* Progress descriptor text */}
+                <div className="text-[10px] text-[#7a7a9a] font-semibold mt-0.5 flex items-center gap-1">
+                  {c.status === "Draft" ? (
+                    c.progress
+                  ) : (
+                    <>
+                      <span>👥 {c.participants} applied</span>
+                      <span className="text-[#9a99b0]">•</span>
+                      <span className="text-[#ea580c]">
+                        🪙 {c.tokens} distributed
+                      </span>
+                    </>
                   )}
-                >
-                  {c.status}
-                </span>
+                </div>
               </div>
             </div>
 
-            {/* Body */}
-            <div className="p-5 flex flex-col gap-4 flex-1">
-              <div className="flex justify-between items-start gap-2">
-                <div className="flex flex-col text-left">
-                  <h4 className="text-sm font-bold text-[#1a1a2e] leading-snug">
-                    {c.title}
-                  </h4>
-                  <span className="text-[10px] text-[#9a99b0] font-semibold mt-0.5">
-                    {c.niche}
-                  </span>
-                </div>
-                <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-[#f5f3ff] text-[#7c3aed] border border-[#ede9fe] shrink-0">
-                  {c.tier}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center text-xs font-semibold text-[#5a5a7a] border-t border-[#e8e6f0]/40 pt-3">
-                <span className="flex items-center gap-1 text-[11px] text-[#ea580c]">
-                  🪙 {c.tokens}
-                </span>
-                <span className="text-[10px] text-[#5a5a7a]">
-                  👥 {c.applicants} applied
-                </span>
-              </div>
-
-              {/* Actions row */}
-              <div className="grid grid-cols-3 gap-2 mt-2">
-                <Link
-                  href={`/admin/campaigns/${c.id}`}
-                  className="h-8 px-3 bg-[#eff6ff] text-[#2563eb] rounded-xl hover:bg-[#dbeafe] transition-all cursor-pointer flex items-center justify-center gap-1.5 text-[10px] font-bold shrink-0"
-                >
-                  <Eye size={12} /> View
-                </Link>
-                <button
-                  onClick={() => alert(`${c.title} campaign has been paused.`)}
-                  className="h-8.5 rounded-xl border border-[#fde68a] bg-[#fffdf5] text-[10px] font-bold text-[#b45309] hover:bg-[#fffbeb] flex items-center justify-center gap-1 cursor-pointer"
-                >
-                  <Pause size={12} /> Pause
-                </button>
-                <button
-                  onClick={() => setDeleteTargetId(c.id)}
-                  className="h-8.5 rounded-xl border border-[#fee2e2] bg-[#fffbfa] text-[10px] font-bold text-[#dc2626] hover:bg-[#fff5f5] flex items-center justify-center gap-1 cursor-pointer"
-                >
-                  <Trash2 size={12} /> Delete
-                </button>
-              </div>
+            {/* Right Action buttons */}
+            <div className="flex items-center gap-2 shrink-0 self-stretch md:self-auto justify-end">
+              {c.status === "Draft" ? (
+                <>
+                  <button
+                    onClick={() => alert(`Continuing setup for ${c.title}...`)}
+                    className="h-9 px-4.5 border border-[#e8e6f0] bg-white hover:bg-[#faf9fc] text-xs font-bold text-[#5a5a7a] rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <FileEdit size={13} /> Continue
+                  </button>
+                  <button
+                    onClick={() => setDeleteTargetId(c.id)}
+                    className="w-9 h-9 border border-[#e8e6f0] bg-white hover:bg-[#faf9fc] text-[#5a5a7a] hover:text-[#dc2626] rounded-xl flex items-center justify-center transition-all cursor-pointer"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href={`/admin/campaigns/${c.id}`}
+                    className="h-9 px-4 bg-[#eff6ff] text-[#2563eb] rounded-xl hover:bg-[#dbeafe] transition-all cursor-pointer flex items-center justify-center gap-1.5 text-xs font-bold shrink-0"
+                  >
+                    <Eye size={13} /> View Details
+                  </Link>
+                  {c.status !== "Completed" && (
+                    <button
+                      onClick={() =>
+                        alert(`${c.title} campaign has been paused.`)
+                      }
+                      className="h-9 px-4 border border-[#fde68a] bg-[#fffdf5] text-xs font-bold text-[#b45309] hover:bg-[#fffbeb] rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Pause size={13} /> Pause
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           </div>
         ))}
@@ -207,7 +294,7 @@ export default function SocialGrid() {
 
       {/* Delete Confirmation Modal */}
       {deleteTargetId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[10vh] overflow-y-auto pb-6">
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
             onClick={() => setDeleteTargetId(null)}
