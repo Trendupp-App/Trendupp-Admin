@@ -130,6 +130,7 @@ export default function CampaignTable({
   onSelectStatus,
 }: CampaignTableProps) {
   const [search, setSearch] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState("");
   const [selectedTier, setSelectedTier] = useState("");
   const [selectedPlatform, setSelectedPlatform] = useState("");
@@ -202,58 +203,68 @@ export default function CampaignTable({
             className="h-9.5 w-full bg-white border border-[#e8e6f0] rounded-xl pl-9 pr-4 text-xs text-[#1a1a2e] placeholder-[#9a99b0] focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium"
           />
         </div>
-        <button className="h-9.5 px-4 rounded-xl border border-[#e8e6f0] text-xs font-bold text-[#5a5a7a] hover:bg-[#faf9fc] cursor-pointer transition-colors flex items-center gap-2">
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={cn(
+            "h-9.5 px-4 rounded-xl border text-xs font-bold cursor-pointer transition-colors flex items-center gap-2",
+            showFilters
+              ? "bg-brand-pink-light border-[#fae2ec] text-brand-pink"
+              : "border-[#e8e6f0] text-[#5a5a7a] hover:bg-[#faf9fc]",
+          )}
+        >
           <SlidersHorizontal size={13} /> Filters
         </button>
       </div>
 
       {/* Dropdown filters */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-b border-[#e8e6f0]/40 py-4.5">
-        {[
-          {
-            label: "Brand",
-            value: selectedBrand,
-            onChange: setSelectedBrand,
-            options: ["Zara Africa"],
-          },
-          {
-            label: "Creator Tier",
-            value: selectedTier,
-            onChange: setSelectedTier,
-            options: ["Micro", "Macro", "Nano", "Mega"],
-          },
-          {
-            label: "Platform",
-            value: selectedPlatform,
-            onChange: setSelectedPlatform,
-            options: ["Instagram", "TikTok", "YouTube"],
-          },
-        ].map((f) => (
-          <div key={f.label} className="flex flex-col gap-1.5 text-left">
-            <span className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
-              {f.label}
-            </span>
-            <div className="relative">
-              <select
-                value={f.value}
-                onChange={(e) => f.onChange(e.target.value)}
-                className="h-9.5 w-full pl-4 pr-10 rounded-xl border border-[#e8e6f0] bg-white text-xs font-semibold text-[#1a1a2e] appearance-none cursor-pointer focus:outline-none"
-              >
-                <option value="">All</option>
-                {f.options.map((o) => (
-                  <option key={o} value={o}>
-                    {o}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                size={14}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9a99b0] pointer-events-none"
-              />
+      {showFilters && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-b border-[#e8e6f0]/40 py-4.5 animate-fade-in-up">
+          {[
+            {
+              label: "Brand",
+              value: selectedBrand,
+              onChange: setSelectedBrand,
+              options: ["Zara Africa"],
+            },
+            {
+              label: "Creator Tier",
+              value: selectedTier,
+              onChange: setSelectedTier,
+              options: ["Micro", "Macro", "Nano", "Mega"],
+            },
+            {
+              label: "Platform",
+              value: selectedPlatform,
+              onChange: setSelectedPlatform,
+              options: ["Instagram", "TikTok", "YouTube"],
+            },
+          ].map((f) => (
+            <div key={f.label} className="flex flex-col gap-1.5 text-left">
+              <span className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
+                {f.label}
+              </span>
+              <div className="relative">
+                <select
+                  value={f.value}
+                  onChange={(e) => f.onChange(e.target.value)}
+                  className="h-9.5 w-full pl-4 pr-10 rounded-xl border border-[#e8e6f0] bg-white text-xs font-semibold text-[#1a1a2e] appearance-none cursor-pointer focus:outline-none"
+                >
+                  <option value="">All</option>
+                  {f.options.map((o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={14}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9a99b0] pointer-events-none"
+                />
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Status tab pills row */}
       <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-1">
