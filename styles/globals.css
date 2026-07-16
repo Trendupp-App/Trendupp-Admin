@@ -217,3 +217,10 @@
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }
+
+/* Hide Next.js Dev/Feedback Indicator overlay */
+nextjs-portal,
+#nextjs-wml-indicator,
+[data-nextjs-toast-outer] {
+  display: none !important;
+}

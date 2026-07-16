@@ -1,6 +1,18 @@
+import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Toaster } from "sonner";
 import "@/styles/globals.css";
+
+export const metadata: Metadata = {
+  title: {
+    default: "Trendupp Admin",
+    template: "%s | Trendupp Admin",
+  },
+  description: "Super Admin Portal for Trendupp marketing campaigns.",
+  icons: {
+    icon: "/Option.png",
+  },
+};
 
 const slussen = localFont({
   src: [
