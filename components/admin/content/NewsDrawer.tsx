@@ -100,6 +100,7 @@ export default function NewsDrawer({
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (previewImage?.startsWith("blob:")) URL.revokeObjectURL(previewImage);
     const url = URL.createObjectURL(file);
     setPreviewImage(url);
     setCoverUrl(""); // Clear URL input if file is chosen
