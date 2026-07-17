@@ -10,6 +10,7 @@ import CreatorProfileDrawer from "./CreatorProfileDrawer";
 
 interface CreatorItem {
   id: string;
+  creatorId: string;
   name: string;
   handle: string;
   email: string;
@@ -29,6 +30,7 @@ interface CreatorItem {
 const MOCK_CREATORS: CreatorItem[] = [
   {
     id: "1",
+    creatorId: "CRT-5021",
     name: "Amara Osei",
     handle: "@amara.creates",
     email: "amara@email.com",
@@ -46,6 +48,7 @@ const MOCK_CREATORS: CreatorItem[] = [
   },
   {
     id: "2",
+    creatorId: "CRT-1092",
     name: "Chidi Nwosu",
     handle: "@chidiplays",
     email: "chidi@email.com",
@@ -63,6 +66,7 @@ const MOCK_CREATORS: CreatorItem[] = [
   },
   {
     id: "3",
+    creatorId: "CRT-7742",
     name: "Tolu Fashola",
     handle: "@tolustyles",
     email: "tolu@email.com",
@@ -80,6 +84,7 @@ const MOCK_CREATORS: CreatorItem[] = [
   },
   {
     id: "4",
+    creatorId: "CRT-0985",
     name: "Ngozi Eze",
     handle: "@ngozi.beauty",
     email: "ngozi@email.com",
@@ -97,6 +102,7 @@ const MOCK_CREATORS: CreatorItem[] = [
   },
   {
     id: "5",
+    creatorId: "CRT-8813",
     name: "Emeka Dev",
     handle: "@emekadev",
     email: "emeka@email.com",
@@ -114,6 +120,7 @@ const MOCK_CREATORS: CreatorItem[] = [
   },
   {
     id: "6",
+    creatorId: "CRT-4491",
     name: "Zara Bello",
     handle: "@zarabellocooks",
     email: "zara@email.com",
@@ -161,7 +168,8 @@ export default function CreatorTable() {
     if (
       search &&
       !c.name.toLowerCase().includes(search.toLowerCase()) &&
-      !c.handle.toLowerCase().includes(search.toLowerCase())
+      !c.handle.toLowerCase().includes(search.toLowerCase()) &&
+      !c.creatorId.toLowerCase().includes(search.toLowerCase())
     )
       return false;
     if (selectedTier && c.tier !== selectedTier) return false;
@@ -299,14 +307,15 @@ export default function CreatorTable() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-[#e8e6f0]/40 text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
-              <th className="pb-3.5 pl-2">Creator</th>
+              <th className="pb-3.5 pl-2">Creator ID</th>
+              <th className="pb-3.5">Creator</th>
               <th className="pb-3.5">Email</th>
               <th className="pb-3.5">Country</th>
               <th className="pb-3.5">Tier</th>
               <th className="pb-3.5">Niche</th>
               <th className="pb-3.5">Gender</th>
               <th className="pb-3.5">Platforms</th>
-              <th className="pb-3.5">Completion</th>
+              <th className="pb-3.5">Profile Completion</th>
               <th className="pb-3.5">Earnings</th>
               <th className="pb-3.5 text-center">Revisions</th>
               <th className="pb-3.5">Status</th>
@@ -321,7 +330,10 @@ export default function CreatorTable() {
                 key={c.id}
                 className="hover:bg-[#faf9fc]/40 transition-colors"
               >
-                <td className="py-3 pl-2">
+                <td className="py-3 pl-2 text-[#5a5a7a] font-medium">
+                  {c.creatorId}
+                </td>
+                <td className="py-3">
                   <div className="flex items-center gap-2">
                     <UserAvatar
                       initials={c.name
