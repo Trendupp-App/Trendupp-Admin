@@ -17,6 +17,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/campaigns": "Campaigns",
   "/admin/campaigns/social": "Social Impact",
   "/admin/campaigns/social/create": "Social Impact",
+  "/admin/content/news": "Trendupp News",
   "/admin/disputes": "Chat & Disputes",
   "/admin/support": "Support Tickets",
   "/admin/finance/escrow": "Escrow",
