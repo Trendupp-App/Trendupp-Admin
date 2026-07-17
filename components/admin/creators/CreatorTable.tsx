@@ -16,10 +16,14 @@ interface CreatorItem {
   country: string;
   tier: "Mega" | "Macro" | "Micro" | "Nano";
   niche: string;
+  gender: "Male" | "Female";
   platforms: ("IG" | "TikTok" | "YT")[];
   completion: number;
+  totalEarnings: number;
+  revisionCount: number;
   status: "Active" | "Pending" | "Suspended";
   dateJoined: string;
+  lastLogin: string;
 }
 
 const MOCK_CREATORS: CreatorItem[] = [
@@ -31,10 +35,14 @@ const MOCK_CREATORS: CreatorItem[] = [
     country: "Lagos, Nigeria",
     tier: "Macro",
     niche: "Fashion",
+    gender: "Female",
     platforms: ["IG", "TikTok"],
     completion: 100,
+    totalEarnings: 1500000,
+    revisionCount: 2,
     status: "Active",
     dateJoined: "Jan 15, 2026",
+    lastLogin: "2 hours ago",
   },
   {
     id: "2",
@@ -44,10 +52,14 @@ const MOCK_CREATORS: CreatorItem[] = [
     country: "Abuja, Nigeria",
     tier: "Micro",
     niche: "Tech",
+    gender: "Male",
     platforms: ["TikTok", "YT"],
     completion: 85,
+    totalEarnings: 850000,
+    revisionCount: 4,
     status: "Active",
     dateJoined: "Feb 1, 2026",
+    lastLogin: "1 day ago",
   },
   {
     id: "3",
@@ -57,10 +69,14 @@ const MOCK_CREATORS: CreatorItem[] = [
     country: "Lagos, Nigeria",
     tier: "Mega",
     niche: "Fashion",
+    gender: "Female",
     platforms: ["IG", "TikTok", "YT"],
     completion: 100,
+    totalEarnings: 5200000,
+    revisionCount: 1,
     status: "Pending",
     dateJoined: "Nov 5, 2025",
+    lastLogin: "3 days ago",
   },
   {
     id: "4",
@@ -70,10 +86,14 @@ const MOCK_CREATORS: CreatorItem[] = [
     country: "Enugu, Nigeria",
     tier: "Micro",
     niche: "Beauty",
+    gender: "Female",
     platforms: ["IG"],
     completion: 75,
+    totalEarnings: 450000,
+    revisionCount: 0,
     status: "Active",
     dateJoined: "Apr 20, 2026",
+    lastLogin: "4 hours ago",
   },
   {
     id: "5",
@@ -83,10 +103,14 @@ const MOCK_CREATORS: CreatorItem[] = [
     country: "Enugu, Nigeria",
     tier: "Nano",
     niche: "Tech, Beauty",
+    gender: "Male",
     platforms: ["IG"],
     completion: 75,
+    totalEarnings: 300000,
+    revisionCount: 5,
     status: "Suspended",
     dateJoined: "Apr 20, 2026",
+    lastLogin: "1 week ago",
   },
   {
     id: "6",
@@ -96,10 +120,14 @@ const MOCK_CREATORS: CreatorItem[] = [
     country: "Port Harcourt, Nigeria",
     tier: "Nano",
     niche: "Lifestyle",
+    gender: "Female",
     platforms: ["IG"],
     completion: 60,
+    totalEarnings: 200000,
+    revisionCount: 3,
     status: "Pending",
     dateJoined: "Mar 10, 2026",
+    lastLogin: "Just now",
   },
 ];
 
@@ -138,6 +166,7 @@ export default function CreatorTable() {
       return false;
     if (selectedTier && c.tier !== selectedTier) return false;
     if (selectedNiche && !c.niche.includes(selectedNiche)) return false;
+    if (selectedGender && c.gender !== selectedGender) return false;
     if (selectedStatus && c.status !== selectedStatus) return false;
     if (selectedCountry && c.country !== selectedCountry) return false;
     return true;
@@ -275,10 +304,14 @@ export default function CreatorTable() {
               <th className="pb-3.5">Country</th>
               <th className="pb-3.5">Tier</th>
               <th className="pb-3.5">Niche</th>
+              <th className="pb-3.5">Gender</th>
               <th className="pb-3.5">Platforms</th>
               <th className="pb-3.5">Completion</th>
+              <th className="pb-3.5">Earnings</th>
+              <th className="pb-3.5 text-center">Revisions</th>
               <th className="pb-3.5">Status</th>
               <th className="pb-3.5">Date Joined</th>
+              <th className="pb-3.5">Last Login</th>
               <th className="pb-3.5 text-right pr-2">Action</th>
             </tr>
           </thead>
@@ -320,6 +353,7 @@ export default function CreatorTable() {
                   </span>
                 </td>
                 <td className="py-3 text-[#5a5a7a]">{c.niche}</td>
+                <td className="py-3 text-[#5a5a7a]">{c.gender}</td>
                 <td className="py-3">
                   <div className="flex items-center gap-1">
                     {c.platforms.map((p) => {
@@ -372,11 +406,22 @@ export default function CreatorTable() {
                     </span>
                   </div>
                 </td>
+                <td className="py-3 font-semibold text-[#1a1a2e] whitespace-nowrap">
+                  ₦{c.totalEarnings.toLocaleString()}
+                </td>
+                <td className="py-3 text-center">
+                  <span className="px-2 py-0.5 rounded-full bg-[#f4f3f6] text-[#5a5a7a] font-bold text-[10px]">
+                    {c.revisionCount}
+                  </span>
+                </td>
                 <td className="py-3">
                   <AdminStatusBadge status={c.status.toLowerCase()} />
                 </td>
                 <td className="py-3 text-[#9a99b0] whitespace-nowrap">
                   {c.dateJoined}
+                </td>
+                <td className="py-3 text-[#9a99b0] whitespace-nowrap">
+                  {c.lastLogin}
                 </td>
                 <td className="py-3 text-right pr-2">
                   <button
