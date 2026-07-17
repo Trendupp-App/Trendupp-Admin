@@ -198,7 +198,12 @@ export default function TrenduppNewsPage() {
         if (a.id === id) {
           return {
             ...a,
-            status: a.status === "Archived" ? "Draft" : "Archived",
+            status:
+              a.status === "Archived"
+                ? a.publishedAt === "Never"
+                  ? "Draft"
+                  : "Published"
+                : "Archived",
           };
         }
         return a;
