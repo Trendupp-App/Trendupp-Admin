@@ -131,7 +131,7 @@ To prevent GetStream channel creation failures (which occur if participants are 
 1. **GET `/disputes/stream-token`:**
    - When any user fetches their Stream token, the backend calls `upsertUser({ id, name, email })` to register their full profile (name, email) in GetStream before returning the token.
 2. **POST `/disputes/:id/activate`:**
-   - When the admin activates the dispute, the backend calls `upsertUsers([adminId, brandId, adminId])` using minimal `{ id }` objects.
+   - When the admin activates the dispute, the backend calls `upsertUsers([creatorId, brandId, adminId])` using minimal `{ id }` objects.
    - This ensures that GetStream channel creation never fails, even if some of the participants have not requested a token yet.
 
 ### Admin Client UI Dispute Load Flow
