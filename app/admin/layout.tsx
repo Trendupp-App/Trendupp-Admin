@@ -15,6 +15,8 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/users/creators": "Creators",
   "/admin/users/brands": "Brand",
   "/admin/campaigns": "Campaigns",
+  "/admin/campaigns/social": "Social Impact",
+  "/admin/campaigns/social/create": "Social Impact",
   "/admin/disputes": "Chat & Disputes",
   "/admin/support": "Support Tickets",
   "/admin/finance/escrow": "Escrow",

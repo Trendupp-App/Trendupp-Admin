@@ -1,13 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
 import SocialStats from "@/components/admin/campaigns/SocialStats";
 import SocialGrid from "@/components/admin/campaigns/SocialGrid";
-import CreateCampaignWizard from "@/components/admin/campaigns/CreateCampaignWizard";
 
 export default function SocialImpactCampaignsPage() {
-  const [isWizardOpen, setIsWizardOpen] = useState(false);
-
   return (
     <div className="flex flex-col gap-6 p-6 md:p-8 animate-fade-in-up">
       {/* Header */}
@@ -20,12 +17,12 @@ export default function SocialImpactCampaignsPage() {
             5 campaigns total &mdash; token-based, non-paid
           </span>
         </div>
-        <button
-          onClick={() => setIsWizardOpen(true)}
-          className="h-9.5 px-4.5 bg-brand-pink text-white text-xs font-bold rounded-xl hover:opacity-90 transition-all cursor-pointer"
+        <Link
+          href="/admin/campaigns/social/create"
+          className="h-9.5 px-4.5 bg-brand-pink text-white text-xs font-bold rounded-xl hover:opacity-90 transition-all cursor-pointer flex items-center justify-center select-none"
         >
           + Create Campaign
-        </button>
+        </Link>
       </div>
 
       {/* KPI stats */}
@@ -33,12 +30,6 @@ export default function SocialImpactCampaignsPage() {
 
       {/* Grid of campaigns */}
       <SocialGrid />
-
-      {/* Wizard */}
-      <CreateCampaignWizard
-        isOpen={isWizardOpen}
-        onClose={() => setIsWizardOpen(false)}
-      />
     </div>
   );
 }

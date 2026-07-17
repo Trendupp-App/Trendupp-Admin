@@ -1,6 +1,6 @@
 ---
-name: creator-chat-integration
-description: Context, specifications, and message flows for implementing the Creator Chat feature.
+name: admin-chat-integration
+description: Context, specifications, and message flows for implementing the admin Chat feature.
 ---
 
 # Admin-Mediated Dispute Chat System Lifecycle
@@ -11,11 +11,11 @@ This document defines the end-to-end lifecycle and testing guide for the Admin-M
 
 ## Step 1: Client Authentication & GetStream Connection
 
-Before any chat or dispute actions can occur, every participant (Creator, Brand, Admin) must authenticate with both the NestJS server and the GetStream server.
+Before any chat or dispute actions can occur, every participant (admin, Brand, Admin) must authenticate with both the NestJS server and the GetStream server.
 
 ### 1. Login to NestJS Server
 
-Creators, Brands, and Admins log in normally to retrieve their standard JWT token.
+admins, Brands, and Admins log in normally to retrieve their standard JWT token.
 
 ### 2. Fetch Stream User Token
 
@@ -39,14 +39,14 @@ Creators, Brands, and Admins log in normally to retrieve their standard JWT toke
 
 ---
 
-## Step 2: Dispute is Raised (Brand or Creator)
+## Step 2: Dispute is Raised (Brand or admin)
 
 Either party can escalate a campaign to a dispute when a conflict arises.
 
 - **Endpoint:** `POST /api/v1/disputes`
 - **Headers:** `Authorization: Bearer <JWT_USER_TOKEN>`
 
-### Payload (When Creator escalates)
+### Payload (When admin escalates)
 
 ```json
 {
@@ -57,20 +57,20 @@ Either party can escalate a campaign to a dispute when a conflict arises.
 
 ### Payload (When Brand escalates)
 
-Brands must specify which creator they are disputing if there are multiple participants on the campaign:
+Brands must specify which admin they are disputing if there are multiple participants on the campaign:
 
 ```json
 {
   "campaignId": "3a7b68fc-9b2c-47ea-bc91-2bbdd670a256",
-  "creatorId": "4c1eef8a-95db-4f31-ad90-df6e7d96dcd5",
-  "reason": "The creator submitted blank draft URLs and is unresponsive."
+  "adminId": "4c1eef8a-95db-4f31-ad90-df6e7d96dcd5",
+  "reason": "The admin submitted blank draft URLs and is unresponsive."
 }
 ```
 
 ### Expected Result
 
 - Returns the created dispute record with status set to `raised`.
-- **Crucial Behavior:** No Stream channel is created yet. Brand and Creator still cannot message each other.
+- **Crucial Behavior:** No Stream channel is created yet. Brand and admin still cannot message each other.
 
 ---
 
@@ -93,9 +93,9 @@ Brands must specify which creator they are disputing if there are multiple parti
 ### Expected Result
 
 - The dispute status updates to `under_review`.
-- The backend initializes the GetStream channel `dispute_{disputeId}` with the members: **Creator, Brand, Activating Admin, and Finance Admin** (if passed).
-- An automated system message is posted to the channel: _"Admin has opened this chat to resolve the dispute. Brand and Creator can now discuss."_
-- **Frontend Behavior:** The chat box becomes visible on both the Creator's and the Brand's applications. They can now type and chat.
+- The backend initializes the GetStream channel `dispute_{disputeId}` with the members: **admin, Brand, Activating Admin, and Finance Admin** (if passed).
+- An automated system message is posted to the channel: _"Admin has opened this chat to resolve the dispute. Brand and admin can now discuss."_
+- **Frontend Behavior:** The chat box becomes visible on both the admin's and the Brand's applications. They can now type and chat.
 
 ---
 
@@ -108,9 +108,9 @@ Once a decision is reached, the Finance Admin or Super Admin resolves the disput
 - **Payload:**
   ```json
   {
-    "action": "release_to_creator", // Options: "release_to_creator" | "refund_to_brand" | "split"
-    "notes": "Escrow resolved. Escrowed payment is released to the creator.",
-    "splitCreatorAmount": 0 // Only required if action is "split"
+    "action": "release_to_admin", // Options: "release_to_admin" | "refund_to_brand" | "split"
+    "notes": "Escrow resolved. Escrowed payment is released to the admin.",
+    "splitadminAmount": 0 // Only required if action is "split"
   }
   ```
 
@@ -118,7 +118,7 @@ Once a decision is reached, the Finance Admin or Super Admin resolves the disput
 
 - The dispute status updates to `resolved`.
 - The backend calls the GetStream API to **freeze** the channel.
-- **Frontend Behavior:** The chat box inputs are disabled for both the Brand and the Creator. They can scroll and read historic messages, but the interface is read-only.
+- **Frontend Behavior:** The chat box inputs are disabled for both the Brand and the admin. They can scroll and read historic messages, but the interface is read-only.
 
 ---
 
@@ -131,7 +131,7 @@ To prevent GetStream channel creation failures (which occur if participants are 
 1. **GET `/disputes/stream-token`:**
    - When any user fetches their Stream token, the backend calls `upsertUser({ id, name, email })` to register their full profile (name, email) in GetStream before returning the token.
 2. **POST `/disputes/:id/activate`:**
-   - When the admin activates the dispute, the backend calls `upsertUsers([creatorId, brandId, adminId])` using minimal `{ id }` objects.
+   - When the admin activates the dispute, the backend calls `upsertUsers([adminId, brandId, adminId])` using minimal `{ id }` objects.
    - This ensures that GetStream channel creation never fails, even if some of the participants have not requested a token yet.
 
 ### Admin Client UI Dispute Load Flow
