@@ -274,7 +274,7 @@ export default function BrandTable() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-[#e8e6f0]/40 text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
-              <th className="pb-3.5 pl-2">Advertisers ID</th>
+              <th className="pb-3.5 pl-2">Advertiser ID</th>
               <th className="pb-3.5">Advertiser</th>
               <th className="pb-3.5">Representative</th>
               <th className="pb-3.5">Industry</th>
