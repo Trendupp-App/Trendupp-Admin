@@ -2,136 +2,131 @@
 
 import { useState } from "react";
 import { Search, Eye, ChevronDown } from "lucide-react";
-import { FaTiktok, FaInstagram, FaYoutube } from "react-icons/fa";
 import { cn } from "@/lib/utils";
 import { AdminStatusBadge } from "../AdminStatusBadge";
 import BrandProfileDrawer from "./BrandProfileDrawer";
 
-const PepsiLogo = () => (
-  <svg
-    viewBox="0 0 100 100"
-    className="w-7 h-7 rounded-full overflow-hidden shadow-sm shrink-0"
-  >
-    <path
-      d="M 50,5 A 45,45 0 0 1 95,50 C 95,50 80,35 50,45 C 20,55 5,50 5,50 A 45,45 0 0 1 50,5 Z"
-      fill="#E31837"
-    />
-    <path
-      d="M 50,95 A 45,45 0 0 1 5,50 C 5,50 20,55 50,45 C 80,35 95,50 95,50 A 45,45 0 0 1 50,95 Z"
-      fill="#004B87"
-    />
-    <path
-      d="M 5,50 C 5,50 20,55 50,45 C 80,35 95,50 95,50 C 95,50 78,28 50,38 C 22,48 5,50 5,50 Z"
-      fill="#FFFFFF"
-    />
-  </svg>
-);
-
 interface BrandItem {
   id: string;
+  advertiserId: string;
   name: string;
   repName: string;
   repEmail: string;
   industry: string;
   location: string;
-  platforms: ("IG" | "TikTok" | "YT")[];
   completion: number;
   status: "Active" | "Pending" | "Suspended";
+  totalSpend: number;
   campaigns: number;
   joined: string;
+  lastLogin: string;
 }
 
 const MOCK_BRANDS: BrandItem[] = [
   {
     id: "1",
+    advertiserId: "ADV-2061",
     name: "Pepsi Nigeria",
     repName: "Emeka Obi",
     repEmail: "emeka@pepsi.ng",
     industry: "Beverages",
     location: "Lagos, Nigeria",
-    platforms: ["IG", "TikTok"],
     completion: 100,
     status: "Active",
+    totalSpend: 15400000,
     campaigns: 14,
-    joined: "Oct 2023",
+    joined: "Oct 15, 2023",
+    lastLogin: "3 hours ago",
   },
   {
     id: "2",
-    name: "Pepsi Nigeria",
-    repName: "Emeka Obi",
-    repEmail: "emeka@pepsi.ng",
+    advertiserId: "ADV-4092",
+    name: "Coca-Cola",
+    repName: "Sarah Alabi",
+    repEmail: "sarah@coke.ng",
     industry: "Beverages",
-    location: "Lagos, Nigeria",
-    platforms: ["IG", "TikTok"],
+    location: "Abuja, Nigeria",
     completion: 80,
     status: "Active",
-    campaigns: 14,
-    joined: "Oct 2023",
+    totalSpend: 12100000,
+    campaigns: 9,
+    joined: "Jan 10, 2024",
+    lastLogin: "1 day ago",
   },
   {
     id: "3",
-    name: "Pepsi Nigeria",
-    repName: "Emeka Obi",
-    repEmail: "emeka@pepsi.ng",
-    industry: "Beverages",
+    advertiserId: "ADV-1083",
+    name: "Flutterwave",
+    repName: "Tunde Cole",
+    repEmail: "tunde@flutterwave.com",
+    industry: "Tech",
     location: "Lagos, Nigeria",
-    platforms: ["IG", "TikTok"],
     completion: 100,
     status: "Active",
-    campaigns: 14,
-    joined: "Oct 2023",
+    totalSpend: 28900000,
+    campaigns: 24,
+    joined: "Jun 22, 2024",
+    lastLogin: "Just now",
   },
   {
     id: "4",
-    name: "Pepsi Nigeria",
-    repName: "Emeka Obi",
-    repEmail: "emeka@pepsi.ng",
-    industry: "Beverages",
+    advertiserId: "ADV-8891",
+    name: "Paystack",
+    repName: "Chioma Nze",
+    repEmail: "chioma@paystack.com",
+    industry: "Tech",
     location: "Lagos, Nigeria",
-    platforms: ["IG", "TikTok"],
     completion: 100,
     status: "Active",
-    campaigns: 14,
-    joined: "Oct 2023",
+    totalSpend: 31200000,
+    campaigns: 19,
+    joined: "Aug 05, 2024",
+    lastLogin: "5 hours ago",
   },
   {
     id: "5",
-    name: "Pepsi Nigeria",
-    repName: "Emeka Obi",
-    repEmail: "emeka@pepsi.ng",
-    industry: "Beverages",
-    location: "Lagos, Nigeria",
-    platforms: ["IG", "TikTok"],
+    advertiserId: "ADV-0925",
+    name: "MTN Nigeria",
+    repName: "Kunle Adeniyi",
+    repEmail: "kunle@mtn.ng",
+    industry: "Telecom",
+    location: "Abuja, Nigeria",
     completion: 60,
     status: "Pending",
-    campaigns: 14,
-    joined: "Oct 2023",
+    totalSpend: 4500000,
+    campaigns: 2,
+    joined: "Dec 18, 2025",
+    lastLogin: "2 days ago",
   },
   {
     id: "6",
-    name: "Pepsi Nigeria",
-    repName: "Emeka Obi",
-    repEmail: "emeka@pepsi.ng",
+    advertiserId: "ADV-1526",
+    name: "Guinness Nigeria",
+    repName: "Bisi Akande",
+    repEmail: "bisi@guinness.ng",
     industry: "Beverages",
     location: "Lagos, Nigeria",
-    platforms: ["IG", "TikTok"],
     completion: 100,
     status: "Active",
-    campaigns: 14,
-    joined: "Oct 2023",
+    totalSpend: 9800000,
+    campaigns: 11,
+    joined: "Nov 01, 2024",
+    lastLogin: "12 hours ago",
   },
   {
     id: "7",
-    name: "Pepsi Nigeria",
-    repName: "Emeka Obi",
-    repEmail: "emeka@pepsi.ng",
-    industry: "Beverages",
+    advertiserId: "ADV-7431",
+    name: "PiggyVest",
+    repName: "Odun Eweniyi",
+    repEmail: "odun@piggyvest.com",
+    industry: "Tech",
     location: "Lagos, Nigeria",
-    platforms: ["IG", "TikTok"],
     completion: 40,
     status: "Suspended",
-    campaigns: 14,
-    joined: "Oct 2023",
+    totalSpend: 1500000,
+    campaigns: 1,
+    joined: "Feb 14, 2025",
+    lastLogin: "1 week ago",
   },
 ];
 
@@ -155,10 +150,15 @@ export default function BrandTable() {
     if (
       search &&
       !b.name.toLowerCase().includes(search.toLowerCase()) &&
-      !b.repName.toLowerCase().includes(search.toLowerCase())
+      !b.repName.toLowerCase().includes(search.toLowerCase()) &&
+      !b.advertiserId.toLowerCase().includes(search.toLowerCase())
     )
       return false;
     if (selectedIndustry && b.industry !== selectedIndustry) return false;
+    if (selectedCompletion) {
+      const numeric = parseInt(selectedCompletion);
+      if (b.completion !== numeric) return false;
+    }
     if (selectedStatus && b.status !== selectedStatus) return false;
     if (selectedCountry && !b.location.includes(selectedCountry)) return false;
     return true;
@@ -274,15 +274,17 @@ export default function BrandTable() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-[#e8e6f0]/40 text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
-              <th className="pb-3.5 pl-2">Brand</th>
+              <th className="pb-3.5 pl-2">Advertisers ID</th>
+              <th className="pb-3.5">Advertiser</th>
               <th className="pb-3.5">Representative</th>
               <th className="pb-3.5">Industry</th>
               <th className="pb-3.5">Location</th>
-              <th className="pb-3.5">Platforms</th>
-              <th className="pb-3.5">Completion</th>
+              <th className="pb-3.5">Profile Completion</th>
               <th className="pb-3.5">Status</th>
+              <th className="pb-3.5">Total Spend</th>
               <th className="pb-3.5">Campaigns</th>
-              <th className="pb-3.5">Joined</th>
+              <th className="pb-3.5">Join Date</th>
+              <th className="pb-3.5">Last login</th>
               <th className="pb-3.5 text-right pr-2">Action</th>
             </tr>
           </thead>
@@ -292,9 +294,14 @@ export default function BrandTable() {
                 key={b.id}
                 className="hover:bg-[#faf9fc]/40 transition-colors"
               >
-                <td className="py-3.5 pl-2">
+                <td className="py-3.5 pl-2 text-[#5a5a7a] font-medium">
+                  {b.advertiserId}
+                </td>
+                <td className="py-3.5">
                   <div className="flex items-center gap-2">
-                    <PepsiLogo />
+                    <div className="w-7 h-7 rounded-full bg-brand-pink/5 text-brand-pink font-bold flex items-center justify-center border border-brand-pink/10 shrink-0 text-[10px] uppercase">
+                      {b.name.substring(0, 2)}
+                    </div>
                     <span className="font-semibold text-[#1a1a2e]">
                       {b.name}
                     </span>
@@ -315,35 +322,6 @@ export default function BrandTable() {
                 </td>
                 <td className="py-3.5 font-medium text-[#5a5a7a]">
                   {b.location}
-                </td>
-                <td className="py-3.5">
-                  <div className="flex items-center gap-1.5">
-                    {b.platforms.map((p) => {
-                      if (p === "IG")
-                        return (
-                          <FaInstagram
-                            key={p}
-                            className="text-[#e1306c]"
-                            size={14}
-                          />
-                        );
-                      if (p === "TikTok")
-                        return (
-                          <FaTiktok
-                            key={p}
-                            className="text-[#000000]"
-                            size={12}
-                          />
-                        );
-                      return (
-                        <FaYoutube
-                          key={p}
-                          className="text-[#ff0000]"
-                          size={14}
-                        />
-                      );
-                    })}
-                  </div>
                 </td>
                 <td className="py-3.5">
                   <div className="flex items-center gap-2 max-w-[120px]">
@@ -377,11 +355,17 @@ export default function BrandTable() {
                 <td className="py-3.5">
                   <AdminStatusBadge status={b.status} />
                 </td>
+                <td className="py-3.5 font-semibold text-[#1a1a2e] whitespace-nowrap">
+                  ₦{b.totalSpend.toLocaleString()}
+                </td>
                 <td className="py-3.5 font-bold text-[#1a1a2e]">
                   {b.campaigns}
                 </td>
                 <td className="py-3.5 font-medium text-[#9a99b0]">
                   {b.joined}
+                </td>
+                <td className="py-3.5 font-medium text-[#9a99b0] whitespace-nowrap">
+                  {b.lastLogin}
                 </td>
                 <td className="py-3.5 text-right pr-2">
                   <button
