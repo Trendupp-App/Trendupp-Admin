@@ -557,7 +557,7 @@ export default function CreateCampaignPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#7a7a9a] uppercase tracking-wider text-[9px] font-bold">
-                      Advertise
+                      Advertiser
                     </span>
                     <span className="font-bold">
                       {activeAdvertiserObj?.name || ""}
