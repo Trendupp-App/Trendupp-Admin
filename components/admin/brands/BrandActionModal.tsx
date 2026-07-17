@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X, AlertTriangle, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Portal } from "@/components/ui/portal";
 
 type BrandAction = "suspend" | "reactivate" | "delete";
 
@@ -62,82 +63,84 @@ export default function BrandActionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center px-4 pt-[10vh] overflow-y-auto pb-6">
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
-        onClick={handleClose}
-      />
-      <div className="relative z-10 w-full max-w-[380px] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-[#e8e6f0]/40">
-          <div className="flex items-center gap-2.5">
-            {isDel ? (
-              <div className="w-7 h-7 rounded-full bg-[#fee2e2] flex items-center justify-center">
-                <Trash2 size={13} className="text-[#dc2626]" />
-              </div>
-            ) : (
-              <div className="w-7 h-7 rounded-full bg-[#fff7ed] flex items-center justify-center">
-                <AlertTriangle size={13} className="text-[#f59e0b]" />
-              </div>
-            )}
-            <span className="text-[15px] font-bold text-[#1a1a2e]">
-              {cfg.title}
-            </span>
-          </div>
-          <button
-            onClick={handleClose}
-            className="p-1 rounded-full hover:bg-[#f4f3f6] text-[#7a7a9a] cursor-pointer"
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="px-6 py-5 flex flex-col gap-4 text-left">
-          <div
-            className={cn(
-              "flex items-start gap-2.5 px-4 py-3 rounded-xl border text-xs font-medium leading-relaxed",
-              cfg.warningColor,
-            )}
-          >
-            <AlertTriangle size={13} className="shrink-0 mt-0.5" />
-            {cfg.warning}
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-[#5a5a7a] uppercase tracking-wider">
-              {cfg.inputLabel}
-            </label>
-            <input
-              type="text"
-              value={val}
-              onChange={(e) => setVal(e.target.value)}
-              placeholder={cfg.inputPlaceholder}
-              className="h-9.5 px-4 rounded-xl border border-[#e8e6f0] text-xs text-[#1a1a2e] focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium"
-            />
-          </div>
-
-          <div className="flex items-center justify-end gap-2.5 mt-2">
+    <Portal>
+      <div className="fixed inset-0 z-[60] flex items-start justify-center px-4 pt-[10vh] overflow-y-auto pb-6">
+        <div
+          className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+          onClick={handleClose}
+        />
+        <div className="relative z-10 w-full max-w-[380px] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-[#e8e6f0]/40">
+            <div className="flex items-center gap-2.5">
+              {isDel ? (
+                <div className="w-7 h-7 rounded-full bg-[#fee2e2] flex items-center justify-center">
+                  <Trash2 size={13} className="text-[#dc2626]" />
+                </div>
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-[#fff7ed] flex items-center justify-center">
+                  <AlertTriangle size={13} className="text-[#f59e0b]" />
+                </div>
+              )}
+              <span className="text-[15px] font-bold text-[#1a1a2e]">
+                {cfg.title}
+              </span>
+            </div>
             <button
               onClick={handleClose}
-              className="px-4.5 h-9 text-xs font-bold text-[#7a7a9a] hover:bg-[#f4f3f6] rounded-xl cursor-pointer"
+              className="p-1 rounded-full hover:bg-[#f4f3f6] text-[#7a7a9a] cursor-pointer"
             >
-              Cancel
+              <X size={16} />
             </button>
-            <button
-              onClick={() => {
-                onConfirm();
-                handleClose();
-              }}
-              disabled={!ready}
+          </div>
+
+          <div className="px-6 py-5 flex flex-col gap-4 text-left">
+            <div
               className={cn(
-                "px-4.5 h-9 text-xs font-bold rounded-xl transition-all cursor-pointer",
-                cfg.confirmClass,
+                "flex items-start gap-2.5 px-4 py-3 rounded-xl border text-xs font-medium leading-relaxed",
+                cfg.warningColor,
               )}
             >
-              {cfg.confirmText}
-            </button>
+              <AlertTriangle size={13} className="shrink-0 mt-0.5" />
+              {cfg.warning}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-[#5a5a7a] uppercase tracking-wider">
+                {cfg.inputLabel}
+              </label>
+              <input
+                type="text"
+                value={val}
+                onChange={(e) => setVal(e.target.value)}
+                placeholder={cfg.inputPlaceholder}
+                className="h-9.5 px-4 rounded-xl border border-[#e8e6f0] text-xs text-[#1a1a2e] focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 mt-2">
+              <button
+                onClick={handleClose}
+                className="px-4.5 h-9 text-xs font-bold text-[#7a7a9a] hover:bg-[#f4f3f6] rounded-xl cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  onConfirm();
+                  handleClose();
+                }}
+                disabled={!ready}
+                className={cn(
+                  "px-4.5 h-9 text-xs font-bold rounded-xl transition-all cursor-pointer",
+                  cfg.confirmClass,
+                )}
+              >
+                {cfg.confirmText}
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </Portal>
   );
 }
