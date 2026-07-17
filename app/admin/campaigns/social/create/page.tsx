@@ -70,7 +70,7 @@ export default function CreateCampaignPage() {
     "Use natural lighting throughout the video",
   ]);
   const [donts, setDonts] = useState<string[]>([
-    "Do not feature or mention competitor produc",
+    "Do not feature or mention competitor products",
   ]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
