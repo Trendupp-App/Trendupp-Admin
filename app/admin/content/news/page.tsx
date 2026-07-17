@@ -144,7 +144,7 @@ export default function TrenduppNewsPage() {
       return false;
     if (activeTab === "Draft" && article.status !== "Draft") return false;
     if (activeTab === "Archived" && article.status !== "Archived") return false;
-    if (activeTab !== "Archived" && article.status === "Archived") return false; // Hide archived in All, Published, Draft
+    if (activeTab !== "All" && activeTab !== "Archived" && article.status === "Archived") return false;
 
     // Search filter
     if (searchQuery.trim() !== "") {
