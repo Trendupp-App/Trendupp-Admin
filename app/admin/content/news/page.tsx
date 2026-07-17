@@ -168,10 +168,17 @@ export default function TrenduppNewsPage() {
 
   const handleDrop = (index: number) => {
     if (draggedIndex === null) return;
+    const draggedId = filteredArticles[draggedIndex]?.id;
+    const targetId = filteredArticles[index]?.id;
+    if (draggedId == null || targetId == null) return;
+
     const updated = [...articles];
-    const draggedItem = updated[draggedIndex];
-    updated.splice(draggedIndex, 1);
-    updated.splice(index, 0, draggedItem);
+    const from = updated.findIndex((a) => a.id === draggedId);
+    const to = updated.findIndex((a) => a.id === targetId);
+    if (from === -1 || to === -1) return;
+
+    const [draggedItem] = updated.splice(from, 1);
+    updated.splice(to, 0, draggedItem);
     setDraggedIndex(null);
     setArticles(updated);
   };
