@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import UserAvatar from "@/shared/UserAvatar";
+import { useAuthStore } from "@/store/authStore";
 
 interface NavItem {
   label: string;
@@ -106,6 +107,11 @@ export default function AdminSidebar({
   onNotificationClick,
 }: AdminSidebarProps) {
   const pathname = usePathname();
+
+  const handleLogout = () => {
+    useAuthStore.getState().clearSession();
+    window.location.href = "/admin/signin";
+  };
 
   return (
     <aside className="w-[264px] h-screen bg-[#fef2f6] border-r border-[#fae2ec] flex flex-col justify-between py-6 px-4 shrink-0 overflow-y-auto">
@@ -194,7 +200,10 @@ export default function AdminSidebar({
       </div>
 
       {/* Logout */}
-      <button className="flex items-center gap-3 px-3 py-2.5 text-sm text-[#7a7a9a] hover:text-red-500 hover:bg-white/60 rounded-xl transition-all duration-200 group w-full cursor-pointer mt-4">
+      <button
+        onClick={handleLogout}
+        className="flex items-center gap-3 px-3 py-2.5 text-sm text-[#7a7a9a] hover:text-red-500 hover:bg-white/60 rounded-xl transition-all duration-200 group w-full cursor-pointer mt-4"
+      >
         <LogOut
           size={16}
           className="shrink-0 group-hover:text-red-500 transition-colors"

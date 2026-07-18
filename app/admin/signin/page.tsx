@@ -6,6 +6,9 @@ import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { authApi } from "@/services/authApi";
+import { useAuthStore } from "@/store/authStore";
+import { toast } from "sonner"; // If you use sonner for notifications
 
 type StepType = "signin" | "forgot-password" | "verify-code" | "reset-password";
 
@@ -25,13 +28,39 @@ export default function AdminSigninPage() {
     else if (step === "reset-password") setStep("verify-code");
   };
 
-  const onSigninSubmit = (e: React.FormEvent) => {
+  const onSigninSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+
+    try {
+      // 1. Send the login request to the NestJS server
+      const response = await authApi.login({ email, password });
+
+      const { accessToken, user } = response.data;
+
+      // 2. Double-check if this user is a super admin
+      if (user.role !== "super_admin") {
+        toast.error("Access denied. Super Admin role required.");
+        setLoading(false);
+        return;
+      }
+
+      // 3. Save the token and user in local Zustand session storage
+      useAuthStore.getState().setSession(accessToken, user);
+
+      toast.success(`Welcome back, ${user.firstName}!`);
+
+      // 4. Redirect to the dashboard
       router.push("/admin/dashboard");
-    }, 800);
+    } catch (err) {
+      // The apiClient interceptor automatically formats backend validation errors
+      const error = err as { response?: { data?: { message?: string } } };
+      const errorMessage =
+        error.response?.data?.message || "Failed to sign in. Please try again.";
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const onForgotSubmit = (e: React.FormEvent) => {
