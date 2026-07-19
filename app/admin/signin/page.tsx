@@ -36,7 +36,9 @@ export default function AdminSigninPage() {
       // 1. Send the login request to the NestJS server
       const response = await authApi.login({ email, password });
 
-      const { accessToken, user } = response.data;
+      const { accessToken, admin } = response.data;
+
+      const user = admin;
 
       // Define allowed administrative roles
       const ALLOWED_ADMIN_ROLES = [
@@ -71,34 +73,55 @@ export default function AdminSigninPage() {
     }
   };
 
-  const onForgotSubmit = (e: React.FormEvent) => {
+  const onForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await authApi.forgotPassword(email);
+      toast.success("Verification code sent to your email!");
       setStep("verify-code");
-    }, 600);
+    } catch (err) {
+      const error = err as { response?: { data?: { message?: string } } };
+      const errorMessage =
+        error.response?.data?.message ||
+        "Failed to send code. Please try again.";
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const onVerifySubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setStep("reset-password");
-    }, 600);
+    setStep("reset-password");
   };
 
-  const onResetSubmit = (e: React.FormEvent) => {
+  const onResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match.");
+      return;
+    }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      alert(
+    try {
+      await authApi.resetPassword({ email, code, newPassword });
+      toast.success(
         "Password successfully reset! Please sign in with your new password.",
       );
       setStep("signin");
-    }, 800);
+      setPassword("");
+      setCode("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      const error = err as { response?: { data?: { message?: string } } };
+      const errorMessage =
+        error.response?.data?.message ||
+        "Failed to reset password. Please try again.";
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
