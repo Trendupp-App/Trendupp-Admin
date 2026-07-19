@@ -21,7 +21,8 @@ function formatValidationErrorMessage(message: unknown): string {
   if (!message) return "";
 
   if (Array.isArray(message)) {
-    return message.map((msg) => formatSingleMessage(String(msg))).join(". ");
+    if (message.length === 0) return "";
+    return formatSingleMessage(String(message[0]));
   }
 
   if (typeof message === "string") {
