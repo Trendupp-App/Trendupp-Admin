@@ -38,9 +38,17 @@ export default function AdminSigninPage() {
 
       const { accessToken, user } = response.data;
 
-      // 2. Double-check if this user is a super admin
-      if (user.role !== "super_admin") {
-        toast.error("Access denied. Super Admin role required.");
+      // Define allowed administrative roles
+      const ALLOWED_ADMIN_ROLES = [
+        "owner",
+        "super_admin",
+        "finance_admin",
+        "moderator",
+        "support_agent",
+      ];
+
+      if (!ALLOWED_ADMIN_ROLES.includes(user.role)) {
+        toast.error("Access denied. Authorized administrator role required.");
         setLoading(false);
         return;
       }
