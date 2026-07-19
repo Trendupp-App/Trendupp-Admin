@@ -6,8 +6,7 @@ import {
   useActivateDispute,
   useResolveDispute,
 } from "@/hooks/useDisputes";
-import { useMyApplications } from "@/hooks/useCampaign";
-import type { CampaignApplicationDto } from "@/types/campaign";
+import { useCampaign } from "@/hooks/useCampaign";
 import {
   AlertCircle,
   CheckCircle,
@@ -68,7 +67,7 @@ export default function AdminDisputesPage() {
     isLoading: isDisputeLoading,
     error: disputeError,
   } = useDisputeDetails(loadedDisputeId);
-  const { data: myApps } = useMyApplications();
+  const { data: campaign } = useCampaign(dispute?.campaignId ?? null);
 
   // Chat integration states
   const { client, isConnected } = useStreamChat();
@@ -80,20 +79,22 @@ export default function AdminDisputesPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const getCampaignTitle = (campaignId: string) => {
-    const app = myApps?.find(
-      (a: CampaignApplicationDto) =>
-        a.campaignId === campaignId || a.campaign?.id === campaignId,
-    );
-    return app?.campaign?.title || `Campaign ${campaignId.slice(0, 8)}`;
+    if (
+      campaign &&
+      (campaign.id === campaignId || campaignId === dispute?.campaignId)
+    ) {
+      return campaign.title;
+    }
+    return `Campaign ${campaignId.slice(0, 8)}`;
   };
 
   const getBrandName = (campaignId: string) => {
-    const app = myApps?.find(
-      (a: CampaignApplicationDto) =>
-        a.campaignId === campaignId || a.campaign?.id === campaignId,
-    );
-    if (app?.campaign?.brand) {
-      return `${app.campaign.brand.firstName} ${app.campaign.brand.lastName}`;
+    if (
+      campaign &&
+      (campaign.id === campaignId || campaignId === dispute?.campaignId) &&
+      campaign.brand
+    ) {
+      return `${campaign.brand.firstName} ${campaign.brand.lastName}`;
     }
     return "Unknown Brand";
   };
