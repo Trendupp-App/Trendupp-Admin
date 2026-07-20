@@ -45,4 +45,113 @@ test.describe("Admin Panel Navigation", () => {
     await page.click("text=Cancel");
     await expect(page.locator("text=Delete Article?")).not.toBeVisible();
   });
+
+  test("should load team management page, search, invite, edit and remove staff member", async ({
+    page,
+  }) => {
+    // Mock the invite API so we don't need a live backend
+    await page.route("**/admin/users/invite", (route) => {
+      route.fulfill({
+        status: 201,
+        body: "{}",
+        contentType: "application/json",
+      });
+    });
+
+    // Seed localStorage so canInvite resolves to true (owner role)
+    await page.goto("/admin/team");
+    await page.evaluate(() => {
+      const authState = {
+        state: {
+          accessToken: "mock-token",
+          user: {
+            id: "mock-id",
+            email: "owner@trendupp.com",
+            firstName: "Admin",
+            lastName: "Owner",
+            role: "owner",
+            isEmailVerified: true,
+            onboardingPercentage: 100,
+            onboardingStepsCompleted: {},
+            socialsConnected: {
+              instagram: false,
+              tiktok: false,
+              youtube: false,
+              twitter: false,
+            },
+            username: null,
+            niches: [],
+            industries: [],
+            assignedTier: null,
+            bio: null,
+            avatarUrl: null,
+            bankName: null,
+            bankAccountNumber: null,
+            bankAccountName: null,
+            brandRepresentative: null,
+          },
+        },
+        version: 0,
+      };
+      localStorage.setItem("trendupp-auth", JSON.stringify(authState));
+    });
+    // Reload so Zustand hydrates the mocked session
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+
+    // Verify page heading
+    await expect(page.locator("h2").first()).toContainText("Team & Access");
+
+    // Verify stats cards are present
+    await expect(page.locator("text=Total Staff")).toBeVisible();
+    await expect(page.locator("text=Roles Available")).toBeVisible();
+
+    // Verify initial mock staff list
+    await expect(page.locator("text=Adaeze Okonkwo")).toBeVisible();
+
+    // Open Invite Staff Member modal (only visible for owner / super_admin)
+    await page.click('button:has-text("Invite Staff Member")');
+    await expect(page.locator("text=Invite Staff Member").last()).toBeVisible();
+
+    // Fill the invitation form
+    await page.fill(
+      'input[placeholder="e.g. Adaeze Okonkwo"]',
+      "Test Team Member",
+    );
+    await page.fill(
+      'input[placeholder="staff@trendupp.com"]',
+      "testmember@trendupp.com",
+    );
+    await page.click("text=Send Invitation");
+
+    // Confirm new member was added in Pending Setup status
+    await expect(
+      page.locator("tbody").locator("text=Test Team Member"),
+    ).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("text=testmember@trendupp.com")).toBeVisible();
+
+    // Search for the new member
+    await page.fill(
+      'input[placeholder="Search name or email..."]',
+      "Test Team",
+    );
+    await expect(page.locator("text=Adaeze Okonkwo")).not.toBeVisible();
+    await expect(
+      page.locator("tbody").locator("text=Test Team Member"),
+    ).toBeVisible();
+
+    // Clear search
+    await page.fill('input[placeholder="Search name or email..."]', "");
+
+    // Open Edit role modal
+    await page.click('button:has-text("Edit") >> nth=0');
+    await expect(page.locator("text=Edit — Adaeze Okonkwo")).toBeVisible();
+    await page.click("text=Save Changes");
+
+    // Open Remove staff modal
+    await page.click('button:has-text("Remove") >> nth=0');
+    await expect(page.locator("text=Remove Adaeze Okonkwo?")).toBeVisible();
+    await page.click("text=Yes, Remove");
+    await expect(page.locator("text=Adaeze Okonkwo")).not.toBeVisible();
+  });
 });

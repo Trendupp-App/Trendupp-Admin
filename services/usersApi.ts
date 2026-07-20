@@ -14,6 +14,14 @@ export interface AdminUser {
   createdAt: string;
 }
 
+export interface AdminInviteDto {
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: "super_admin" | "finance_admin" | "moderator" | "support_agent";
+  phoneNumber?: string;
+}
+
 export const usersApi = {
   getExploreProfile: (id: string) =>
     apiClient.get<CreatorProfileDto>(`/users/explore/profile/${id}`),
@@ -22,4 +30,6 @@ export const usersApi = {
   getAllUsers: () => apiClient.get<AdminUser[]>("/users"),
   getTopPerformers: () =>
     apiClient.get<TopPerformerCreator[]>("/users/creators/top-performers"),
+  inviteAdmin: (data: AdminInviteDto) =>
+    apiClient.post<void>("/admin/users/invite", data),
 };
