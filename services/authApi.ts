@@ -43,6 +43,9 @@ export const authApi = {
   verifyOtp: (data: OtpVerifyPayload) =>
     apiClient.post<AuthResponse>("/auth/otp/verify", data),
 
+  verifyOtpAdmin: (data: { email: string; code: string }) =>
+    apiClient.post<void>("/admin/auth/verify-otp", data),
+
   login: (data: LoginPayload) =>
     apiClient.post<AuthResponse>("/admin/auth/login", data),
 
@@ -51,7 +54,7 @@ export const authApi = {
   forgotPassword: (email: string) =>
     apiClient.post<MessageResponse>("/admin/auth/forgot-password", { email }),
 
-  resetPassword: (data: { email: string; code: string; newPassword: string }) =>
+  resetPasswordAdmin: (data: { email: string; password: string }) =>
     apiClient.post<MessageResponse>("/admin/auth/reset-password", data),
 
   getUserProfile: (userId: string) =>
