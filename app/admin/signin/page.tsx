@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,8 +14,21 @@ type StepType = "signin" | "forgot-password" | "verify-code" | "reset-password";
 
 export default function AdminSigninPage() {
   const router = useRouter();
-  const [step, setStep] = useState<StepType>("signin");
-  const [email, setEmail] = useState("");
+  const searchParams = useSearchParams();
+
+  // Detect invite-flow: arrived with ?step=reset-password&email=... from activation page
+  const isInviteFlow = searchParams.get("step") === "reset-password";
+
+  // Derive initial step and email directly from URL params (no effect needed)
+  const [step, setStep] = useState<StepType>(() => {
+    return searchParams.get("step") === "reset-password"
+      ? "reset-password"
+      : "signin";
+  });
+  const [email, setEmail] = useState(() => {
+    const urlEmail = searchParams.get("email");
+    return urlEmail ? decodeURIComponent(urlEmail) : "";
+  });
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -267,8 +280,8 @@ export default function AdminSigninPage() {
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#7c3aed]/5 blur-[120px]" />
 
       <div className="w-full max-w-[420px] bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 md:p-8 shadow-xl flex flex-col gap-6 relative z-10 text-left">
-        {/* Back Link */}
-        {step !== "signin" && (
+        {/* Back Link — hidden in invite flow (no verify-code step to go back to) */}
+        {step !== "signin" && !isInviteFlow && (
           <button
             onClick={handleBack}
             className="flex items-center gap-1 text-xs text-[#7a7a9a] hover:text-brand-pink transition-colors font-bold cursor-pointer"
@@ -466,6 +479,25 @@ export default function AdminSigninPage() {
 
         {step === "reset-password" && (
           <form onSubmit={onResetSubmit} className="flex flex-col gap-4">
+            {/* Show locked email in invite flow so user knows which account they're setting up */}
+            {isInviteFlow && email && (
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[10px] font-bold text-[#1a1a2e] uppercase tracking-wider">
+                  Account Email
+                </Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9a99b0]" />
+                  <Input
+                    type="email"
+                    value={email}
+                    disabled
+                    readOnly
+                    className="pl-10 h-9.5 text-xs rounded-xl font-medium bg-[#f4f3f6] text-[#9a99b0] cursor-not-allowed border-[#e8e6f0]"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-col gap-1.5">
               <Label className="text-[10px] font-bold text-[#1a1a2e] uppercase tracking-wider">
                 New Password
@@ -553,7 +585,11 @@ export default function AdminSigninPage() {
               }
               className="h-9.5 w-full bg-brand-pink hover:opacity-90 text-white text-xs font-bold rounded-xl transition-all cursor-pointer mt-2"
             >
-              {loading ? "Resetting..." : "Reset password"}
+              {loading
+                ? "Setting up…"
+                : isInviteFlow
+                  ? "Set Up Password →"
+                  : "Reset password"}
             </Button>
           </form>
         )}

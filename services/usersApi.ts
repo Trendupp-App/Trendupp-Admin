@@ -22,6 +22,14 @@ export interface AdminInviteDto {
   phoneNumber?: string;
 }
 
+export interface AdminInviteResponse {
+  /** OTP/token the backend may include so the frontend can construct the invite link */
+  otp?: string;
+  /** Full invite link if the backend constructs it server-side */
+  inviteLink?: string;
+  message?: string;
+}
+
 export const usersApi = {
   getExploreProfile: (id: string) =>
     apiClient.get<CreatorProfileDto>(`/users/explore/profile/${id}`),
@@ -31,5 +39,5 @@ export const usersApi = {
   getTopPerformers: () =>
     apiClient.get<TopPerformerCreator[]>("/users/creators/top-performers"),
   inviteAdmin: (data: AdminInviteDto) =>
-    apiClient.post<void>("/admin/users/invite", data),
+    apiClient.post<AdminInviteResponse>("/admin/users/invite", data),
 };
