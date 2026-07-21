@@ -1,116 +1,99 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Users,
-  CheckCircle,
-  Clock,
-  ShieldCheck,
-  Search,
-  Plus,
-  Edit2,
-  Trash2,
-  Link2,
-  Copy,
-  X,
-} from "lucide-react";
+import { useState, useEffect } from "react";
 import InviteStaffModal from "@/components/admin/team/InviteStaffModal";
 import EditStaffModal from "@/components/admin/team/EditStaffModal";
 import RemoveStaffModal from "@/components/admin/team/RemoveStaffModal";
+import TeamStats from "@/components/admin/team/TeamStats";
+import TeamRoleCards from "@/components/admin/team/TeamRoleCards";
+import TeamToolbar from "@/components/admin/team/TeamToolbar";
+import TeamTable, { StaffMember } from "@/components/admin/team/TeamTable";
+import InvitePreviewModal from "@/components/admin/team/InvitePreviewModal";
+
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/authStore";
 import { usersApi } from "@/services/usersApi";
 
-interface StaffMember {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  status: "Active" | "Pending Setup";
-  joined: string;
-  lastLogin: string;
-}
+const copyToClipboard = async (text: string) => {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } else {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      const success = document.execCommand("copy");
+      textArea.remove();
+      return !!success;
+    }
+  } catch {
+    return false;
+  }
+};
 
-const INITIAL_STAFF: StaffMember[] = [
-  {
-    id: "STF-1001",
-    name: "Adaeze Okonkwo",
-    email: "adaeze@trendupp.com",
-    role: "Support Agent",
-    status: "Active",
-    joined: "Jan 15, 2026",
-    lastLogin: "Jun 5, 2026",
-  },
-  {
-    id: "STF-1002",
-    name: "Tunde Bello",
-    email: "tunde@trendupp.com",
-    role: "Finance Admin",
-    status: "Active",
-    joined: "Feb 1, 2026",
-    lastLogin: "Jun 4, 2026",
-  },
-  {
-    id: "STF-1003",
-    name: "Ngozi Chukwu",
-    email: "ngozi@trendupp.com",
-    role: "Finance Admin",
-    status: "Pending Setup",
-    joined: "Jun 1, 2026",
-    lastLogin: "Never",
-  },
-  {
-    id: "STF-1004",
-    name: "Emeka Eze",
-    email: "emeka@trendupp.com",
-    role: "Moderator",
-    status: "Active",
-    joined: "Mar 10, 2026",
-    lastLogin: "Jun 5, 2026",
-  },
-];
+const formatLastLogin = (dateString?: string | null) => {
+  if (!dateString) return "Never";
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Never";
+
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    if (diffMs < 0) return "Just now";
+
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}d ago`;
+
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return "Never";
+  }
+};
 
 const ROLE_TYPES = [
   {
     title: "Support Agent",
     description: "Handles disputes, tickets, chat approvals.",
-    bgColor: "bg-blue-50/50 border-blue-100/60 text-[#2563eb]",
   },
   {
     title: "Finance Admin",
     description: "Manage escrow, payouts, and financial reports.",
-    bgColor: "bg-purple-50/50 border-purple-100/60 text-[#7c3aed]",
   },
   {
     title: "Moderator",
     description: "Review content, reports, and flags.",
-    bgColor: "bg-orange-50/50 border-orange-100/60 text-[#ea580c]",
   },
   {
     title: "Super Admin",
     description: "Full platform access and management.",
-    bgColor: "bg-rose-50/50 border-rose-100/60 text-brand-pink",
   },
 ];
 
-// Helper to determine role badges
-const getRoleBadgeStyle = (role: string) => {
-  const r = role.toLowerCase();
-  if (r.includes("support") || r.includes("customer")) {
-    return "bg-[#edf2fe] text-[#2f63eb] border-[#dbeafe]";
-  }
-  if (r.includes("finance") || r.includes("account")) {
-    return "bg-[#f5f3ff] text-[#7c3aed] border-[#ede9fe]";
-  }
-  if (r.includes("moderator") || r.includes("content")) {
-    return "bg-[#fff7ed] text-[#ea580c] border-[#ffedd5]";
-  }
-  return "bg-[#fdf2f8] text-brand-pink border-[#fce7f3]"; // Super Admin / Default
-};
-
 export default function TeamManagementPage() {
-  const [staffList, setStaffList] = useState<StaffMember[]>(INITIAL_STAFF);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeRoleFilter, setActiveRoleFilter] = useState("all");
+  const [activeStatusFilter, setActiveStatusFilter] = useState("all");
+
+  const [staffList, setStaffList] = useState<StaffMember[]>([]);
+  const [isLoadingList, setIsLoadingList] = useState(false);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const { user } = useAuthStore();
   const canInvite = user?.role === "owner" || user?.role === "super_admin";
@@ -123,86 +106,167 @@ export default function TeamManagementPage() {
 
   // Invite link state (for copy-link dialog when email system is down)
   const [invitePreviewUrl, setInvitePreviewUrl] = useState<string | null>(null);
-  const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
+  // Cache of generated OTP codes by email: { [email: string]: string }
+  const [invitedCodesMap, setInvitedCodesMap] = useState<
+    Record<string, string>
+  >({});
 
   // Selected item states
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
 
+  // Debounce search query input to limit API calls
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  // Load sub-admins from API
+  const fetchSubAdmins = async () => {
+    setIsLoadingList(true);
+    try {
+      const apiRole = activeRoleFilter !== "all" ? activeRoleFilter : undefined;
+      const response = await usersApi.getSubAdmins({
+        q: debouncedSearch || undefined,
+        role: apiRole,
+      });
+
+      let rawList: unknown[] = [];
+      if (Array.isArray(response.data)) {
+        rawList = response.data;
+      } else if (response.data && typeof response.data === "object") {
+        const keys = ["data", "users", "subAdmins", "results"];
+        for (const key of keys) {
+          const list = (response.data as Record<string, unknown>)[key];
+          if (Array.isArray(list)) {
+            rawList = list;
+            break;
+          }
+        }
+      }
+
+      const mapped: StaffMember[] = rawList.map((item, i) => {
+        const u = item as {
+          role?: string;
+          id?: string;
+          firstName?: string;
+          lastName?: string;
+          email: string;
+          isEmailVerified?: boolean;
+          createdAt?: string;
+          username?: string | null;
+          lastLoginAt?: string | null;
+          lastLogin?: string | null;
+        };
+
+        let uiRole = "Support Agent";
+        if (u.role === "finance_admin") uiRole = "Finance Admin";
+        else if (u.role === "super_admin") uiRole = "Super Admin";
+        else if (u.role === "moderator") uiRole = "Moderator";
+
+        const itemObj = u as {
+          status?: string;
+          isActive?: boolean;
+          isEmailVerified?: boolean;
+        };
+
+        const isVerified =
+          itemObj.status === "active" ||
+          itemObj.isActive === true ||
+          String(itemObj.isActive) === "true" ||
+          itemObj.isEmailVerified === true ||
+          String(itemObj.isEmailVerified) === "true";
+
+        return {
+          id: u.id || `STF-${1000 + i}`,
+          name: `${u.firstName || ""} ${u.lastName || ""}`.trim(),
+          email: u.email,
+          role: uiRole,
+          status: isVerified ? "Active" : "Pending",
+          joined: u.createdAt
+            ? new Date(u.createdAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })
+            : "—",
+          lastLogin: formatLastLogin(u.lastLoginAt || u.lastLogin),
+        };
+      });
+      setStaffList(mapped);
+    } catch (err) {
+      console.error("Failed to load staff list", err);
+      toast.error("Failed to load staff members.");
+    } finally {
+      setIsLoadingList(false);
+    }
+  };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchSubAdmins();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, activeRoleFilter]);
+
   // Stats
   const totalStaff = staffList.length;
   const activeStaff = staffList.filter((s) => s.status === "Active").length;
-  const pendingStaff = staffList.filter(
-    (s) => s.status === "Pending Setup",
-  ).length;
-  const rolesAvailable = 5;
+  const pendingStaff = staffList.filter((s) => s.status === "Pending").length;
+  const rolesAvailable = 4;
 
-  // Filtered members list
-  const filteredStaff = staffList.filter(
-    (member) =>
-      member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.email.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  // Filter staff list according to active status filter
+  const filteredStaff = staffList.filter((s) => {
+    if (activeStatusFilter === "Active") return s.status === "Active";
+    if (activeStatusFilter === "Pending") return s.status === "Pending";
+    return true;
+  });
 
   // Invite handler
   const handleInviteSuccess = async (data: {
-    name: string;
+    firstName: string;
+    lastName: string;
     email: string;
     role: string;
   }) => {
     setIsInviting(true);
+    const fullName = `${data.firstName} ${data.lastName}`.trim();
+    const toastId = toast.loading("Inviting staff member...");
     try {
-      // Split name into first and last name
-      const parts = data.name.trim().split(/\s+/);
-      const firstName = parts[0] || "";
-      const lastName = parts.slice(1).join(" ") || "";
-
-      // Map chosen role to API enum
-      let apiRole:
-        "super_admin" | "finance_admin" | "moderator" | "support_agent" =
-        "support_agent";
-      if (data.role === "Finance Admin") {
-        apiRole = "finance_admin";
-      } else if (data.role === "Super Admin") {
-        apiRole = "super_admin";
-      } else if (data.role === "Moderator") {
-        apiRole = "moderator";
-      }
+      const apiRole =
+        data.role === "Finance Admin"
+          ? "finance_admin"
+          : data.role === "Super Admin"
+            ? "super_admin"
+            : data.role === "Moderator"
+              ? "moderator"
+              : "support_agent";
 
       const response = await usersApi.inviteAdmin({
-        firstName,
-        lastName,
+        firstName: data.firstName,
+        lastName: data.lastName,
         email: data.email,
         role: apiRole,
       });
 
-      // Build the invite preview URL for the email-system-down fallback
-      const otp = response?.data?.otp;
-      const serverLink = response?.data?.inviteLink;
-      if (otp || serverLink) {
-        const base =
-          typeof window !== "undefined" ? window.location.origin : "";
-        const previewUrl = serverLink
-          ? serverLink
-          : `${base}/setup/invite/preview?name=${encodeURIComponent(data.name)}&role=${encodeURIComponent(data.role)}&email=${encodeURIComponent(data.email)}&otp=${encodeURIComponent(otp!)}`;
-        setInvitePreviewUrl(previewUrl);
+      // Build the invite preview URL with the code generated by the backend API
+      const code = response?.data?.code || "";
+      if (code && data.email) {
+        setInvitedCodesMap((prev) => ({
+          ...prev,
+          [data.email.toLowerCase()]: code,
+        }));
       }
 
-      const newMember: StaffMember = {
-        id: `STF-${1000 + staffList.length + 1}`,
-        name: data.name,
-        email: data.email,
-        role: data.role,
-        status: "Pending Setup",
-        joined: new Date().toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
-        lastLogin: "Never",
-      };
-      setStaffList((prev) => [...prev, newMember]);
+      const base = typeof window !== "undefined" ? window.location.origin : "";
+      const previewUrl = `${base}/setup/invite/preview?name=${encodeURIComponent(fullName)}&role=${encodeURIComponent(data.role)}&email=${encodeURIComponent(data.email)}&otp=${encodeURIComponent(code)}`;
+      setInvitePreviewUrl(previewUrl);
+
+      fetchSubAdmins();
       setIsInviteOpen(false);
-      toast.success(`Invitation successfully sent to ${data.name}!`);
+      toast.success(`Invitation successfully sent to ${fullName}!`, {
+        id: toastId,
+      });
     } catch (err: unknown) {
       const axiosErr = err as {
         response?: { data?: { message?: unknown } };
@@ -212,356 +276,215 @@ export default function TeamManagementPage() {
         axiosErr?.response?.data?.message ??
         axiosErr?.message ??
         "Failed to send invitation.";
-      toast.error(Array.isArray(errMsg) ? String(errMsg[0]) : String(errMsg));
+      toast.error(Array.isArray(errMsg) ? String(errMsg[0]) : String(errMsg), {
+        id: toastId,
+      });
     } finally {
       setIsInviting(false);
     }
   };
 
   // Edit handler
-  const handleEditSuccess = (newRole: string) => {
+  const handleEditSuccess = async (newRole: string) => {
     if (!selectedStaff) return;
-    setStaffList((prev) =>
-      prev.map((s) =>
-        s.id === selectedStaff.id ? { ...s, role: newRole } : s,
-      ),
-    );
-    setIsEditOpen(false);
-    setSelectedStaff(null);
-    toast.success("Staff member role updated successfully!");
+
+    let apiRole:
+      "super_admin" | "finance_admin" | "moderator" | "support_agent" =
+      "support_agent";
+    if (newRole === "Finance Admin") {
+      apiRole = "finance_admin";
+    } else if (newRole === "Super Admin") {
+      apiRole = "super_admin";
+    } else if (newRole === "Moderator") {
+      apiRole = "moderator";
+    }
+
+    const toastId = toast.loading("Updating staff member role...");
+    try {
+      await usersApi.updateAdmin(selectedStaff.id, { role: apiRole });
+      toast.success("Staff member role updated successfully!", { id: toastId });
+      fetchSubAdmins();
+      setIsEditOpen(false);
+      setSelectedStaff(null);
+    } catch (err: unknown) {
+      const axiosErr = err as {
+        response?: { data?: { message?: unknown } };
+        message?: string;
+      };
+      const errMsg =
+        axiosErr?.response?.data?.message ??
+        axiosErr?.message ??
+        "Failed to update role.";
+      toast.error(Array.isArray(errMsg) ? String(errMsg[0]) : String(errMsg), {
+        id: toastId,
+      });
+    }
   };
 
   // Remove handler
-  const handleRemoveSuccess = () => {
+  const handleRemoveSuccess = async () => {
     if (!selectedStaff) return;
-    setStaffList((prev) => prev.filter((s) => s.id !== selectedStaff.id));
-    setIsRemoveOpen(false);
-    setSelectedStaff(null);
-    toast.success("Staff member access has been revoked.");
+
+    const toastId = toast.loading("Revoking staff member access...");
+    try {
+      await usersApi.deleteAdmin(selectedStaff.id);
+      toast.success("Staff member access has been revoked.", { id: toastId });
+      fetchSubAdmins();
+      setIsRemoveOpen(false);
+      setSelectedStaff(null);
+    } catch (err: unknown) {
+      const axiosErr = err as {
+        response?: { data?: { message?: unknown } };
+        message?: string;
+      };
+      const errMsg =
+        axiosErr?.response?.data?.message ??
+        axiosErr?.message ??
+        "Failed to revoke access.";
+      toast.error(Array.isArray(errMsg) ? String(errMsg[0]) : String(errMsg), {
+        id: toastId,
+      });
+    }
+  };
+
+  const handleCopyInviteLink = async (member: StaffMember) => {
+    const emailKey = member.email.toLowerCase();
+    let code = invitedCodesMap[emailKey] || "";
+
+    // If code is not in memory cache, re-trigger invitation API to obtain a fresh OTP code from backend
+    if (!code) {
+      const toastId = toast.loading(
+        `Generating fresh invite link for ${member.name}...`,
+      );
+      try {
+        const nameParts = member.name.trim().split(" ");
+        const firstName = nameParts[0] || "Staff";
+        const lastName = nameParts.slice(1).join(" ") || "Member";
+
+        let apiRole:
+          "super_admin" | "finance_admin" | "moderator" | "support_agent" =
+          "support_agent";
+        if (member.role === "Finance Admin") apiRole = "finance_admin";
+        else if (member.role === "Super Admin") apiRole = "super_admin";
+        else if (member.role === "Moderator") apiRole = "moderator";
+
+        const res = await usersApi.inviteAdmin({
+          firstName,
+          lastName,
+          email: member.email,
+          role: apiRole,
+        });
+
+        code = res?.data?.code || "";
+        if (code) {
+          setInvitedCodesMap((prev) => ({ ...prev, [emailKey]: code }));
+        }
+        toast.dismiss(toastId);
+      } catch {
+        toast.error("Failed to generate invite link code.", { id: toastId });
+        return;
+      }
+    }
+
+    const base = typeof window !== "undefined" ? window.location.origin : "";
+    const previewUrl = `${base}/setup/invite/preview?name=${encodeURIComponent(member.name)}&role=${encodeURIComponent(member.role)}&email=${encodeURIComponent(member.email)}&otp=${encodeURIComponent(code)}`;
+    const success = await copyToClipboard(previewUrl);
+    if (success) {
+      toast.success(`Invite link for ${member.name} copied to clipboard!`);
+    } else {
+      toast.error("Failed to copy link.");
+    }
   };
 
   return (
     <div className="p-6 md:p-8 flex flex-col gap-8 text-left max-w-7xl mx-auto">
-      {/* Stats Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {/* Total Staff */}
-        <div className="bg-white border border-[#e8e6f0]/60 p-5 rounded-3xl shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-[#edf2fe] flex items-center justify-center border border-[#dbeafe]">
-            <Users size={20} className="text-[#2f63eb]" />
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xl font-extrabold text-[#1a1a2e]">
-              {totalStaff}
-            </span>
-            <span className="text-[10px] text-[#9a99b0] font-bold uppercase tracking-wider">
-              Total Staff
-            </span>
-          </div>
-        </div>
-
-        {/* Active */}
-        <div className="bg-white border border-[#e8e6f0]/60 p-5 rounded-3xl shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-[#f0fdf4] flex items-center justify-center border border-[#dcfce7]">
-            <CheckCircle size={20} className="text-[#16a34a]" />
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xl font-extrabold text-[#1a1a2e]">
-              {activeStaff}
-            </span>
-            <span className="text-[10px] text-[#9a99b0] font-bold uppercase tracking-wider">
-              Active
-            </span>
-          </div>
-        </div>
-
-        {/* Pending Setup */}
-        <div className="bg-white border border-[#e8e6f0]/60 p-5 rounded-3xl shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-[#fef9e7] flex items-center justify-center border border-[#fef08a]">
-            <Clock size={20} className="text-[#ca8a04]" />
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xl font-extrabold text-[#1a1a2e]">
-              {pendingStaff}
-            </span>
-            <span className="text-[10px] text-[#9a99b0] font-bold uppercase tracking-wider">
-              Pending Setup
-            </span>
-          </div>
-        </div>
-
-        {/* Roles Available */}
-        <div className="bg-white border border-[#e8e6f0]/60 p-5 rounded-3xl shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-[#fdf2f8] flex items-center justify-center border border-[#fce7f3]">
-            <ShieldCheck size={20} className="text-brand-pink" />
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xl font-extrabold text-[#1a1a2e]">
-              {rolesAvailable}
-            </span>
-            <span className="text-[10px] text-[#9a99b0] font-bold uppercase tracking-wider">
-              Roles Available
-            </span>
-          </div>
-        </div>
-      </div>
+      {/* Stats Cards Row with Shimmer Loading */}
+      <TeamStats
+        totalStaff={totalStaff}
+        activeStaff={activeStaff}
+        pendingStaff={pendingStaff}
+        rolesAvailable={rolesAvailable}
+        isLoading={isLoadingList}
+      />
 
       {/* Staff Role Types */}
+      <TeamRoleCards
+        roleTypes={ROLE_TYPES}
+        canInvite={canInvite}
+        onInviteClick={() => setIsInviteOpen(true)}
+      />
+
+      {/* Toolbar & Table */}
       <div className="flex flex-col gap-4">
-        <div className="flex justify-between items-center">
-          <h3 className="text-sm font-bold text-[#1a1a2e]">Staff Role Types</h3>
-          {canInvite && (
-            <button
-              onClick={() => setIsInviteOpen(true)}
-              className="flex items-center gap-1.5 h-9 px-4 bg-brand-pink hover:opacity-90 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm"
-            >
-              <Plus size={14} /> Invite Staff Member
-            </button>
-          )}
-        </div>
+        <TeamToolbar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          activeRoleFilter={activeRoleFilter}
+          onRoleFilterChange={setActiveRoleFilter}
+          activeStatusFilter={activeStatusFilter}
+          onStatusFilterChange={setActiveStatusFilter}
+          canInvite={canInvite}
+          onInviteClick={() => setIsInviteOpen(true)}
+        />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {ROLE_TYPES.map((role) => (
-            <div
-              key={role.title}
-              className={`p-5 rounded-2xl border flex flex-col gap-1.5 text-left transition-all hover:shadow-md ${role.bgColor}`}
-            >
-              <span className="text-[11px] font-bold uppercase tracking-wider">
-                {role.title}
-              </span>
-              <p className="text-[10px] text-[#7a7a9a] font-medium leading-relaxed">
-                {role.description}
-              </p>
-            </div>
-          ))}
-        </div>
+        <TeamTable
+          staffList={filteredStaff}
+          isLoading={isLoadingList}
+          onCopyInvite={handleCopyInviteLink}
+          onEdit={(member) => {
+            setSelectedStaff(member);
+            setIsEditOpen(true);
+          }}
+          onRemove={(member) => {
+            setSelectedStaff(member);
+            setIsRemoveOpen(true);
+          }}
+        />
       </div>
 
-      {/* Current Staff Members */}
-      <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 shadow-sm flex flex-col gap-5">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h3 className="text-sm font-bold text-[#1a1a2e]">
-            Current Staff Members
-          </h3>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            {/* Search Input */}
-            <div className="relative flex items-center flex-1 sm:flex-none">
-              <Search size={14} className="absolute left-3 text-[#9a99b0]" />
-              <input
-                type="text"
-                placeholder="Search name or email..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-9 w-full sm:w-[220px] bg-[#f4f3f6] rounded-full pl-9 pr-4 text-xs text-[#1a1a2e] placeholder-[#9a99b0] focus:outline-none focus:ring-1 focus:ring-brand-pink/30 border-none font-medium"
-              />
-            </div>
-            {/* Add Member Shortcut — owner & super_admin only */}
-            {canInvite && (
-              <button
-                onClick={() => setIsInviteOpen(true)}
-                className="flex items-center gap-1 h-9 px-3 bg-[#fdf2f8] hover:bg-[#fbcfe8]/40 text-brand-pink text-xs font-bold rounded-xl transition-all cursor-pointer"
-              >
-                <Plus size={14} /> Add Member
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Table View */}
-        <div className="overflow-x-auto -mx-6">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-[#e8e6f0]/40 text-[#9a99b0] text-[9.5px] uppercase tracking-wider font-extrabold text-left">
-                <th className="pl-6 pb-3">Name</th>
-                <th className="pb-3">Email</th>
-                <th className="pb-3">Role</th>
-                <th className="pb-3">Status</th>
-                <th className="pb-3">Joined</th>
-                <th className="pb-3">Last Login</th>
-                <th className="pr-6 pb-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredStaff.map((member) => (
-                <tr
-                  key={member.id}
-                  className="border-b border-[#e8e6f0]/30 hover:bg-[#faf9fc]/30 text-xs text-[#1a1a2e]"
-                >
-                  {/* Name */}
-                  <td className="pl-6 py-4.5 font-bold">{member.name}</td>
-                  {/* Email */}
-                  <td className="py-4.5 text-[#5a5a7a] font-medium">
-                    {member.email}
-                  </td>
-                  {/* Role */}
-                  <td className="py-4.5">
-                    <span
-                      className={`inline-flex px-2 py-0.5 rounded-full border text-[9px] font-bold ${getRoleBadgeStyle(
-                        member.role,
-                      )}`}
-                    >
-                      {member.role}
-                    </span>
-                  </td>
-                  {/* Status */}
-                  <td className="py-4.5">
-                    <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                        member.status === "Active"
-                          ? "bg-green-50 text-green-700 border border-green-100"
-                          : "bg-amber-50 text-amber-700 border border-amber-100"
-                      }`}
-                    >
-                      {member.status}
-                    </span>
-                  </td>
-                  {/* Joined */}
-                  <td className="py-4.5 text-[#7a7a9a] font-medium">
-                    {member.joined}
-                  </td>
-                  {/* Last Login */}
-                  <td className="py-4.5 text-[#7a7a9a] font-medium">
-                    {member.lastLogin}
-                  </td>
-                  {/* Actions */}
-                  <td className="pr-6 py-4.5 text-right">
-                    <div className="flex gap-2 justify-end">
-                      <button
-                        onClick={() => {
-                          setSelectedStaff(member);
-                          setIsEditOpen(true);
-                        }}
-                        className="flex items-center gap-1 h-7 px-2 rounded-lg border border-[#e8e6f0] text-[10px] font-bold text-[#5a5a7a] hover:bg-[#faf9fc] cursor-pointer"
-                      >
-                        <Edit2 size={10} /> Edit
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedStaff(member);
-                          setIsRemoveOpen(true);
-                        }}
-                        className="flex items-center gap-1 h-7 px-2 rounded-lg border border-[#fee2e2] text-[10px] font-bold text-[#dc2626] hover:bg-[#fef2f2] cursor-pointer"
-                      >
-                        <Trash2 size={10} /> Remove
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-
-              {filteredStaff.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="text-center py-8 text-[#9a99b0] font-medium"
-                  >
-                    No staff members found matching your search.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Action Modals */}
-      <InviteStaffModal
-        isOpen={isInviteOpen}
-        onClose={() => setIsInviteOpen(false)}
-        onSuccess={handleInviteSuccess}
-        isLoading={isInviting}
-      />
-
-      <EditStaffModal
-        isOpen={isEditOpen}
-        onClose={() => setIsEditOpen(false)}
-        staffName={selectedStaff?.name || ""}
-        currentRole={selectedStaff?.role || ""}
-        onSuccess={handleEditSuccess}
-      />
-
-      <RemoveStaffModal
-        isOpen={isRemoveOpen}
-        onClose={() => setIsRemoveOpen(false)}
-        staffName={selectedStaff?.name || ""}
-        onConfirm={handleRemoveSuccess}
-      />
-
-      {/* ── Copy Invite Link Dialog (email-system-down fallback) ── */}
-      {invitePreviewUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
-            onClick={() => {
-              setInvitePreviewUrl(null);
-              setInviteLinkCopied(false);
-            }}
-          />
-          <div className="relative z-10 w-full max-w-[460px] bg-white rounded-3xl shadow-2xl p-6 flex flex-col gap-4">
-            {/* Header */}
-            <div className="flex justify-between items-start">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#fdf2f8] flex items-center justify-center">
-                  <Link2 size={14} className="text-[#c0185c]" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-[#1a1a2e]">
-                    Share Invite Link
-                  </h3>
-                  <p className="text-[10px] text-[#9a99b0] font-medium">
-                    Email system is down — share this link manually
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setInvitePreviewUrl(null);
-                  setInviteLinkCopied(false);
-                }}
-                className="p-1 hover:bg-[#f4f3f6] rounded-lg transition-colors text-[#9a99b0] hover:text-[#1a1a2e] cursor-pointer"
-              >
-                <X size={15} />
-              </button>
-            </div>
-
-            {/* Info callout */}
-            <div className="bg-[#fdf2f8] border border-[#fce7f3] rounded-xl px-4 py-3 text-[11px] text-[#c0185c] font-semibold leading-relaxed">
-              📌 This link takes the invitee to a preview of their invitation
-              email. Clicking the button on that page will auto-verify their
-              account and redirect them to set their password.
-            </div>
-
-            {/* Link box */}
-            <div className="flex items-center gap-2 bg-[#f4f3f6] rounded-xl px-3 py-2.5 border border-[#e8e6f0]">
-              <p className="flex-1 text-[11px] text-[#5a5a7a] font-medium truncate break-all">
-                {invitePreviewUrl}
-              </p>
-              <button
-                onClick={async () => {
-                  await navigator.clipboard.writeText(invitePreviewUrl);
-                  setInviteLinkCopied(true);
-                  setTimeout(() => setInviteLinkCopied(false), 2500);
-                }}
-                className="shrink-0 flex items-center gap-1.5 h-8 px-3 bg-[#c0185c] hover:opacity-90 text-white text-[11px] font-bold rounded-lg transition-all cursor-pointer"
-              >
-                <Copy size={12} />
-                {inviteLinkCopied ? "Copied!" : "Copy"}
-              </button>
-            </div>
-
-            {/* Done button */}
-            <button
-              onClick={() => {
-                setInvitePreviewUrl(null);
-                setInviteLinkCopied(false);
-              }}
-              className="h-9 w-full bg-[#f4f3f6] hover:bg-[#ebe9f1] text-[#5a5a7a] text-xs font-bold rounded-xl transition-all cursor-pointer"
-            >
-              Done
-            </button>
-          </div>
-        </div>
+      {/* Invite Modal */}
+      {isInviteOpen && (
+        <InviteStaffModal
+          isOpen={isInviteOpen}
+          onClose={() => setIsInviteOpen(false)}
+          onSuccess={handleInviteSuccess}
+          isLoading={isInviting}
+        />
       )}
+
+      {/* Edit Role Modal */}
+      {isEditOpen && selectedStaff && (
+        <EditStaffModal
+          isOpen={isEditOpen}
+          onClose={() => {
+            setIsEditOpen(false);
+            setSelectedStaff(null);
+          }}
+          staffName={selectedStaff.name}
+          currentRole={selectedStaff.role}
+          onSuccess={handleEditSuccess}
+        />
+      )}
+
+      {/* Remove Staff Modal */}
+      {isRemoveOpen && selectedStaff && (
+        <RemoveStaffModal
+          isOpen={isRemoveOpen}
+          onClose={() => {
+            setIsRemoveOpen(false);
+            setSelectedStaff(null);
+          }}
+          staffName={selectedStaff.name}
+          onConfirm={handleRemoveSuccess}
+        />
+      )}
+
+      {/* Copy Invite Link Dialog (Fallback for disabled email service) */}
+      <InvitePreviewModal
+        previewUrl={invitePreviewUrl}
+        onClose={() => setInvitePreviewUrl(null)}
+        copyToClipboard={copyToClipboard}
+      />
     </div>
   );
 }

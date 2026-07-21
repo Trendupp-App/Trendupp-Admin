@@ -7,7 +7,12 @@ import { Portal } from "@/components/ui/portal";
 interface InviteStaffModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (data: { name: string; email: string; role: string }) => void;
+  onSuccess: (data: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+  }) => void;
   isLoading?: boolean;
 }
 
@@ -40,7 +45,8 @@ export default function InviteStaffModal({
   onSuccess,
   isLoading = false,
 }: InviteStaffModalProps) {
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [selectedRole, setSelectedRole] = useState("Support Agent");
 
@@ -48,10 +54,23 @@ export default function InviteStaffModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName || !email || !selectedRole || isLoading) return;
-    onSuccess({ name: fullName, email, role: selectedRole });
+    if (
+      !firstName.trim() ||
+      !lastName.trim() ||
+      !email.trim() ||
+      !selectedRole ||
+      isLoading
+    )
+      return;
+    onSuccess({
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.trim(),
+      role: selectedRole,
+    });
     // Reset fields
-    setFullName("");
+    setFirstName("");
+    setLastName("");
     setEmail("");
     setSelectedRole("Support Agent");
   };
@@ -81,20 +100,37 @@ export default function InviteStaffModal({
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {/* Full Name */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-[#5a5a7a] uppercase tracking-wider">
-                Full Name <span className="text-brand-pink">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                disabled={isLoading}
-                placeholder="e.g. Adaeze Okonkwo"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="h-9.5 px-4 rounded-xl border border-[#e8e6f0] text-xs placeholder-[#b0aec8] text-[#1a1a2e] focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium disabled:opacity-60"
-              />
+            {/* First Name & Last Name in one row */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-[#5a5a7a] uppercase tracking-wider">
+                  First Name <span className="text-brand-pink">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  disabled={isLoading}
+                  placeholder="e.g. Adaeze"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="h-9.5 px-4 rounded-xl border border-[#e8e6f0] text-xs placeholder-[#b0aec8] text-[#1a1a2e] focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium disabled:opacity-60"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-[#5a5a7a] uppercase tracking-wider">
+                  Last Name <span className="text-brand-pink">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  disabled={isLoading}
+                  placeholder="e.g. Okonkwo"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="h-9.5 px-4 rounded-xl border border-[#e8e6f0] text-xs placeholder-[#b0aec8] text-[#1a1a2e] focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium disabled:opacity-60"
+                />
+              </div>
             </div>
 
             {/* Email */}
@@ -169,7 +205,9 @@ export default function InviteStaffModal({
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={!fullName || !email || !selectedRole || isLoading}
+              disabled={
+                !firstName || !lastName || !email || !selectedRole || isLoading
+              }
               className="h-10 w-full bg-brand-pink hover:opacity-90 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all cursor-pointer mt-1"
             >
               {isLoading ? "Sending Invitation..." : "Send Invitation →"}

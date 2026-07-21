@@ -23,11 +23,31 @@ export interface AdminInviteDto {
 }
 
 export interface AdminInviteResponse {
-  /** OTP/token the backend may include so the frontend can construct the invite link */
-  otp?: string;
-  /** Full invite link if the backend constructs it server-side */
-  inviteLink?: string;
+  code?: string;
   message?: string;
+  admin?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    isActive: boolean;
+  };
+}
+
+export interface GetSubAdminsParams {
+  q?: string;
+  role?: string;
+  isActive?: boolean;
+  page?: number;
+  limit?: number;
+}
+
+export interface UpdateAdminProfileDto {
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  role?: "super_admin" | "finance_admin" | "moderator" | "support_agent";
 }
 
 export const usersApi = {
@@ -40,4 +60,9 @@ export const usersApi = {
     apiClient.get<TopPerformerCreator[]>("/users/creators/top-performers"),
   inviteAdmin: (data: AdminInviteDto) =>
     apiClient.post<AdminInviteResponse>("/admin/users/invite", data),
+  getSubAdmins: (params?: GetSubAdminsParams) =>
+    apiClient.get<AdminUser[]>("/admin/users", { params }),
+  updateAdmin: (id: string, data: UpdateAdminProfileDto) =>
+    apiClient.patch<void>(`/admin/users/${id}`, data),
+  deleteAdmin: (id: string) => apiClient.delete<void>(`/admin/users/${id}`),
 };

@@ -250,6 +250,20 @@ export default function AdminSigninPage() {
     setFieldErrors({});
     setGeneralError(null);
 
+    const hasMinLength = newPassword.length >= 8;
+    const hasUpper = /[A-Z]/.test(newPassword);
+    const hasLower = /[a-z]/.test(newPassword);
+    const hasNumber = /[0-9]/.test(newPassword);
+    const hasSpecial = /[@$!%*?&_#^()\-\+=]/.test(newPassword);
+
+    if (!hasMinLength || !hasUpper || !hasLower || !hasNumber || !hasSpecial) {
+      setFieldErrors({
+        newPassword:
+          "Password must be at least 8 characters and include 1 uppercase, 1 lowercase, 1 number, and 1 special character (@ $ ! % * ? & _ # ^ ( ) - + =).",
+      });
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       setFieldErrors({ confirmPassword: "Passwords do not match." });
       return;
@@ -261,7 +275,8 @@ export default function AdminSigninPage() {
       toast.success(
         "Password successfully reset! Please sign in with your new password.",
       );
-      navigateToStep("signin");
+      router.replace("/admin/signin");
+      setStep("signin");
       setPassword("");
       setCode("");
       setNewPassword("");
