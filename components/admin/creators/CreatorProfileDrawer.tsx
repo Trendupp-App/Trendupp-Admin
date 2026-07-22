@@ -89,19 +89,6 @@ const REVIEWS = [
   },
 ];
 
-const NOTES = [
-  {
-    author: "Admin Jane",
-    date: "Feb 1, 2026",
-    text: "Flagged as top performer. Recommend for premium campaigns.",
-  },
-  {
-    author: "Admin Mike",
-    date: "Mar 15, 2026",
-    text: "Verified bank details manually. All good.",
-  },
-];
-
 const ACTIONS = [
   {
     label: "Suspend Account",
@@ -192,6 +179,16 @@ function Stars({ rating, max = 5 }: { rating: number; max?: number }) {
   );
 }
 
+import {
+  useCreatorDetails,
+  useCreatorCampaignHistory,
+  useCreatorReviews,
+  useCreatorNotes,
+  useAddCreatorNote,
+  useUpdateCreatorNote,
+  useDeleteCreatorNote,
+} from "@/hooks/useAdminCreators";
+
 /* ── main component ─────────────────────────────────── */
 export default function CreatorProfileDrawer({
   isOpen,
@@ -212,11 +209,27 @@ export default function CreatorProfileDrawer({
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [noteModalTitle, setNoteModalTitle] = useState("Add note");
   const [noteInitialValue, setNoteInitialValue] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 
   /* Success Modal states */
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [successModalTitle, setSuccessModalTitle] = useState("");
   const [successModalMessage, setSuccessModalMessage] = useState("");
+
+  /* API Hooks */
+  const { data: creatorDetail } = useCreatorDetails(creatorId, isOpen);
+  const { data: campaignHistoryData } = useCreatorCampaignHistory(
+    creatorId,
+    1,
+    10,
+    isOpen,
+  );
+  const { data: reviewsData } = useCreatorReviews(creatorId, isOpen);
+  const { data: notesData = [] } = useCreatorNotes(creatorId, isOpen);
+
+  const addNoteMutation = useAddCreatorNote();
+  const updateNoteMutation = useUpdateCreatorNote();
+  const deleteNoteMutation = useDeleteCreatorNote();
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
@@ -227,14 +240,42 @@ export default function CreatorProfileDrawer({
 
   if (!isOpen || !creatorId) return null;
 
+  const displayReviews = reviewsData?.length
+    ? reviewsData.map((r) => ({
+        brand: r.brandName,
+        date: new Date(r.createdAt).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+        rating: r.rating,
+        text: r.comment,
+      }))
+    : REVIEWS;
+
+  const displayCampaigns = campaignHistoryData?.data?.length
+    ? campaignHistoryData.data.map((c) => ({
+        name: c.title,
+        brand: c.brandName,
+        status: c.status,
+        fee: `₦${(c.payout / 1000).toFixed(0)}K`,
+        date: new Date(c.submittedAt).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+      }))
+    : CAMPAIGNS;
+
   const avgRating = (
-    REVIEWS.reduce((s, r) => s + r.rating, 0) / REVIEWS.length
+    displayReviews.reduce((s, r) => s + r.rating, 0) /
+    (displayReviews.length || 1)
   ).toFixed(1);
 
   const metrics = [
     {
       label: "Followers",
-      value: "450K",
+      value: creatorDetail?.tier ? `${creatorDetail.tier} Tier` : "450K",
       icon: Users,
       bg: "bg-[#fdf2f6] text-[#d7176f]",
     },
@@ -246,13 +287,17 @@ export default function CreatorProfileDrawer({
     },
     {
       label: "Campaigns",
-      value: "18",
+      value: creatorDetail?.stats?.completedCampaigns
+        ? String(creatorDetail.stats.completedCampaigns)
+        : "18",
       icon: CheckCircle,
       bg: "bg-[#f0fdf4] text-[#16a34a]",
     },
     {
       label: "Earnings",
-      value: "₦2.4M",
+      value: creatorDetail?.stats?.totalEarnings
+        ? `₦${(creatorDetail.stats.totalEarnings / 1000000).toFixed(1)}M`
+        : "₦2.4M",
       icon: Wallet,
       bg: "bg-[#fff7ed] text-[#ea580c]",
     },
@@ -486,7 +531,7 @@ export default function CreatorProfileDrawer({
                       </tr>
                     </thead>
                     <tbody>
-                      {CAMPAIGNS.map((c, i) => (
+                      {displayCampaigns.map((c, i) => (
                         <tr
                           key={i}
                           className="border-b border-[#e8e6f0]/40 last:border-0 hover:bg-[#faf9fc] transition-colors"
@@ -523,14 +568,14 @@ export default function CreatorProfileDrawer({
                   <div className="flex flex-col gap-1">
                     <Stars rating={Math.round(Number(avgRating))} />
                     <span className="text-[11px] text-[#9a99b0] font-medium">
-                      {REVIEWS.length} reviews
+                      {displayReviews.length} reviews
                     </span>
                   </div>
                 </div>
 
                 {/* Individual reviews */}
                 <div className="flex flex-col gap-3">
-                  {REVIEWS.map((r, i) => (
+                  {displayReviews.map((r, i) => (
                     <div
                       key={i}
                       className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 flex flex-col gap-2"
@@ -567,6 +612,7 @@ export default function CreatorProfileDrawer({
                   </div>
                   <button
                     onClick={() => {
+                      setEditingNoteId(null);
                       setNoteModalTitle("Add note");
                       setNoteInitialValue("");
                       setIsNoteModalOpen(true);
@@ -578,41 +624,63 @@ export default function CreatorProfileDrawer({
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  {NOTES.map((n, i) => (
-                    <div
-                      key={i}
-                      className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 flex flex-col gap-2"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="text-xs font-bold text-[#1a1a2e]">
-                            {n.author}
-                          </span>
-                          <span className="text-[10px] text-[#9a99b0] ml-2">
-                            {n.date}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              setNoteModalTitle("Edit note");
-                              setNoteInitialValue(n.text);
-                              setIsNoteModalOpen(true);
-                            }}
-                            className="p-1 rounded-lg hover:bg-[#f4f3f6] text-[#9a99b0] hover:text-[#5a5a7a] transition-colors cursor-pointer"
-                          >
-                            <Pencil size={12} />
-                          </button>
-                          <button className="p-1 rounded-lg hover:bg-[#fef2f2] text-[#9a99b0] hover:text-[#dc2626] transition-colors cursor-pointer">
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      </div>
-                      <p className="text-xs text-[#5a5a7a] leading-relaxed">
-                        {n.text}
-                      </p>
+                  {notesData.length === 0 ? (
+                    <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-2xl p-6 text-center text-xs text-[#9a99b0] font-medium">
+                      No internal notes recorded yet for this creator.
                     </div>
-                  ))}
+                  ) : (
+                    notesData.map((n) => (
+                      <div
+                        key={n.id}
+                        className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 flex flex-col gap-2 shadow-xs"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-xs font-bold text-[#1a1a2e]">
+                              {n.createdBy?.name || "Admin"}
+                            </span>
+                            <span className="text-[10px] text-[#9a99b0] ml-2">
+                              {new Date(n.createdAt).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                },
+                              )}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                setEditingNoteId(n.id);
+                                setNoteModalTitle("Edit note");
+                                setNoteInitialValue(n.note);
+                                setIsNoteModalOpen(true);
+                              }}
+                              className="p-1 rounded-lg hover:bg-[#f4f3f6] text-[#9a99b0] hover:text-[#5a5a7a] transition-colors cursor-pointer"
+                            >
+                              <Pencil size={12} />
+                            </button>
+                            <button
+                              onClick={() =>
+                                deleteNoteMutation.mutate({
+                                  id: creatorId,
+                                  noteId: n.id,
+                                })
+                              }
+                              className="p-1 rounded-lg hover:bg-[#fef2f2] text-[#9a99b0] hover:text-[#dc2626] transition-colors cursor-pointer"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-xs text-[#5a5a7a] leading-relaxed">
+                          {n.note}
+                        </p>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             )}
@@ -712,12 +780,27 @@ export default function CreatorProfileDrawer({
         {isNoteModalOpen && (
           <NoteModal
             isOpen={isNoteModalOpen}
-            onClose={() => setIsNoteModalOpen(false)}
+            onClose={() => {
+              setIsNoteModalOpen(false);
+              setEditingNoteId(null);
+            }}
             initialValue={noteInitialValue}
             title={noteModalTitle}
             onSave={(value) => {
-              // Simply mock saving for frontend demonstration
-              console.log("Saved note:", value);
+              if (editingNoteId) {
+                updateNoteMutation.mutate({
+                  id: creatorId,
+                  noteId: editingNoteId,
+                  note: value,
+                });
+              } else {
+                addNoteMutation.mutate({
+                  id: creatorId,
+                  note: value,
+                });
+              }
+              setIsNoteModalOpen(false);
+              setEditingNoteId(null);
             }}
           />
         )}

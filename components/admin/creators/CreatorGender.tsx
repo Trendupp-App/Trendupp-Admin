@@ -1,6 +1,23 @@
 "use client";
 
+import { useCreatorGenderDistribution } from "@/hooks/useAdminCreators";
+
 export default function CreatorGender() {
+  const { data: genderData } = useCreatorGenderDistribution();
+
+  const items = genderData?.length
+    ? genderData.map((g) => ({
+        name: g.gender,
+        count: g.count,
+        pct: Math.round(g.percentage),
+        color:
+          g.gender.toLowerCase() === "male" ? "bg-[#2f63eb]" : "bg-brand-pink",
+      }))
+    : [
+        { name: "Female", count: 2643, pct: 68.7, color: "bg-brand-pink" },
+        { name: "Male", count: 1204, pct: 31.3, color: "bg-[#2f63eb]" },
+      ];
+
   return (
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-4.5">
       <div>
@@ -8,10 +25,7 @@ export default function CreatorGender() {
       </div>
 
       <div className="flex flex-col gap-4">
-        {[
-          { name: "Male", count: 1204, pct: 31, color: "bg-brand-pink" },
-          { name: "Female", count: 687, pct: 18, color: "bg-[#2f63eb]" },
-        ].map((g) => (
+        {items.map((g) => (
           <div key={g.name} className="flex flex-col gap-1.5">
             <div className="flex justify-between items-center text-xs">
               <span className="font-semibold text-[#1a1a2e]">{g.name}</span>

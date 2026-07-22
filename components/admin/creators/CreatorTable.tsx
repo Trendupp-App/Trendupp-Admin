@@ -138,9 +138,11 @@ const MOCK_CREATORS: CreatorItem[] = [
   },
 ];
 
+import { useAdminCreatorsList } from "@/hooks/useAdminCreators";
+
 type FilterTab = "All" | "Active" | "Suspended" | "Pending";
 
-const TIER_CLASSES = {
+const TIER_CLASSES: Record<string, string> = {
   Mega: "text-[#ea580c] bg-[#fff7ed] border-[#ffedd5]",
   Macro: "text-[#2f63eb] bg-[#edf2fe] border-[#dbeafe]",
   Micro: "text-[#7c3aed] bg-[#f5f3ff] border-[#e0e7ff]",
@@ -162,8 +164,58 @@ export default function CreatorTable() {
   const [selectedCreatorId, setSelectedCreatorId] = useState<string | null>(
     null,
   );
+  const [page] = useState(1);
 
-  const filtered = MOCK_CREATORS.filter((c) => {
+  const apiStatus =
+    activeTab !== "All"
+      ? activeTab.toLowerCase()
+      : selectedStatus
+        ? selectedStatus.toLowerCase()
+        : undefined;
+
+  const { data: paginatedResponse } = useAdminCreatorsList({
+    q: search || undefined,
+    status: apiStatus,
+    tier: selectedTier || undefined,
+    niche: selectedNiche || undefined,
+    page,
+    limit: 10,
+  });
+
+  const apiCreators = paginatedResponse?.data;
+  const listItems: CreatorItem[] = apiCreators?.length
+    ? apiCreators.map((c) => ({
+        id: c.id,
+        creatorId: `CRT-${c.id.slice(0, 4).toUpperCase()}`,
+        name: c.name,
+        handle: c.handle.startsWith("@") ? c.handle : `@${c.handle}`,
+        email: c.email,
+        country: "Nigeria",
+        tier: (c.tier as "Mega" | "Macro" | "Micro" | "Nano") || "Micro",
+        niche: c.niche || "General",
+        gender: "Female",
+        platforms: ["IG", "TikTok"],
+        completion: 100,
+        totalEarnings: c.totalEarnings,
+        revisionCount: 0,
+        status:
+          c.status === "active"
+            ? "Active"
+            : c.status === "suspended"
+              ? "Suspended"
+              : "Pending",
+        dateJoined: c.joinedAt
+          ? new Date(c.joinedAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })
+          : "Jan 15, 2026",
+        lastLogin: "Active",
+      }))
+    : MOCK_CREATORS;
+
+  const filtered = listItems.filter((c) => {
     if (activeTab !== "All" && c.status !== activeTab) return false;
     if (
       search &&
