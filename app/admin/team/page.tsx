@@ -204,7 +204,9 @@ export default function TeamManagementPage() {
   };
 
   useEffect(() => {
-    fetchSubAdmins();
+    Promise.resolve().then(() => {
+      fetchSubAdmins();
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, activeRoleFilter]);
 
@@ -214,8 +216,17 @@ export default function TeamManagementPage() {
   const pendingStaff = staffList.filter((s) => s.status === "Pending").length;
   const rolesAvailable = 4;
 
-  // Filter staff list according to active status filter
+  // Filter staff list according to active search and status filter
   const filteredStaff = staffList.filter((s) => {
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      if (
+        !s.name.toLowerCase().includes(q) &&
+        !s.email.toLowerCase().includes(q)
+      ) {
+        return false;
+      }
+    }
     if (activeStatusFilter === "Active") return s.status === "Active";
     if (activeStatusFilter === "Pending") return s.status === "Pending";
     return true;
