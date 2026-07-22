@@ -39,9 +39,10 @@ export default function AdminDashboardPage() {
     },
     {
       value: topMetrics
-        ? `${(topMetrics.totalCampaigns / 1000).toFixed(1)}k`
+        ? topMetrics.totalCampaigns >= 1000
+          ? `${(topMetrics.totalCampaigns / 1000).toFixed(1)}k`
+          : topMetrics.totalCampaigns.toLocaleString()
         : "28.4k",
-      label: "Total Campaigns",
       trend: "Across 62 campaigns",
       trendUp: true,
       icon: Wallet,
