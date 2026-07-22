@@ -101,9 +101,13 @@ const ACTIONS = [
 
 function StatusChip({ status }: { status: string }) {
   const map: Record<string, string> = {
+    COMPLETED: "bg-[#f0fdf4] text-[#16a34a]",
     Completed: "bg-[#f0fdf4] text-[#16a34a]",
+    ACTIVE: "bg-[#eff6ff] text-[#2563eb]",
     Active: "bg-[#eff6ff] text-[#2563eb]",
+    APPLIED: "bg-[#fdf4ff] text-[#9333ea]",
     Applied: "bg-[#fdf4ff] text-[#9333ea]",
+    PENDING: "bg-[#fff7ed] text-[#ea580c]",
     Pending: "bg-[#fff7ed] text-[#ea580c]",
   };
   return (
@@ -163,7 +167,7 @@ export default function CreatorProfileDrawer({
   const [successModalMessage, setSuccessModalMessage] = useState("");
 
   /* API Hooks */
-  const { data: creatorDetail } = useCreatorDetails(creatorId, isOpen);
+  const { data: creatorProfile } = useCreatorDetails(creatorId, isOpen);
   const { data: campaignHistoryData, isLoading: isLoadingCampaigns } =
     useCreatorCampaignHistory(creatorId, 1, 10, isOpen);
   const { data: reviewsData, isLoading: isLoadingReviews } = useCreatorReviews(
@@ -183,23 +187,17 @@ export default function CreatorProfileDrawer({
     };
   }, [isOpen]);
 
-  // Dynamic header fields
-  const creatorName = useMemo(() => {
-    if (creatorDetail?.name) return creatorDetail.name;
-    if (creatorDetail?.firstName || creatorDetail?.lastName) {
-      return `${creatorDetail.firstName || ""} ${creatorDetail.lastName || ""}`.trim();
-    }
-    return "Alex Okafor";
-  }, [creatorDetail]);
+  const profileDetails = creatorProfile?.profileDetails;
+  const metricsData = creatorProfile?.metrics;
+  const socialAccounts = creatorProfile?.socialAccounts;
 
-  const creatorHandle = useMemo(() => {
-    if (creatorDetail?.handle) {
-      return creatorDetail.handle.startsWith("@")
-        ? creatorDetail.handle
-        : `@${creatorDetail.handle}`;
-    }
-    return "@alexokafor";
-  }, [creatorDetail]);
+  // Header displays
+  const creatorName = profileDetails?.fullName || "Alex Okafor";
+  const creatorHandle = profileDetails?.username
+    ? profileDetails.username.startsWith("@")
+      ? profileDetails.username
+      : `@${profileDetails.username}`
+    : "@alexokafor";
 
   const creatorInitials = useMemo(() => {
     return creatorName
@@ -210,12 +208,14 @@ export default function CreatorProfileDrawer({
       .slice(0, 2);
   }, [creatorName]);
 
-  const creatorTier = creatorDetail?.tier || "Micro";
-  const creatorStatus = (creatorDetail?.status || "active").toLowerCase();
+  const creatorTier = profileDetails?.tier || "Micro";
+  const creatorStatus = (
+    profileDetails?.accountStatus || "active"
+  ).toLowerCase();
 
   // Dynamic reviews array
   const displayReviews = useMemo(() => {
-    if (reviewsData && Array.isArray(reviewsData)) {
+    if (reviewsData && Array.isArray(reviewsData) && reviewsData.length > 0) {
       return reviewsData.map((r) => ({
         id: r.id,
         brand: r.brandName || "Brand Partner",
@@ -235,13 +235,17 @@ export default function CreatorProfileDrawer({
 
   // Dynamic campaigns array
   const displayCampaigns = useMemo(() => {
-    if (campaignHistoryData?.data && Array.isArray(campaignHistoryData.data)) {
+    if (
+      campaignHistoryData?.data &&
+      Array.isArray(campaignHistoryData.data) &&
+      campaignHistoryData.data.length > 0
+    ) {
       return campaignHistoryData.data.map((c) => ({
         id: c.id,
-        name: c.title || "Campaign",
+        name: c.campaignTitle || "Campaign",
         brand: c.brandName || "Brand",
-        status: c.status || "Completed",
-        fee: c.payout ? `₦${(c.payout / 1000).toFixed(0)}K` : "₦150K",
+        status: c.status || "COMPLETED",
+        fee: c.fee ? `₦${(c.fee / 1000).toFixed(0)}K` : "₦150K",
         date: c.submittedAt
           ? new Date(c.submittedAt).toLocaleDateString("en-US", {
               month: "short",
@@ -255,47 +259,50 @@ export default function CreatorProfileDrawer({
   }, [campaignHistoryData]);
 
   const avgRating = useMemo(() => {
-    if (creatorDetail?.stats?.rating)
-      return creatorDetail.stats.rating.toFixed(1);
-    if (displayReviews.length) {
+    if (displayReviews.length > 0) {
       return (
         displayReviews.reduce((s, r) => s + r.rating, 0) / displayReviews.length
       ).toFixed(1);
     }
     return "4.8";
-  }, [creatorDetail, displayReviews]);
+  }, [displayReviews]);
 
-  // Dynamic metrics cards
+  // Metrics under Overview (derived from GET /api/v1/admin/creators/{id} -> metrics)
   const metrics = [
     {
       label: "Followers",
-      value: creatorDetail?.tier ? `${creatorDetail.tier} Tier` : "450K",
+      value: metricsData?.totalFollowers
+        ? `${(metricsData.totalFollowers / 1000).toFixed(0)}K`
+        : "450K",
       icon: Users,
       bg: "bg-[#fdf2f6] text-[#d7176f]",
     },
     {
       label: "Engagement",
-      value: "4.2%",
+      value:
+        metricsData?.onTimeSubmissionRate !== undefined
+          ? `${metricsData.onTimeSubmissionRate}%`
+          : "4.2%",
       icon: TrendingUp,
       bg: "bg-[#edf2fe] text-[#2f63eb]",
     },
     {
       label: "Campaigns",
       value:
-        creatorDetail?.stats?.completedCampaigns !== undefined
-          ? String(creatorDetail.stats.completedCampaigns)
-          : String(displayCampaigns.length || 18),
+        metricsData?.completedCampaigns !== undefined
+          ? String(metricsData.completedCampaigns)
+          : "18",
       icon: CheckCircle,
       bg: "bg-[#f0fdf4] text-[#16a34a]",
     },
     {
       label: "Earnings",
       value:
-        creatorDetail?.stats?.totalEarnings !== undefined
+        metricsData?.totalEarnings !== undefined
           ? `₦${
-              creatorDetail.stats.totalEarnings >= 1000000
-                ? (creatorDetail.stats.totalEarnings / 1000000).toFixed(1) + "M"
-                : (creatorDetail.stats.totalEarnings / 1000).toFixed(0) + "K"
+              metricsData.totalEarnings >= 1000000
+                ? (metricsData.totalEarnings / 1000000).toFixed(1) + "M"
+                : (metricsData.totalEarnings / 1000).toFixed(0) + "K"
             }`
           : "₦2.4M",
       icon: Wallet,
@@ -303,7 +310,10 @@ export default function CreatorProfileDrawer({
     },
     {
       label: "Tokens",
-      value: "1200",
+      value:
+        metricsData?.totalTokens !== undefined
+          ? String(metricsData.totalTokens)
+          : "1200",
       icon: Award,
       bg: "bg-[#f5f3ff] text-[#7c3aed]",
     },
@@ -320,7 +330,7 @@ export default function CreatorProfileDrawer({
         />
 
         <div className="w-full max-w-[620px] h-full bg-white relative z-10 flex flex-col shadow-2xl overflow-y-auto">
-          {/* ── Top bar ─────── */}
+          {/* Top bar */}
           <div className="flex items-center justify-between border-b border-[#e8e6f0]/60 px-6 py-4 shrink-0">
             <button
               onClick={onClose}
@@ -339,7 +349,7 @@ export default function CreatorProfileDrawer({
             </button>
           </div>
 
-          {/* ── Creator Summary ─────── */}
+          {/* Creator Header Summary */}
           <div className="flex flex-col items-center justify-center py-7 border-b border-[#e8e6f0]/40 shrink-0">
             <UserAvatar initials={creatorInitials} size={72} />
             <h3 className="text-base font-bold text-[#1a1a2e] mt-3">
@@ -354,7 +364,7 @@ export default function CreatorProfileDrawer({
             </div>
           </div>
 
-          {/* ── Tabs ─────── */}
+          {/* Tabs */}
           <div className="flex border-b border-[#e8e6f0]/40 px-6 overflow-x-auto shrink-0 scrollbar-none">
             {(
               [
@@ -380,9 +390,9 @@ export default function CreatorProfileDrawer({
             ))}
           </div>
 
-          {/* ── Tab Content ─────── */}
+          {/* Tab Content */}
           <div className="flex-1 flex flex-col gap-5 p-6">
-            {/* OVERVIEW */}
+            {/* OVERVIEW TAB */}
             {activeTab === "Overview" && (
               <>
                 <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-4">
@@ -391,46 +401,50 @@ export default function CreatorProfileDrawer({
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3.5 text-xs">
                     {[
-                      { label: "Full name", value: creatorName },
+                      {
+                        label: "Full name",
+                        value: profileDetails?.fullName || creatorName,
+                      },
                       {
                         label: "Email",
-                        value: creatorDetail?.email || "alex@email.com",
+                        value: profileDetails?.email || "alex@email.com",
                       },
                       {
                         label: "Country of residence",
-                        value: creatorDetail?.country || "Nigeria",
+                        value: profileDetails?.countryOfResidence || "Nigeria",
                       },
                       {
                         label: "State / Location",
-                        value: creatorDetail?.location || "Lagos",
+                        value: profileDetails?.state || "Lagos",
+                      },
+                      {
+                        label: "Nationality",
+                        value: profileDetails?.nationality || "Nigeria",
                       },
                       {
                         label: "Phone",
-                        value: creatorDetail?.phoneNumber || "N/A",
+                        value: profileDetails?.phoneNumber || "N/A",
                       },
                       {
                         label: "Bio",
                         value:
-                          creatorDetail?.bio ||
+                          profileDetails?.bio ||
                           "Fashion content creator passionate about African aesthetics and modern style.",
                         span: true,
                       },
-                      { label: "Profile Completion", value: "100%" },
+                      {
+                        label: "Profile Completion",
+                        value: profileDetails?.profileCompletion || "100%",
+                      },
                       {
                         label: "Bank Account",
-                        value: "Verified",
+                        value: profileDetails?.bankAccountStatus || "Verified",
                         color: "text-[#16a34a] font-bold",
                       },
                       {
                         label: "Date Joined",
-                        value: creatorDetail?.createdAt
-                          ? new Date(
-                              creatorDetail.createdAt,
-                            ).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })
+                        value: profileDetails?.dateJoined
+                          ? profileDetails.dateJoined
                           : "Jan 15, 2026",
                       },
                       { label: "Account Status", badge: true },
@@ -464,6 +478,7 @@ export default function CreatorProfileDrawer({
                   </div>
                 </div>
 
+                {/* Metrics Cards Grid Under Overview */}
                 <div className="flex flex-col gap-3">
                   <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
                     Metrics
@@ -496,60 +511,86 @@ export default function CreatorProfileDrawer({
                   </div>
                 </div>
 
+                {/* Social Accounts Section */}
                 <div className="flex flex-col gap-3">
                   <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
                     Social Accounts
                   </h4>
                   <div className="flex flex-col gap-3">
-                    <div className="flex items-center gap-3.5 p-3.5 bg-white border border-[#e8e6f0]/60 rounded-2xl">
-                      <div className="w-8 h-8 rounded-full bg-[#fdf2f6] text-[#d7176f] flex items-center justify-center shrink-0">
-                        <FaInstagram size={14} />
-                      </div>
-                      <div className="flex flex-col flex-1 min-w-0">
-                        <span className="text-xs font-bold text-[#1a1a2e]">
-                          Instagram
-                        </span>
-                        <span className="text-[10px] text-[#9a99b0] truncate">
-                          {creatorDetail?.socials?.instagram || creatorHandle}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3.5 p-3.5 bg-white border border-[#e8e6f0]/60 rounded-2xl">
-                      <div className="w-8 h-8 rounded-full bg-[#f4f3f6] text-[#1a1a2e] flex items-center justify-center shrink-0">
-                        <FaTiktok size={14} />
-                      </div>
-                      <div className="flex flex-col flex-1 min-w-0">
-                        <span className="text-xs font-bold text-[#1a1a2e]">
-                          TikTok
-                        </span>
-                        <span className="text-[10px] text-[#9a99b0] truncate">
-                          {creatorDetail?.socials?.tiktok || creatorHandle}
-                        </span>
-                      </div>
-                    </div>
-
-                    {creatorDetail?.socials?.youtube && (
-                      <div className="flex items-center gap-3.5 p-3.5 bg-white border border-[#e8e6f0]/60 rounded-2xl">
-                        <div className="w-8 h-8 rounded-full bg-[#fef2f2] text-[#dc2626] flex items-center justify-center shrink-0">
-                          <FaYoutube size={14} />
+                    {socialAccounts && socialAccounts.length > 0 ? (
+                      socialAccounts.map((sa) => (
+                        <div
+                          key={sa.platform}
+                          className="flex items-center gap-3.5 p-3.5 bg-white border border-[#e8e6f0]/60 rounded-2xl"
+                        >
+                          <div
+                            className={cn(
+                              "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+                              sa.platform.toLowerCase() === "instagram"
+                                ? "bg-[#fdf2f6] text-[#d7176f]"
+                                : sa.platform.toLowerCase() === "youtube"
+                                  ? "bg-[#fef2f2] text-[#dc2626]"
+                                  : "bg-[#f4f3f6] text-[#1a1a2e]",
+                            )}
+                          >
+                            {sa.platform.toLowerCase() === "instagram" ? (
+                              <FaInstagram size={14} />
+                            ) : sa.platform.toLowerCase() === "youtube" ? (
+                              <FaYoutube size={14} />
+                            ) : (
+                              <FaTiktok size={14} />
+                            )}
+                          </div>
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <span className="text-xs font-bold text-[#1a1a2e] capitalize">
+                              {sa.platform}
+                            </span>
+                            <span className="text-[10px] text-[#9a99b0] truncate">
+                              {sa.handle}{" "}
+                              {sa.followersCount
+                                ? `(${sa.followersCount.toLocaleString()} followers)`
+                                : ""}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex flex-col flex-1 min-w-0">
-                          <span className="text-xs font-bold text-[#1a1a2e]">
-                            YouTube
-                          </span>
-                          <span className="text-[10px] text-[#9a99b0] truncate">
-                            {creatorDetail.socials.youtube}
-                          </span>
+                      ))
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-3.5 p-3.5 bg-white border border-[#e8e6f0]/60 rounded-2xl">
+                          <div className="w-8 h-8 rounded-full bg-[#fdf2f6] text-[#d7176f] flex items-center justify-center shrink-0">
+                            <FaInstagram size={14} />
+                          </div>
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <span className="text-xs font-bold text-[#1a1a2e]">
+                              Instagram
+                            </span>
+                            <span className="text-[10px] text-[#9a99b0] truncate">
+                              {creatorHandle}
+                            </span>
+                          </div>
                         </div>
-                      </div>
+
+                        <div className="flex items-center gap-3.5 p-3.5 bg-white border border-[#e8e6f0]/60 rounded-2xl">
+                          <div className="w-8 h-8 rounded-full bg-[#f4f3f6] text-[#1a1a2e] flex items-center justify-center shrink-0">
+                            <FaTiktok size={14} />
+                          </div>
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <span className="text-xs font-bold text-[#1a1a2e]">
+                              TikTok
+                            </span>
+                            <span className="text-[10px] text-[#9a99b0] truncate">
+                              {creatorHandle}
+                            </span>
+                          </div>
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>
               </>
             )}
 
-            {/* CAMPAIGN HISTORY */}
+            {/* CAMPAIGN HISTORY TAB */}
             {activeTab === "Campaign History" && (
               <div className="flex flex-col gap-4">
                 <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
@@ -621,10 +662,9 @@ export default function CreatorProfileDrawer({
               </div>
             )}
 
-            {/* REVIEW */}
+            {/* REVIEWS TAB */}
             {activeTab === "Review" && (
               <div className="flex flex-col gap-5">
-                {/* Average rating card */}
                 <div className="flex items-center gap-4 bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-2xl p-5">
                   <span className="text-4xl font-black text-[#1a1a2e]">
                     {avgRating}
@@ -637,7 +677,6 @@ export default function CreatorProfileDrawer({
                   </div>
                 </div>
 
-                {/* Individual reviews */}
                 {isLoadingReviews ? (
                   <div className="py-8 text-center text-xs text-[#9a99b0]">
                     Loading creator reviews...
@@ -679,7 +718,7 @@ export default function CreatorProfileDrawer({
               </div>
             )}
 
-            {/* NOTE */}
+            {/* NOTES TAB */}
             {activeTab === "Note" && (
               <div className="flex flex-col gap-5">
                 <div className="flex items-start justify-between">
@@ -766,7 +805,7 @@ export default function CreatorProfileDrawer({
               </div>
             )}
 
-            {/* ACTION */}
+            {/* ACTION TAB */}
             {activeTab === "Action" && (
               <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#fffbeb] border border-[#fde68a] text-[#92400e] text-xs font-semibold">

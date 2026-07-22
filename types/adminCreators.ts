@@ -90,46 +90,53 @@ export interface PaginatedCreatorsResponse {
   totalPages: number;
 }
 
-export interface AdminCreatorDetails {
-  id: string;
-  firstName: string;
-  lastName: string;
-  name: string;
-  handle: string;
-  email: string;
-  phoneNumber?: string | null;
-  avatarUrl?: string | null;
-  coverImageUrl?: string | null;
-  bio?: string | null;
-  tier: string;
-  niche?: string | null;
-  status: string;
-  gender?: string | null;
-  location?: string | null;
-  country?: string | null;
-  socials?: {
-    instagram?: string | null;
-    tiktok?: string | null;
-    youtube?: string | null;
-    twitter?: string | null;
-  } | null;
-  stats?: {
-    completedCampaigns: number;
-    activeCampaigns: number;
-    totalEarnings: number;
-    rating: number;
-    reviewCount: number;
-  } | null;
-  createdAt: string;
+export interface CreatorProfileMetricsDto {
+  completedCampaigns: number;
+  totalEarnings: number;
+  onTimeSubmissionRate: number;
+  totalFollowers: number;
+  totalTokens: number;
 }
+
+export interface CreatorProfileDetailsDto {
+  id: string;
+  fullName: string;
+  username: string;
+  email: string;
+  countryOfResidence: string;
+  state: string;
+  nationality: string;
+  bio?: string | null;
+  profileCompletion?: string | null;
+  bankAccountStatus?: string | null;
+  dateJoined?: string | null;
+  accountStatus?: string | null;
+  tier?: string | null;
+  phoneNumber?: string | null;
+}
+
+export interface CreatorSocialAccountDto {
+  platform: string;
+  handle: string;
+  followersCount?: number | null;
+  url?: string | null;
+}
+
+export interface AdminCreatorProfileResponseDto {
+  metrics: CreatorProfileMetricsDto;
+  profileDetails: CreatorProfileDetailsDto;
+  socialAccounts?: CreatorSocialAccountDto[];
+}
+
+// Backwards compatibility alias
+export type AdminCreatorDetails = AdminCreatorProfileResponseDto;
 
 export interface CreatorCampaignHistoryItem {
   id: string;
-  title: string;
+  campaignTitle: string;
   brandName: string;
-  brandAvatar?: string | null;
   status: string;
-  payout: number;
+  fee: number;
   submittedAt: string;
 }
 
