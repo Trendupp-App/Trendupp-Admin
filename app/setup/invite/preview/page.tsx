@@ -31,7 +31,7 @@ export default async function InvitePreviewPage({
 
   const displayUrl =
     otp && email
-      ? `${process.env.NEXT_PUBLIC_APP_URL ?? "https://admin.trendupp.com"}/setup/invite/${otp}?email=${email}`
+      ? `${process.env.NEXT_PUBLIC_APP_URL ?? "https://admin.trendupp.com"}/setup/invite/${otp}?email=${encodeURIComponent(email)}`
       : "—";
 
   return (
