@@ -8,6 +8,7 @@ interface ClosedDisputesTableProps {
   getCampaignTitle: (campaignId: string) => string;
   getBrandName: (campaignId: string) => string;
   getCreatorName: (creatorId: string) => string;
+  currentAdminName?: string;
 }
 
 export default function ClosedDisputesTable({
@@ -15,6 +16,7 @@ export default function ClosedDisputesTable({
   getCampaignTitle,
   getBrandName,
   getCreatorName,
+  currentAdminName = "Admin",
 }: ClosedDisputesTableProps) {
   if (disputes.length === 0) {
     return (
@@ -42,7 +44,9 @@ export default function ClosedDisputesTable({
             {disputes.map((dispute, index) => {
               const brand = getBrandName(dispute.campaignId);
               const creator = getCreatorName(dispute.creatorId);
-              const chatId = `CH-00${index + 2}`;
+              const chatId = dispute.id
+                ? `CH-${dispute.id.slice(0, 6).toUpperCase()}`
+                : `CH-00${index + 1}`;
 
               let decisionBadge = (
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -90,7 +94,7 @@ export default function ClosedDisputesTable({
                   <td className="py-4.5">{decisionBadge}</td>
 
                   <td className="py-4.5 font-semibold text-[#5a5a7a]">
-                    Chisom Adeyemi
+                    {currentAdminName}
                   </td>
 
                   <td className="pr-6 py-4.5 text-[#7a7a9a] font-medium">

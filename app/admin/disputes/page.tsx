@@ -22,6 +22,8 @@ import { Dispute, ResolveDisputePayload } from "@/types/dispute";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
+import { useAuthStore } from "@/store/authStore";
+
 interface StreamMessage {
   id: string;
   text?: string;
@@ -52,6 +54,7 @@ interface ChatChannel {
 }
 
 export default function AdminDisputesPage() {
+  const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<DisputeTab>("pending");
   const [selectedDisputeId, setSelectedDisputeId] = useState<string | null>(
     null,
@@ -290,6 +293,11 @@ export default function AdminDisputesPage() {
           getCampaignTitle={getCampaignTitle}
           getBrandName={getBrandName}
           getCreatorName={getCreatorName}
+          currentAdminName={
+            user
+              ? `${user.firstName} ${user.lastName}`.trim()
+              : "Chisom Adeyemi"
+          }
         />
       )}
 
