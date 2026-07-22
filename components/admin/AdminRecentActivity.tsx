@@ -99,10 +99,11 @@ export function AdminRecentActivity({ activities }: AdminRecentActivityProps) {
         brand: item.brandName,
         status: item.status,
         budget:
-          item.budget >= 1000000
-            ? `₦${(item.budget / 1000000).toFixed(1)}M`
-            : `₦${(item.budget / 1000).toFixed(0)}k`,
-        applications: item.applicationsCount,
+          item.budget >= 1_000_000
+            ? `₦${(item.budget / 1_000_000).toFixed(1)}M`
+            : item.budget >= 1_000
+              ? `₦${(item.budget / 1_000).toFixed(0)}k`
+              : `₦${item.budget.toLocaleString()}`, 
       }))
     : MOCK;
 
