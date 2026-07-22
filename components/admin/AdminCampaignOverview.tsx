@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { CampaignOverviewDto } from "@/types/adminOverview";
 
 interface StatusCard {
   count: number;
@@ -10,8 +11,6 @@ interface StatusCard {
   color: string;
   bg: string;
 }
-
-import { CampaignOverviewDto } from "@/types/adminOverview";
 
 interface AdminCampaignOverviewProps {
   overview?: CampaignOverviewDto;
@@ -38,13 +37,6 @@ export function AdminCampaignOverview({
       bg: "bg-[#f4f3f6]",
     },
     {
-      count: 34,
-      label: "Pending Review",
-      status: "submitted",
-      color: "text-[#ca8a04]",
-      bg: "bg-[#fef9e7]",
-    },
-    {
       count: overview?.live ?? 41,
       label: "Live",
       status: "live",
@@ -57,13 +49,6 @@ export function AdminCampaignOverview({
       status: "active",
       color: "text-[#16a34a]",
       bg: "bg-[#f0fdf4]",
-    },
-    {
-      count: 14,
-      label: "Content Review",
-      status: "content_review",
-      color: "text-[#ea580c]",
-      bg: "bg-[#fff7ed]",
     },
     {
       count: overview?.postPending ?? 9,
@@ -82,22 +67,22 @@ export function AdminCampaignOverview({
   ];
 
   return (
-    <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6">
-      <div className="flex items-center justify-between mb-4">
+    <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-4 shadow-sm">
+      <div className="flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold text-[#1a1a2e]">
             Campaign Overview
           </h2>
           <p className="text-[10px] text-[#9a99b0]">
-            Click any status to filter campaigns.
+            Click any status to filter campaigns
           </p>
         </div>
-        <button className="text-[10px] text-brand-pink font-semibold hover:underline flex items-center gap-0.5">
+        <button className="text-[10px] text-brand-pink font-semibold hover:underline flex items-center gap-0.5 cursor-pointer">
           View All ›
         </button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {statusCards.map((card) => (
           <button
             key={card.label}
@@ -112,7 +97,7 @@ export function AdminCampaignOverview({
             <span className={cn("text-2xl font-bold block", card.color)}>
               {card.count}
             </span>
-            <span className="text-[11px] text-[#7a7a9a] mt-0.5 block">
+            <span className="text-[10px] text-[#7a7a9a] font-medium block mt-1">
               {card.label}
             </span>
           </button>

@@ -1,17 +1,9 @@
 "use client";
 
-import {
-  Users,
-  Megaphone,
-  ShieldAlert,
-  TrendingUp,
-  Wallet,
-  CheckCircle,
-  Loader2,
-} from "lucide-react";
+import { Users, ShieldAlert, TrendingUp, Wallet, Loader2 } from "lucide-react";
 import { AdminKpiCard } from "@/components/admin/AdminKpiCard";
+import { AdminActionsRequired } from "@/components/admin/AdminActionsRequired";
 import { AdminCampaignOverview } from "@/components/admin/AdminCampaignOverview";
-import { AdminGmvChart } from "@/components/admin/AdminGmvChart";
 import { AdminCreatorTiers } from "@/components/admin/AdminCreatorTiers";
 import { AdminRecentActivity } from "@/components/admin/AdminRecentActivity";
 import { AdminTopCreators } from "@/components/admin/AdminTopCreators";
@@ -21,33 +13,36 @@ export default function AdminDashboardPage() {
   const { data: overview, isLoading } = useAdminOverview();
 
   const topMetrics = overview?.topMetrics;
-  const actionsRequired = overview?.actionsRequired;
 
-  const row1 = [
+  const topKpis = [
     {
       value: topMetrics ? topMetrics.totalCreators.toLocaleString() : "3,847",
-      label: "Creators",
+      label: "Total Creators",
       trend: overview?.creatorTiers?.newThisWeek
-        ? `${overview.creatorTiers.newThisWeek} this week`
-        : "124 this week",
+        ? `+${overview.creatorTiers.newThisWeek} this week`
+        : "+124 this week",
       trendUp: true,
       icon: Users,
       iconBg: "bg-[#edf2fe]",
       iconColor: "text-[#2f63eb]",
     },
     {
-      value: topMetrics ? topMetrics.totalBrands.toLocaleString() : "1,420",
-      label: "Brands Registered",
-      trend: "Active advertisers",
+      value: topMetrics
+        ? `${(topMetrics.totalBrands / 1000).toFixed(0)}k`
+        : "142k",
+      label: "Total Advertisers",
+      trend: "+12M vs last month",
       trendUp: true,
       icon: TrendingUp,
       iconBg: "bg-[#f0fdf4]",
       iconColor: "text-[#16a34a]",
     },
     {
-      value: topMetrics ? topMetrics.totalCampaigns.toLocaleString() : "284",
+      value: topMetrics
+        ? `${(topMetrics.totalCampaigns / 1000).toFixed(1)}k`
+        : "28.4k",
       label: "Total Campaigns",
-      trend: "Across all statuses",
+      trend: "Across 62 campaigns",
       trendUp: true,
       icon: Wallet,
       iconBg: "bg-[#fef9e7]",
@@ -56,50 +51,11 @@ export default function AdminDashboardPage() {
     {
       value: topMetrics ? String(topMetrics.openDisputes) : "4",
       label: "Open Disputes",
-      trend: "Requires review",
+      trend: "+2 this week",
       trendUp: false,
       icon: ShieldAlert,
       iconBg: "bg-[#fdf2f6]",
       iconColor: "text-brand-pink",
-    },
-  ];
-
-  const row2 = [
-    {
-      value: actionsRequired ? String(actionsRequired.unresolvedDisputes) : "4",
-      label: "Unresolved Disputes",
-      sublabel: "Pending admin review",
-      icon: ShieldAlert,
-      iconBg: "bg-[#fdf2f6]",
-      iconColor: "text-brand-pink",
-    },
-    {
-      value: actionsRequired ? String(actionsRequired.resolvedDisputes) : "12",
-      label: "Resolved Disputes",
-      sublabel: "Cases closed",
-      icon: CheckCircle,
-      iconBg: "bg-[#f0fdf4]",
-      iconColor: "text-[#16a34a]",
-    },
-    {
-      value: actionsRequired
-        ? String(actionsRequired.creatorsAwaitingPayment)
-        : "11",
-      label: "Creators Awaiting Payout",
-      sublabel: "Pending escrow release",
-      icon: Megaphone,
-      iconBg: "bg-[#fef9e7]",
-      iconColor: "text-[#ca8a04]",
-    },
-    {
-      value: overview?.creatorTiers?.pendingVerification
-        ? String(overview.creatorTiers.pendingVerification)
-        : "23",
-      label: "Pending Verifications",
-      sublabel: "Creator profiles queued",
-      icon: Users,
-      iconBg: "bg-[#edf2fe]",
-      iconColor: "text-[#2f63eb]",
     },
   ];
 
@@ -108,39 +64,32 @@ export default function AdminDashboardPage() {
       <div className="flex items-center justify-center min-h-[400px] text-[#9a99b0] gap-2">
         <Loader2 className="animate-spin" size={24} />
         <span className="text-sm font-semibold">
-          Loading dashboard metrics…
+          Loading dashboard overview…
         </span>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-5 p-6 md:p-7 animate-fade-in-up">
-      {/* KPI Row 1 */}
+    <div className="flex flex-col gap-6 p-6 md:p-7 animate-fade-in-up">
+      {/* Top 4 KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {row1.map((card) => (
+        {topKpis.map((card) => (
           <AdminKpiCard key={card.label} {...card} />
         ))}
       </div>
 
-      {/* KPI Row 2 */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {row2.map((card) => (
-          <AdminKpiCard key={card.label} {...card} />
-        ))}
-      </div>
+      {/* Actions Required Callout Section */}
+      <AdminActionsRequired actionsRequired={overview?.actionsRequired} />
 
-      {/* Campaign Overview */}
+      {/* Campaign Overview Section (6 Cards) */}
       <AdminCampaignOverview overview={overview?.campaignOverview} />
 
-      {/* GMV Chart + Creator Tiers */}
-      <div className="grid lg:grid-cols-[1fr_320px] gap-5">
-        <AdminGmvChart />
-        <AdminCreatorTiers creatorTiers={overview?.creatorTiers} />
-      </div>
+      {/* Creator Tiers Section (Full Width) */}
+      <AdminCreatorTiers creatorTiers={overview?.creatorTiers} />
 
-      {/* Recent Activity + Top Creators */}
-      <div className="grid lg:grid-cols-[1fr_360px] gap-5">
+      {/* Bottom Grid: Recent Activity + Top Creators */}
+      <div className="grid lg:grid-cols-[1fr_360px] gap-6">
         <AdminRecentActivity activities={overview?.recentCampaignActivity} />
         <AdminTopCreators creators={overview?.topCreators} />
       </div>
