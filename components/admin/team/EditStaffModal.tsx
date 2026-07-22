@@ -13,25 +13,19 @@ interface EditStaffModalProps {
 }
 
 const EDIT_ROLES_LIST = [
-  { id: "Customer Support", label: "Customer Support" },
-  { id: "Finance / Accountant", label: "Finance / Accountant" },
-  { id: "Campaign Manager", label: "Campaign Manager" },
-  { id: "Compliance Officer", label: "Compliance Officer" },
-  { id: "Content Moderator", label: "Content Moderator" },
+  { id: "Support Agent", label: "Support Agent" },
+  { id: "Finance Admin", label: "Finance Admin" },
+  { id: "Moderator", label: "Moderator" },
+  { id: "Super Admin", label: "Super Admin" },
 ];
 
 // Helper to map incoming display roles to Edit choices
 const mapDisplayRoleToEditRole = (role: string): string => {
   const r = role.toLowerCase();
-  if (r.includes("support") || r.includes("customer"))
-    return "Customer Support";
-  if (r.includes("finance") || r.includes("account"))
-    return "Finance / Accountant";
-  if (r.includes("campaign")) return "Campaign Manager";
-  if (r.includes("compliance")) return "Compliance Officer";
-  if (r.includes("moderator") || r.includes("content"))
-    return "Content Moderator";
-  return "Customer Support"; // Default fallback
+  if (r.includes("finance")) return "Finance Admin";
+  if (r.includes("super")) return "Super Admin";
+  if (r.includes("moderator")) return "Moderator";
+  return "Support Agent"; // Default fallback
 };
 
 export default function EditStaffModal({
