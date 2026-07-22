@@ -189,49 +189,67 @@ export default function CreatorTable() {
     limit: 10,
   });
 
-  const apiCreators = paginatedResponse?.data;
   const listItems: CreatorItem[] = useMemo(() => {
-    if (apiCreators?.length) {
-      return apiCreators.map((c, idx) => ({
-        id: c.id || `creator-${idx}`,
-        creatorId: `CRT-${(c.id || "0000").slice(0, 4).toUpperCase()}`,
-        name: c.name || "Creator",
-        handle: c.handle
-          ? c.handle.startsWith("@")
-            ? c.handle
-            : `@${c.handle}`
-          : "@creator",
-        email: c.email || "—",
-        country: "Nigeria",
-        tier: (c.tier as "Mega" | "Macro" | "Micro" | "Nano") || "Micro",
-        niche: c.niche || "General",
-        gender: "Female",
-        platforms: ["IG", "TikTok"],
-        completion: 100,
-        totalEarnings: c.totalEarnings ?? 0,
-        revisionCount: 0,
-        status:
-          c.status === "active"
+    if (paginatedResponse?.data !== undefined) {
+      return paginatedResponse.data.map((c, idx) => {
+        const rawStatus = (c.status || "").toLowerCase();
+        const normalizedStatus: "Active" | "Pending" | "Suspended" =
+          rawStatus === "active" || rawStatus === "verified"
             ? "Active"
-            : c.status === "suspended"
+            : rawStatus === "suspended" ||
+                rawStatus === "blocked" ||
+                rawStatus === "inactive"
               ? "Suspended"
-              : "Pending",
-        dateJoined: c.joinedAt
-          ? new Date(c.joinedAt).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })
-          : "Jan 15, 2026",
-        lastLogin: "Active",
-      }));
+              : "Pending";
+
+        return {
+          id: c.id || `creator-${idx}`,
+          creatorId: `CRT-${(c.id || "0000").slice(0, 4).toUpperCase()}`,
+          name: c.name || "Creator",
+          handle: c.handle
+            ? c.handle.startsWith("@")
+              ? c.handle
+              : `@${c.handle}`
+            : "@creator",
+          email: c.email || "—",
+          country: "Nigeria",
+          tier: (c.tier as "Mega" | "Macro" | "Micro" | "Nano") || "Micro",
+          niche: c.niche || "General",
+          gender: "Female",
+          platforms: ["IG", "TikTok"],
+          completion: 100,
+          totalEarnings: c.totalEarnings ?? 0,
+          revisionCount: 0,
+          status: normalizedStatus,
+          dateJoined: c.joinedAt
+            ? new Date(c.joinedAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })
+            : "Jan 15, 2026",
+          lastLogin: "Active",
+        };
+      });
     }
     return MOCK_CREATORS;
-  }, [apiCreators]);
+  }, [paginatedResponse]);
 
   const filtered = useMemo(() => {
     return listItems.filter((c) => {
-      if (activeTab !== "All" && c.status !== activeTab) return false;
+      const activeStatusFilterLower =
+        activeTab !== "All"
+          ? activeTab.toLowerCase()
+          : selectedStatus
+            ? selectedStatus.toLowerCase()
+            : "";
+
+      if (
+        activeStatusFilterLower &&
+        c.status.toLowerCase() !== activeStatusFilterLower
+      ) {
+        return false;
+      }
       if (
         search &&
         !c.name.toLowerCase().includes(search.toLowerCase()) &&
@@ -241,26 +259,38 @@ export default function CreatorTable() {
       ) {
         return false;
       }
-      if (selectedTier && c.tier !== selectedTier) return false;
+      if (selectedTier && c.tier.toLowerCase() !== selectedTier.toLowerCase()) {
+        return false;
+      }
       if (
         selectedNiche &&
         !c.niche.toLowerCase().includes(selectedNiche.toLowerCase())
-      )
+      ) {
         return false;
-      if (selectedGender && c.gender !== selectedGender) return false;
-      if (selectedStatus && c.status !== selectedStatus) return false;
-      if (selectedCountry && c.country !== selectedCountry) return false;
+      }
+      if (
+        selectedGender &&
+        c.gender.toLowerCase() !== selectedGender.toLowerCase()
+      ) {
+        return false;
+      }
+      if (
+        selectedCountry &&
+        !c.country.toLowerCase().includes(selectedCountry.toLowerCase())
+      ) {
+        return false;
+      }
       if (selectedYear && !c.dateJoined.includes(selectedYear)) return false;
       return true;
     });
   }, [
     listItems,
     activeTab,
+    selectedStatus,
     search,
     selectedTier,
     selectedNiche,
     selectedGender,
-    selectedStatus,
     selectedCountry,
     selectedYear,
   ]);
