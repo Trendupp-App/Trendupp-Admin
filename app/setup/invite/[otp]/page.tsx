@@ -8,7 +8,7 @@ import { authApi } from "@/services/authApi";
 type ActivationState = "verifying" | "success" | "error";
 
 interface Props {
-  params: Promise<{ otp: string }>;
+  params: { otp: string };
 }
 
 export default function InviteActivationPage({ params }: Props) {
@@ -24,7 +24,7 @@ export default function InviteActivationPage({ params }: Props) {
 
     async function verify() {
       try {
-        const { otp } = await params;
+        const { otp } = params;
         const email = searchParams.get("email") ?? "";
 
         if (!otp || !email) {
