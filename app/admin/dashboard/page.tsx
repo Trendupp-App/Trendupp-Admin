@@ -1,7 +1,10 @@
 "use client";
 
 import { Users, ShieldAlert, TrendingUp, Wallet } from "lucide-react";
-import { AdminKpiCard } from "@/components/admin/AdminKpiCard";
+import {
+  AdminKpiCard,
+  type AdminKpiCardProps,
+} from "@/components/admin/AdminKpiCard";
 import { AdminActionsRequired } from "@/components/admin/AdminActionsRequired";
 import { AdminCampaignOverview } from "@/components/admin/AdminCampaignOverview";
 import { AdminCreatorTiers } from "@/components/admin/AdminCreatorTiers";
@@ -22,7 +25,7 @@ export default function AdminDashboardPage() {
     return val.toLocaleString();
   };
 
-  const topKpis = [
+  const topKpis: AdminKpiCardProps[] = [
     {
       value: formatMetricValue(topMetrics?.totalCreators, "3,847"),
       label: "Total Creators",

@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import { type LucideIcon } from "lucide-react";
 
-interface AdminKpiCardProps {
+export interface AdminKpiCardProps {
   value: string;
   label: string;
   sublabel?: string;
