@@ -109,7 +109,7 @@ export default function AdminSidebar({
   const pathname = usePathname();
 
   const handleLogout = () => {
-    useAuthStore.getState().clearSession();
+    useAuthStore.setState({ accessToken: null, user: null });
     window.location.href = "/admin/signin";
   };
 
