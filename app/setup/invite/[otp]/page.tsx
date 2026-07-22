@@ -24,7 +24,7 @@ export default function InviteActivationPage({ params }: Props) {
 
     async function verify() {
       try {
-        const { otp } = await params;
+        const { otp } = params;
         const email = searchParams.get("email") ?? "";
 
         if (!otp || !email) {
