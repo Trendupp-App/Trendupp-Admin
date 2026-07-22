@@ -8,7 +8,7 @@ import { authApi } from "@/services/authApi";
 type ActivationState = "verifying" | "success" | "error";
 
 interface Props {
-  params: Promise<{ otp: string }>;
+  params: { otp: string };
 }
 
 export default function InviteActivationPage({ params }: Props) {
