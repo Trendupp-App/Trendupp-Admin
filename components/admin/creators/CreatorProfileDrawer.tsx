@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   X,
   ArrowLeft,
@@ -19,7 +19,7 @@ import {
   ShieldCheck,
   Layers,
 } from "lucide-react";
-import { FaTiktok, FaInstagram } from "react-icons/fa";
+import { FaTiktok, FaInstagram, FaYoutube } from "react-icons/fa";
 import { cn } from "@/lib/utils";
 import UserAvatar from "@/shared/UserAvatar";
 import { AdminStatusBadge } from "../AdminStatusBadge";
@@ -27,6 +27,15 @@ import CreatorActionModal from "./CreatorActionModal";
 import NoteModal from "./NoteModal";
 import SuccessModal from "./SuccessModal";
 import { Portal } from "@/components/ui/portal";
+import {
+  useCreatorDetails,
+  useCreatorCampaignHistory,
+  useCreatorReviews,
+  useCreatorNotes,
+  useAddCreatorNote,
+  useUpdateCreatorNote,
+  useDeleteCreatorNote,
+} from "@/hooks/useAdminCreators";
 
 interface CreatorProfileDrawerProps {
   isOpen: boolean;
@@ -35,59 +44,6 @@ interface CreatorProfileDrawerProps {
 }
 
 type TabType = "Overview" | "Campaign History" | "Review" | "Note" | "Action";
-
-/* ── mock data ─────────────────────────────────────── */
-const CAMPAIGNS = [
-  {
-    name: "Summer Glow",
-    brand: "GlowBrand",
-    status: "Completed",
-    fee: "₦150K",
-    date: "Jan 20, 2026",
-  },
-  {
-    name: "Summer Glow",
-    brand: "GlowBrand",
-    status: "Completed",
-    fee: "₦150K",
-    date: "Jan 20, 2026",
-  },
-  {
-    name: "Summer Glow",
-    brand: "GlowBrand",
-    status: "Active",
-    fee: "₦150K",
-    date: "Jan 20, 2026",
-  },
-  {
-    name: "Summer Glow",
-    brand: "GlowBrand",
-    status: "Applied",
-    fee: "₦150K",
-    date: "Jan 20, 2026",
-  },
-];
-
-const REVIEWS = [
-  {
-    brand: "GlowBrand",
-    date: "Feb 15, 2026",
-    rating: 5,
-    text: "Exceptional content quality and professional communication.",
-  },
-  {
-    brand: "FashionNG",
-    date: "Mar 1, 2026",
-    rating: 5,
-    text: "Delivered beyond expectations. Will work again.",
-  },
-  {
-    brand: "StyleHouse",
-    date: "Mar 20, 2026",
-    rating: 4,
-    text: "Great creator, very responsive and creative.",
-  },
-];
 
 const ACTIONS = [
   {
@@ -113,17 +69,27 @@ const ACTIONS = [
   {
     label: "Reactivate Account",
     actionType: "reactivate" as const,
-    desc: "Restore creator access, if currently suspended.",
+    desc: "Restore full account privileges for this creator.",
     icon: ShieldCheck,
     color: "text-[#16a34a]",
-    border: "border-[#e8e6f0]",
-    bg: "bg-white",
-    iconBg: "bg-[#f0fdf4]",
+    border: "border-[#bbf7d0]",
+    bg: "bg-[#f0fdf4]",
+    iconBg: "bg-[#dcfce7]",
   },
   {
-    label: "Delete Account",
+    label: "Change Creator Tier",
+    actionType: "changeTier" as const,
+    desc: "Manually adjust creator tier level (Nano, Micro, Macro, Mega).",
+    icon: Layers,
+    color: "text-[#2f63eb]",
+    border: "border-[#dbeafe]",
+    bg: "bg-[#eff6ff]",
+    iconBg: "bg-[#dbeafe]",
+  },
+  {
+    label: "Delete Creator Account",
     actionType: "delete" as const,
-    desc: "Permanently remove creator account. This cannot be undone.",
+    desc: "Permanently delete account and all associated creator data.",
     icon: Trash2,
     color: "text-[#dc2626]",
     border: "border-[#fecaca]",
@@ -131,19 +97,8 @@ const ACTIONS = [
     iconBg: "bg-[#fee2e2]",
     destructive: true,
   },
-  {
-    label: "Change Creator Tier",
-    actionType: "changeTier" as const,
-    desc: "Manually update the creator's tier classification.",
-    icon: Layers,
-    color: "text-[#2f63eb]",
-    border: "border-[#e8e6f0]",
-    bg: "bg-white",
-    iconBg: "bg-[#edf2fe]",
-  },
 ];
 
-/* ── helpers ────────────────────────────────────────── */
 function StatusChip({ status }: { status: string }) {
   const map: Record<string, string> = {
     Completed: "bg-[#f0fdf4] text-[#16a34a]",
@@ -154,7 +109,7 @@ function StatusChip({ status }: { status: string }) {
   return (
     <span
       className={cn(
-        "px-2.5 py-0.5 rounded-md text-[10px] font-bold",
+        "px-2.5 py-0.5 rounded-md text-[10px] font-bold capitalize",
         map[status] ?? "bg-[#f4f3f6] text-[#7a7a9a]",
       )}
     >
@@ -171,7 +126,9 @@ function Stars({ rating, max = 5 }: { rating: number; max?: number }) {
           key={i}
           size={13}
           className={
-            i < rating ? "text-[#f59e0b] fill-[#f59e0b]" : "text-[#e5e7eb]"
+            i < Math.round(rating)
+              ? "text-[#f59e0b] fill-[#f59e0b]"
+              : "text-[#e5e7eb]"
           }
         />
       ))}
@@ -179,17 +136,6 @@ function Stars({ rating, max = 5 }: { rating: number; max?: number }) {
   );
 }
 
-import {
-  useCreatorDetails,
-  useCreatorCampaignHistory,
-  useCreatorReviews,
-  useCreatorNotes,
-  useAddCreatorNote,
-  useUpdateCreatorNote,
-  useDeleteCreatorNote,
-} from "@/hooks/useAdminCreators";
-
-/* ── main component ─────────────────────────────────── */
 export default function CreatorProfileDrawer({
   isOpen,
   onClose,
@@ -218,13 +164,12 @@ export default function CreatorProfileDrawer({
 
   /* API Hooks */
   const { data: creatorDetail } = useCreatorDetails(creatorId, isOpen);
-  const { data: campaignHistoryData } = useCreatorCampaignHistory(
+  const { data: campaignHistoryData, isLoading: isLoadingCampaigns } =
+    useCreatorCampaignHistory(creatorId, 1, 10, isOpen);
+  const { data: reviewsData, isLoading: isLoadingReviews } = useCreatorReviews(
     creatorId,
-    1,
-    10,
     isOpen,
   );
-  const { data: reviewsData } = useCreatorReviews(creatorId, isOpen);
   const { data: notesData = [] } = useCreatorNotes(creatorId, isOpen);
 
   const addNoteMutation = useAddCreatorNote();
@@ -238,40 +183,89 @@ export default function CreatorProfileDrawer({
     };
   }, [isOpen]);
 
-  if (!isOpen || !creatorId) return null;
+  // Dynamic header fields
+  const creatorName = useMemo(() => {
+    if (creatorDetail?.name) return creatorDetail.name;
+    if (creatorDetail?.firstName || creatorDetail?.lastName) {
+      return `${creatorDetail.firstName || ""} ${creatorDetail.lastName || ""}`.trim();
+    }
+    return "Alex Okafor";
+  }, [creatorDetail]);
 
-  const displayReviews = reviewsData?.length
-    ? reviewsData.map((r) => ({
-        brand: r.brandName,
-        date: new Date(r.createdAt).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
-        rating: r.rating,
-        text: r.comment,
-      }))
-    : REVIEWS;
+  const creatorHandle = useMemo(() => {
+    if (creatorDetail?.handle) {
+      return creatorDetail.handle.startsWith("@")
+        ? creatorDetail.handle
+        : `@${creatorDetail.handle}`;
+    }
+    return "@alexokafor";
+  }, [creatorDetail]);
 
-  const displayCampaigns = campaignHistoryData?.data?.length
-    ? campaignHistoryData.data.map((c) => ({
-        name: c.title,
-        brand: c.brandName,
-        status: c.status,
-        fee: `₦${(c.payout / 1000).toFixed(0)}K`,
-        date: new Date(c.submittedAt).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
-      }))
-    : CAMPAIGNS;
+  const creatorInitials = useMemo(() => {
+    return creatorName
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  }, [creatorName]);
 
-  const avgRating = (
-    displayReviews.reduce((s, r) => s + r.rating, 0) /
-    (displayReviews.length || 1)
-  ).toFixed(1);
+  const creatorTier = creatorDetail?.tier || "Micro";
+  const creatorStatus = (creatorDetail?.status || "active").toLowerCase();
 
+  // Dynamic reviews array
+  const displayReviews = useMemo(() => {
+    if (reviewsData && Array.isArray(reviewsData)) {
+      return reviewsData.map((r) => ({
+        id: r.id,
+        brand: r.brandName || "Brand Partner",
+        date: r.createdAt
+          ? new Date(r.createdAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })
+          : "Recently",
+        rating: r.rating || 5,
+        text: r.comment || "Great creator to collaborate with.",
+      }));
+    }
+    return [];
+  }, [reviewsData]);
+
+  // Dynamic campaigns array
+  const displayCampaigns = useMemo(() => {
+    if (campaignHistoryData?.data && Array.isArray(campaignHistoryData.data)) {
+      return campaignHistoryData.data.map((c) => ({
+        id: c.id,
+        name: c.title || "Campaign",
+        brand: c.brandName || "Brand",
+        status: c.status || "Completed",
+        fee: c.payout ? `₦${(c.payout / 1000).toFixed(0)}K` : "₦150K",
+        date: c.submittedAt
+          ? new Date(c.submittedAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })
+          : "Jan 20, 2026",
+      }));
+    }
+    return [];
+  }, [campaignHistoryData]);
+
+  const avgRating = useMemo(() => {
+    if (creatorDetail?.stats?.rating)
+      return creatorDetail.stats.rating.toFixed(1);
+    if (displayReviews.length) {
+      return (
+        displayReviews.reduce((s, r) => s + r.rating, 0) / displayReviews.length
+      ).toFixed(1);
+    }
+    return "4.8";
+  }, [creatorDetail, displayReviews]);
+
+  // Dynamic metrics cards
   const metrics = [
     {
       label: "Followers",
@@ -287,17 +281,23 @@ export default function CreatorProfileDrawer({
     },
     {
       label: "Campaigns",
-      value: creatorDetail?.stats?.completedCampaigns
-        ? String(creatorDetail.stats.completedCampaigns)
-        : "18",
+      value:
+        creatorDetail?.stats?.completedCampaigns !== undefined
+          ? String(creatorDetail.stats.completedCampaigns)
+          : String(displayCampaigns.length || 18),
       icon: CheckCircle,
       bg: "bg-[#f0fdf4] text-[#16a34a]",
     },
     {
       label: "Earnings",
-      value: creatorDetail?.stats?.totalEarnings
-        ? `₦${(creatorDetail.stats.totalEarnings / 1000000).toFixed(1)}M`
-        : "₦2.4M",
+      value:
+        creatorDetail?.stats?.totalEarnings !== undefined
+          ? `₦${
+              creatorDetail.stats.totalEarnings >= 1000000
+                ? (creatorDetail.stats.totalEarnings / 1000000).toFixed(1) + "M"
+                : (creatorDetail.stats.totalEarnings / 1000).toFixed(0) + "K"
+            }`
+          : "₦2.4M",
       icon: Wallet,
       bg: "bg-[#fff7ed] text-[#ea580c]",
     },
@@ -308,6 +308,8 @@ export default function CreatorProfileDrawer({
       bg: "bg-[#f5f3ff] text-[#7c3aed]",
     },
   ];
+
+  if (!isOpen || !creatorId) return null;
 
   return (
     <Portal>
@@ -339,16 +341,16 @@ export default function CreatorProfileDrawer({
 
           {/* ── Creator Summary ─────── */}
           <div className="flex flex-col items-center justify-center py-7 border-b border-[#e8e6f0]/40 shrink-0">
-            <UserAvatar initials="AO" size={72} />
+            <UserAvatar initials={creatorInitials} size={72} />
             <h3 className="text-base font-bold text-[#1a1a2e] mt-3">
-              Alex Okafor
+              {creatorName}
             </h3>
-            <span className="text-xs text-[#9a99b0]">@alexokafor</span>
+            <span className="text-xs text-[#9a99b0]">{creatorHandle}</span>
             <div className="flex items-center gap-2 mt-2">
-              <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-[#f5f3ff] text-[#7c3aed] border border-[#e0e7ff]">
-                Micro
+              <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-[#f5f3ff] text-[#7c3aed] border border-[#e0e7ff] capitalize">
+                {creatorTier}
               </span>
-              <AdminStatusBadge status="pending" />
+              <AdminStatusBadge status={creatorStatus} />
             </div>
           </div>
 
@@ -389,14 +391,27 @@ export default function CreatorProfileDrawer({
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3.5 text-xs">
                     {[
-                      { label: "Full name", value: "Alex Okafor" },
-                      { label: "Email", value: "alex@email.com" },
-                      { label: "Country of residence", value: "Nigeria" },
-                      { label: "State", value: "Lagos" },
-                      { label: "Nationality", value: "Nigeria" },
+                      { label: "Full name", value: creatorName },
+                      {
+                        label: "Email",
+                        value: creatorDetail?.email || "alex@email.com",
+                      },
+                      {
+                        label: "Country of residence",
+                        value: creatorDetail?.country || "Nigeria",
+                      },
+                      {
+                        label: "State / Location",
+                        value: creatorDetail?.location || "Lagos",
+                      },
+                      {
+                        label: "Phone",
+                        value: creatorDetail?.phoneNumber || "N/A",
+                      },
                       {
                         label: "Bio",
                         value:
+                          creatorDetail?.bio ||
                           "Fashion content creator passionate about African aesthetics and modern style.",
                         span: true,
                       },
@@ -406,7 +421,18 @@ export default function CreatorProfileDrawer({
                         value: "Verified",
                         color: "text-[#16a34a] font-bold",
                       },
-                      { label: "Date Joined", value: "Jan 15, 2026" },
+                      {
+                        label: "Date Joined",
+                        value: creatorDetail?.createdAt
+                          ? new Date(
+                              creatorDetail.createdAt,
+                            ).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })
+                          : "Jan 15, 2026",
+                      },
                       { label: "Account Status", badge: true },
                     ].map((f, i) => (
                       <div
@@ -421,7 +447,7 @@ export default function CreatorProfileDrawer({
                         </span>
                         {f.badge ? (
                           <div className="w-fit">
-                            <AdminStatusBadge status="active" />
+                            <AdminStatusBadge status={creatorStatus} />
                           </div>
                         ) : (
                           <span
@@ -448,7 +474,7 @@ export default function CreatorProfileDrawer({
                       return (
                         <div
                           key={i}
-                          className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-3.5 flex flex-col items-center text-center gap-1"
+                          className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-3.5 flex flex-col items-center text-center gap-1 shadow-xs"
                         >
                           <div
                             className={cn(
@@ -479,26 +505,45 @@ export default function CreatorProfileDrawer({
                       <div className="w-8 h-8 rounded-full bg-[#fdf2f6] text-[#d7176f] flex items-center justify-center shrink-0">
                         <FaInstagram size={14} />
                       </div>
-                      <div className="flex flex-col flex-1 text-xs">
-                        <span className="font-bold text-[#1a1a2e]">
-                          @alexokafor
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <span className="text-xs font-bold text-[#1a1a2e]">
+                          Instagram
                         </span>
-                        <span className="text-[10px] text-[#9a99b0] font-medium">
-                          28.6K · Last synced: Today
+                        <span className="text-[10px] text-[#9a99b0] truncate">
+                          {creatorDetail?.socials?.instagram || creatorHandle}
                         </span>
                       </div>
                     </div>
+
                     <div className="flex items-center gap-3.5 p-3.5 bg-white border border-[#e8e6f0]/60 rounded-2xl">
-                      <div className="w-8 h-8 rounded-full bg-[#f4f3f6] text-[#7a7a9a] flex items-center justify-center shrink-0">
-                        <FaTiktok size={13} />
+                      <div className="w-8 h-8 rounded-full bg-[#f4f3f6] text-[#1a1a2e] flex items-center justify-center shrink-0">
+                        <FaTiktok size={14} />
                       </div>
-                      <div className="flex flex-col flex-1 text-xs">
-                        <span className="font-bold text-[#9a99b0]">TikTok</span>
-                        <span className="text-[10px] text-[#dc2626] font-semibold">
-                          Not connected
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <span className="text-xs font-bold text-[#1a1a2e]">
+                          TikTok
+                        </span>
+                        <span className="text-[10px] text-[#9a99b0] truncate">
+                          {creatorDetail?.socials?.tiktok || creatorHandle}
                         </span>
                       </div>
                     </div>
+
+                    {creatorDetail?.socials?.youtube && (
+                      <div className="flex items-center gap-3.5 p-3.5 bg-white border border-[#e8e6f0]/60 rounded-2xl">
+                        <div className="w-8 h-8 rounded-full bg-[#fef2f2] text-[#dc2626] flex items-center justify-center shrink-0">
+                          <FaYoutube size={14} />
+                        </div>
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <span className="text-xs font-bold text-[#1a1a2e]">
+                            YouTube
+                          </span>
+                          <span className="text-[10px] text-[#9a99b0] truncate">
+                            {creatorDetail.socials.youtube}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
@@ -507,53 +552,72 @@ export default function CreatorProfileDrawer({
             {/* CAMPAIGN HISTORY */}
             {activeTab === "Campaign History" && (
               <div className="flex flex-col gap-4">
-                <h4 className="text-sm font-bold text-[#1a1a2e]">
+                <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
                   Campaign History
                 </h4>
-                <div className="overflow-x-auto rounded-2xl border border-[#e8e6f0]/60">
-                  <table className="w-full text-xs text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-[#e8e6f0]/60 bg-[#faf9fc]">
-                        {[
-                          "Campaign Name",
-                          "Brand",
-                          "Status",
-                          "Proposed Fee",
-                          "Date Applied",
-                        ].map((h) => (
-                          <th
-                            key={h}
-                            className="px-4 py-3 text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider whitespace-nowrap"
-                          >
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {displayCampaigns.map((c, i) => (
-                        <tr
-                          key={i}
-                          className="border-b border-[#e8e6f0]/40 last:border-0 hover:bg-[#faf9fc] transition-colors"
-                        >
-                          <td className="px-4 py-3 font-semibold text-[#1a1a2e]">
-                            {c.name}
-                          </td>
-                          <td className="px-4 py-3 text-[#5a5a7a]">
-                            {c.brand}
-                          </td>
-                          <td className="px-4 py-3">
-                            <StatusChip status={c.status} />
-                          </td>
-                          <td className="px-4 py-3 text-[#5a5a7a]">{c.fee}</td>
-                          <td className="px-4 py-3 text-[#9a99b0] whitespace-nowrap">
-                            {c.date}
-                          </td>
+
+                {isLoadingCampaigns ? (
+                  <div className="py-8 text-center text-xs text-[#9a99b0]">
+                    Loading campaign history...
+                  </div>
+                ) : displayCampaigns.length === 0 ? (
+                  <div className="py-12 px-4 flex flex-col items-center justify-center text-center bg-[#faf9fc] rounded-2xl border border-dashed border-[#e8e6f0]">
+                    <CheckCircle size={32} className="text-[#9a99b0] mb-2" />
+                    <h5 className="text-xs font-bold text-[#1a1a2e]">
+                      No Campaign History
+                    </h5>
+                    <p className="text-[11px] text-[#9a99b0] mt-0.5">
+                      This creator has not participated in any campaigns yet.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto border border-[#e8e6f0]/60 rounded-2xl">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="border-b border-[#e8e6f0]/60 bg-[#faf9fc]">
+                          {[
+                            "Campaign",
+                            "Brand",
+                            "Status",
+                            "Fee",
+                            "Submitted",
+                          ].map((h) => (
+                            <th
+                              key={h}
+                              className="px-4 py-3 text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider whitespace-nowrap"
+                            >
+                              {h}
+                            </th>
+                          ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {displayCampaigns.map((c, i) => (
+                          <tr
+                            key={c.id || i}
+                            className="border-b border-[#e8e6f0]/40 last:border-0 hover:bg-[#faf9fc] transition-colors"
+                          >
+                            <td className="px-4 py-3 font-semibold text-[#1a1a2e]">
+                              {c.name}
+                            </td>
+                            <td className="px-4 py-3 text-[#5a5a7a]">
+                              {c.brand}
+                            </td>
+                            <td className="px-4 py-3">
+                              <StatusChip status={c.status} />
+                            </td>
+                            <td className="px-4 py-3 text-[#5a5a7a] font-semibold">
+                              {c.fee}
+                            </td>
+                            <td className="px-4 py-3 text-[#9a99b0] whitespace-nowrap">
+                              {c.date}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 
@@ -566,7 +630,7 @@ export default function CreatorProfileDrawer({
                     {avgRating}
                   </span>
                   <div className="flex flex-col gap-1">
-                    <Stars rating={Math.round(Number(avgRating))} />
+                    <Stars rating={Number(avgRating)} />
                     <span className="text-[11px] text-[#9a99b0] font-medium">
                       {displayReviews.length} reviews
                     </span>
@@ -574,27 +638,44 @@ export default function CreatorProfileDrawer({
                 </div>
 
                 {/* Individual reviews */}
-                <div className="flex flex-col gap-3">
-                  {displayReviews.map((r, i) => (
-                    <div
-                      key={i}
-                      className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 flex flex-col gap-2"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#1a1a2e]">
-                          {r.brand}
-                        </span>
-                        <span className="text-[10px] text-[#9a99b0]">
-                          {r.date}
-                        </span>
+                {isLoadingReviews ? (
+                  <div className="py-8 text-center text-xs text-[#9a99b0]">
+                    Loading creator reviews...
+                  </div>
+                ) : displayReviews.length === 0 ? (
+                  <div className="py-12 px-4 flex flex-col items-center justify-center text-center bg-[#faf9fc] rounded-2xl border border-dashed border-[#e8e6f0]">
+                    <Star size={32} className="text-[#9a99b0] mb-2" />
+                    <h5 className="text-xs font-bold text-[#1a1a2e]">
+                      No Brand Reviews Yet
+                    </h5>
+                    <p className="text-[11px] text-[#9a99b0] mt-0.5">
+                      No brand reviews or ratings have been submitted for this
+                      creator.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {displayReviews.map((r, i) => (
+                      <div
+                        key={r.id || i}
+                        className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 flex flex-col gap-2 shadow-xs"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-[#1a1a2e]">
+                            {r.brand}
+                          </span>
+                          <span className="text-[10px] text-[#9a99b0]">
+                            {r.date}
+                          </span>
+                        </div>
+                        <Stars rating={r.rating} />
+                        <p className="text-xs text-[#5a5a7a] leading-relaxed">
+                          {r.text}
+                        </p>
                       </div>
-                      <Stars rating={r.rating} />
-                      <p className="text-xs text-[#5a5a7a] leading-relaxed">
-                        {r.text}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -688,33 +769,31 @@ export default function CreatorProfileDrawer({
             {/* ACTION */}
             {activeTab === "Action" && (
               <div className="flex flex-col gap-4">
-                {/* Warning banner */}
                 <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#fffbeb] border border-[#fde68a] text-[#92400e] text-xs font-semibold">
                   <AlertTriangle
                     size={14}
                     className="shrink-0 text-[#f59e0b]"
                   />
                   Actions require confirmation and are recorded in the audit
-                  log.
+                  trail.
                 </div>
 
-                {/* Action rows */}
                 <div className="flex flex-col gap-3">
-                  {ACTIONS.map((a, i) => {
+                  {ACTIONS.map((a) => {
                     const Icon = a.icon;
                     return (
                       <button
-                        key={i}
+                        key={a.actionType}
                         onClick={() => setActiveAction(a.actionType)}
                         className={cn(
-                          "flex items-center gap-4 w-full text-left px-5 py-4 rounded-2xl border transition-all hover:brightness-95 cursor-pointer",
+                          "w-full text-left p-4 rounded-2xl border flex items-start gap-3.5 transition-all cursor-pointer hover:shadow-xs",
                           a.bg,
                           a.border,
                         )}
                       >
                         <div
                           className={cn(
-                            "w-9 h-9 rounded-full flex items-center justify-center shrink-0",
+                            "w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5",
                             a.iconBg,
                             a.color,
                           )}
