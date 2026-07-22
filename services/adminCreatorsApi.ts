@@ -32,7 +32,11 @@ export const adminCreatorsApi = {
     }),
 
   // 3. Active Users
-  getActiveUsers: (params?: { period?: string }) =>
+  getActiveUsers: (params?: {
+    period?: string;
+    year?: number;
+    month?: number;
+  }) =>
     apiClient.get<ActiveUsersItemDto[]>("/admin/creators/active-users", {
       params,
     }),

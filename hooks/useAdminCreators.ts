@@ -22,6 +22,40 @@ export function useTopCreators(enabled: boolean = true) {
   });
 }
 
+export function useCreatorSignupGrowth(
+  period?: string,
+  year?: number,
+  month?: number,
+  enabled: boolean = true,
+) {
+  return useQuery({
+    queryKey: ["admin-creator-signup-growth", period, year, month],
+    queryFn: () =>
+      adminCreatorsApi
+        .getSignupGrowth({ period, year, month })
+        .then((r) => r.data),
+    staleTime: 1000 * 60 * 5,
+    enabled,
+  });
+}
+
+export function useCreatorActiveUsers(
+  period?: string,
+  year?: number,
+  month?: number,
+  enabled: boolean = true,
+) {
+  return useQuery({
+    queryKey: ["admin-creator-active-users", period, year, month],
+    queryFn: () =>
+      adminCreatorsApi
+        .getActiveUsers({ period, year, month })
+        .then((r) => r.data),
+    staleTime: 1000 * 60 * 5,
+    enabled,
+  });
+}
+
 export function useCreatorTierDistribution(enabled: boolean = true) {
   return useQuery({
     queryKey: ["admin-creator-tier-distribution"],

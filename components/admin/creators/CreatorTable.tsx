@@ -36,117 +36,6 @@ interface CreatorItem {
   lastLogin: string;
 }
 
-const MOCK_CREATORS: CreatorItem[] = [
-  {
-    id: "1",
-    creatorId: "CRT-5021",
-    name: "Amara Osei",
-    handle: "@amara.creates",
-    email: "amara@email.com",
-    country: "Lagos, Nigeria",
-    tier: "Macro",
-    niche: "Fashion",
-    gender: "Female",
-    platforms: ["IG", "TikTok"],
-    completion: 100,
-    totalEarnings: 1500000,
-    revisionCount: 2,
-    status: "Active",
-    dateJoined: "Jan 15, 2026",
-    lastLogin: "2 hours ago",
-  },
-  {
-    id: "2",
-    creatorId: "CRT-1092",
-    name: "Chidi Nwosu",
-    handle: "@chidiplays",
-    email: "chidi@email.com",
-    country: "Abuja, Nigeria",
-    tier: "Micro",
-    niche: "Tech",
-    gender: "Male",
-    platforms: ["TikTok", "YT"],
-    completion: 85,
-    totalEarnings: 850000,
-    revisionCount: 4,
-    status: "Active",
-    dateJoined: "Feb 1, 2026",
-    lastLogin: "1 day ago",
-  },
-  {
-    id: "3",
-    creatorId: "CRT-7742",
-    name: "Tolu Fashola",
-    handle: "@tolustyles",
-    email: "tolu@email.com",
-    country: "Lagos, Nigeria",
-    tier: "Mega",
-    niche: "Fashion",
-    gender: "Female",
-    platforms: ["IG", "TikTok", "YT"],
-    completion: 100,
-    totalEarnings: 5200000,
-    revisionCount: 1,
-    status: "Pending",
-    dateJoined: "Nov 5, 2025",
-    lastLogin: "3 days ago",
-  },
-  {
-    id: "4",
-    creatorId: "CRT-0985",
-    name: "Ngozi Eze",
-    handle: "@ngozi.beauty",
-    email: "ngozi@email.com",
-    country: "Enugu, Nigeria",
-    tier: "Micro",
-    niche: "Beauty",
-    gender: "Female",
-    platforms: ["IG"],
-    completion: 75,
-    totalEarnings: 450000,
-    revisionCount: 0,
-    status: "Active",
-    dateJoined: "Apr 20, 2026",
-    lastLogin: "4 hours ago",
-  },
-  {
-    id: "5",
-    creatorId: "CRT-8813",
-    name: "Emeka Dev",
-    handle: "@emekadev",
-    email: "emeka@email.com",
-    country: "Enugu, Nigeria",
-    tier: "Nano",
-    niche: "Tech, Beauty",
-    gender: "Male",
-    platforms: ["IG"],
-    completion: 75,
-    totalEarnings: 300000,
-    revisionCount: 5,
-    status: "Suspended",
-    dateJoined: "Apr 20, 2026",
-    lastLogin: "1 week ago",
-  },
-  {
-    id: "6",
-    creatorId: "CRT-4491",
-    name: "Zara Bello",
-    handle: "@zarabellocooks",
-    email: "zara@email.com",
-    country: "Port Harcourt, Nigeria",
-    tier: "Nano",
-    niche: "Lifestyle",
-    gender: "Female",
-    platforms: ["IG"],
-    completion: 60,
-    totalEarnings: 200000,
-    revisionCount: 3,
-    status: "Pending",
-    dateJoined: "Mar 10, 2026",
-    lastLogin: "Just now",
-  },
-];
-
 type FilterTab = "All" | "Active" | "Suspended" | "Pending";
 
 const TIER_CLASSES: Record<string, string> = {
@@ -238,7 +127,7 @@ export default function CreatorTable() {
         };
       });
     }
-    return MOCK_CREATORS;
+    return [];
   }, [paginatedResponse]);
 
   const filtered = useMemo(() => {
@@ -603,7 +492,22 @@ export default function CreatorTable() {
       )}
 
       {/* Table Content */}
-      {filtered.length === 0 ? (
+      {isLoading ? (
+        <div className="flex flex-col gap-3 py-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-14 w-full bg-[#faf9fc] rounded-2xl animate-pulse flex items-center px-4 gap-4"
+            >
+              <div className="w-16 h-4 bg-[#e8e6f0]/60 rounded-md" />
+              <div className="w-8 h-8 rounded-full bg-[#e8e6f0]/60 shrink-0" />
+              <div className="w-28 h-4 bg-[#e8e6f0]/60 rounded-md" />
+              <div className="w-36 h-4 bg-[#e8e6f0]/40 rounded-md ml-auto" />
+              <div className="w-20 h-4 bg-[#e8e6f0]/60 rounded-md" />
+            </div>
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="py-12 px-4 flex flex-col items-center justify-center text-center bg-[#faf9fc] rounded-2xl border border-dashed border-[#e8e6f0]">
           <Search size={32} className="text-[#9a99b0] mb-3" />
           <h3 className="text-sm font-bold text-[#1a1a2e]">

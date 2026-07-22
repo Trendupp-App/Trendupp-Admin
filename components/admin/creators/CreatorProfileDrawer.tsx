@@ -152,16 +152,15 @@ function formatDateOnly(dateStr?: string | null): string {
   });
 }
 
-function formatFollowerCount(
-  count?: number | null,
-  tier?: string | null,
-): string {
-  if (count !== undefined && count !== null && count > 0) {
-    if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
-    if (count >= 1_000) return `${(count / 1_000).toFixed(0)}K`;
-    return String(count);
+function formatFollowerCount(count?: number | null): string {
+  if (count !== undefined && count !== null) {
+    const num = Number(count);
+    if (!isNaN(num) && num > 0) {
+      if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+      if (num >= 1_000) return `${(num / 1_000).toFixed(0)}K`;
+      return num.toLocaleString();
+    }
   }
-  if (tier) return `${tier} Tier`;
   return "0";
 }
 
@@ -280,11 +279,87 @@ export default function CreatorProfileDrawer({
     return "0.0";
   }, [displayReviews]);
 
+  const totalFollowersCount = useMemo(() => {
+    if (!creatorProfile) return 0;
+
+    // 1. Root level properties
+    const rootObj = creatorProfile as unknown as Record<string, unknown>;
+    const rootVal =
+      rootObj["total followers"] ??
+      rootObj["total_followers"] ??
+      rootObj["totalFollowers"] ??
+      rootObj["followers"];
+    if (rootVal !== undefined && rootVal !== null) {
+      const num = Number(rootVal);
+      if (!isNaN(num) && num > 0) return num;
+    }
+
+    // 2. Metrics object properties
+    const m = (metricsData || rootObj.metrics) as
+      Record<string, unknown> | undefined;
+    if (m) {
+      const rawVal =
+        m["total followers"] ??
+        m["total_followers"] ??
+        m["totalFollowers"] ??
+        m["followers"];
+      if (rawVal !== undefined && rawVal !== null) {
+        const num = Number(rawVal);
+        if (!isNaN(num) && num > 0) return num;
+      }
+    }
+
+    // 3. Profile details object properties
+    const pd = (profileDetails || rootObj.profileDetails) as
+      Record<string, unknown> | undefined;
+    if (pd) {
+      const rawVal =
+        pd["total followers"] ??
+        pd["total_followers"] ??
+        pd["totalFollowers"] ??
+        pd["followers"] ??
+        pd["followersCount"];
+      if (rawVal !== undefined && rawVal !== null) {
+        const num = Number(rawVal);
+        if (!isNaN(num) && num > 0) return num;
+      }
+    }
+
+    // 4. Stats object properties
+    const st = rootObj.stats as Record<string, unknown> | undefined;
+    if (st) {
+      const rawVal =
+        st["total followers"] ??
+        st["total_followers"] ??
+        st["totalFollowers"] ??
+        st["followers"];
+      if (rawVal !== undefined && rawVal !== null) {
+        const num = Number(rawVal);
+        if (!isNaN(num) && num > 0) return num;
+      }
+    }
+
+    // 5. Sum of socialAccounts
+    if (
+      socialAccounts &&
+      Array.isArray(socialAccounts) &&
+      socialAccounts.length > 0
+    ) {
+      const sum = socialAccounts.reduce(
+        (acc, sa) => acc + (sa.followersCount || 0),
+        0,
+      );
+      if (sum > 0) return sum;
+    }
+
+    return 0;
+  }, [creatorProfile, metricsData, profileDetails, socialAccounts]);
+
   // Metrics under Overview (derived from GET /api/v1/admin/creators/{id} -> metrics)
   const metrics = [
     {
       label: "Followers",
-      value: formatFollowerCount(metricsData?.totalFollowers, creatorTier),
+      value: formatFollowerCount(totalFollowersCount),
       icon: Users,
       bg: "bg-[#fdf2f6] text-[#d7176f]",
     },
@@ -607,8 +682,17 @@ export default function CreatorProfileDrawer({
                 </h4>
 
                 {isLoadingCampaigns ? (
-                  <div className="py-8 text-center text-xs text-[#9a99b0]">
-                    Loading campaign history...
+                  <div className="flex flex-col gap-3 py-2">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="h-12 w-full bg-[#faf9fc] rounded-2xl animate-pulse flex items-center px-4 gap-4"
+                      >
+                        <div className="w-24 h-3.5 bg-[#e8e6f0]/60 rounded-md" />
+                        <div className="w-20 h-3.5 bg-[#e8e6f0]/40 rounded-md" />
+                        <div className="w-16 h-4 bg-[#e8e6f0]/60 rounded-md ml-auto" />
+                      </div>
+                    ))}
                   </div>
                 ) : displayCampaigns.length === 0 ? (
                   <div className="py-12 px-4 flex flex-col items-center justify-center text-center bg-[#faf9fc] rounded-2xl border border-dashed border-[#e8e6f0]">
@@ -687,8 +771,20 @@ export default function CreatorProfileDrawer({
                 </div>
 
                 {isLoadingReviews ? (
-                  <div className="py-8 text-center text-xs text-[#9a99b0]">
-                    Loading creator reviews...
+                  <div className="flex flex-col gap-3">
+                    {Array.from({ length: 2 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 flex flex-col gap-3 animate-pulse"
+                      >
+                        <div className="flex justify-between items-center">
+                          <div className="w-28 h-4 bg-[#e8e6f0]/60 rounded-md" />
+                          <div className="w-16 h-3 bg-[#e8e6f0]/40 rounded-md" />
+                        </div>
+                        <div className="w-20 h-3 bg-[#e8e6f0]/40 rounded-md" />
+                        <div className="w-full h-10 bg-[#e8e6f0]/30 rounded-xl" />
+                      </div>
+                    ))}
                   </div>
                 ) : displayReviews.length === 0 ? (
                   <div className="py-12 px-4 flex flex-col items-center justify-center text-center bg-[#faf9fc] rounded-2xl border border-dashed border-[#e8e6f0]">
