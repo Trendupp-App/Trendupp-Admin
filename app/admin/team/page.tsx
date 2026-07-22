@@ -204,7 +204,6 @@ export default function TeamManagementPage() {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchSubAdmins();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, activeRoleFilter]);
