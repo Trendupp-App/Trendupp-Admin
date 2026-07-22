@@ -256,11 +256,11 @@ export default function TeamManagementPage() {
           ...prev,
           [data.email.toLowerCase()]: code,
         }));
-      }
 
-      const base = typeof window !== "undefined" ? window.location.origin : "";
-      const previewUrl = `${base}/setup/invite/preview?name=${encodeURIComponent(fullName)}&role=${encodeURIComponent(data.role)}&email=${encodeURIComponent(data.email)}&otp=${encodeURIComponent(code)}`;
-      setInvitePreviewUrl(previewUrl);
+        const base = window.location.origin;
+        const previewUrl = `${base}/setup/invite/preview?name=${encodeURIComponent(fullName)}&role=${encodeURIComponent(data.role)}&email=${encodeURIComponent(data.email)}&otp=${encodeURIComponent(code)}`;
+        setInvitePreviewUrl(previewUrl);
+      }
 
       fetchSubAdmins();
       setIsInviteOpen(false);
