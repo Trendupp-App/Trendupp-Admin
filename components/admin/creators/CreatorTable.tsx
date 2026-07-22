@@ -156,6 +156,18 @@ const TIER_CLASSES: Record<string, string> = {
   Nano: "text-[#16a34a] bg-[#f0fdf4] border-[#dcfce7]",
 };
 
+function formatDateOnly(dateStr?: string | null): string {
+  if (!dateStr) return "—";
+  const cleanDate = dateStr.split("T")[0];
+  const parsed = new Date(cleanDate.includes("-") ? cleanDate : dateStr);
+  if (isNaN(parsed.getTime())) return cleanDate || "—";
+  return parsed.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export default function CreatorTable() {
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
   const [search, setSearch] = useState("");
@@ -221,13 +233,7 @@ export default function CreatorTable() {
           totalEarnings: c.totalEarnings ?? 0,
           revisionCount: 0,
           status: normalizedStatus,
-          dateJoined: c.joinedAt
-            ? new Date(c.joinedAt).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })
-            : "Jan 15, 2026",
+          dateJoined: formatDateOnly(c.joinedAt),
           lastLogin: "Active",
         };
       });

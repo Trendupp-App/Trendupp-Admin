@@ -140,6 +140,31 @@ function Stars({ rating, max = 5 }: { rating: number; max?: number }) {
   );
 }
 
+function formatDateOnly(dateStr?: string | null): string {
+  if (!dateStr) return "—";
+  const cleanDate = dateStr.split("T")[0];
+  const parsed = new Date(cleanDate.includes("-") ? cleanDate : dateStr);
+  if (isNaN(parsed.getTime())) return cleanDate || "—";
+  return parsed.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatFollowerCount(
+  count?: number | null,
+  tier?: string | null,
+): string {
+  if (count !== undefined && count !== null && count > 0) {
+    if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
+    if (count >= 1_000) return `${(count / 1_000).toFixed(0)}K`;
+    return String(count);
+  }
+  if (tier) return `${tier} Tier`;
+  return "0";
+}
+
 export default function CreatorProfileDrawer({
   isOpen,
   onClose,
@@ -192,12 +217,12 @@ export default function CreatorProfileDrawer({
   const socialAccounts = creatorProfile?.socialAccounts;
 
   // Header displays
-  const creatorName = profileDetails?.fullName || "Alex Okafor";
+  const creatorName = profileDetails?.fullName || "Creator Profile";
   const creatorHandle = profileDetails?.username
     ? profileDetails.username.startsWith("@")
       ? profileDetails.username
       : `@${profileDetails.username}`
-    : "@alexokafor";
+    : "@creator";
 
   const creatorInitials = useMemo(() => {
     return creatorName
@@ -219,13 +244,7 @@ export default function CreatorProfileDrawer({
       return reviewsData.map((r) => ({
         id: r.id,
         brand: r.brandName || "Brand Partner",
-        date: r.createdAt
-          ? new Date(r.createdAt).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })
-          : "Recently",
+        date: formatDateOnly(r.createdAt),
         rating: r.rating || 5,
         text: r.comment || "Great creator to collaborate with.",
       }));
@@ -245,14 +264,8 @@ export default function CreatorProfileDrawer({
         name: c.campaignTitle || "Campaign",
         brand: c.brandName || "Brand",
         status: c.status || "COMPLETED",
-        fee: c.fee ? `₦${(c.fee / 1000).toFixed(0)}K` : "₦150K",
-        date: c.submittedAt
-          ? new Date(c.submittedAt).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })
-          : "Jan 20, 2026",
+        fee: c.fee ? `₦${(c.fee / 1000).toFixed(0)}K` : "₦0",
+        date: formatDateOnly(c.submittedAt),
       }));
     }
     return [];
@@ -264,16 +277,14 @@ export default function CreatorProfileDrawer({
         displayReviews.reduce((s, r) => s + r.rating, 0) / displayReviews.length
       ).toFixed(1);
     }
-    return "4.8";
+    return "0.0";
   }, [displayReviews]);
 
   // Metrics under Overview (derived from GET /api/v1/admin/creators/{id} -> metrics)
   const metrics = [
     {
       label: "Followers",
-      value: metricsData?.totalFollowers
-        ? `${(metricsData.totalFollowers / 1000).toFixed(0)}K`
-        : "450K",
+      value: formatFollowerCount(metricsData?.totalFollowers, creatorTier),
       icon: Users,
       bg: "bg-[#fdf2f6] text-[#d7176f]",
     },
@@ -282,7 +293,7 @@ export default function CreatorProfileDrawer({
       value:
         metricsData?.onTimeSubmissionRate !== undefined
           ? `${metricsData.onTimeSubmissionRate}%`
-          : "4.2%",
+          : "0%",
       icon: TrendingUp,
       bg: "bg-[#edf2fe] text-[#2f63eb]",
     },
@@ -291,7 +302,7 @@ export default function CreatorProfileDrawer({
       value:
         metricsData?.completedCampaigns !== undefined
           ? String(metricsData.completedCampaigns)
-          : "18",
+          : String(displayCampaigns.length),
       icon: CheckCircle,
       bg: "bg-[#f0fdf4] text-[#16a34a]",
     },
@@ -304,7 +315,7 @@ export default function CreatorProfileDrawer({
                 ? (metricsData.totalEarnings / 1000000).toFixed(1) + "M"
                 : (metricsData.totalEarnings / 1000).toFixed(0) + "K"
             }`
-          : "₦2.4M",
+          : "₦0",
       icon: Wallet,
       bg: "bg-[#fff7ed] text-[#ea580c]",
     },
@@ -313,7 +324,7 @@ export default function CreatorProfileDrawer({
       value:
         metricsData?.totalTokens !== undefined
           ? String(metricsData.totalTokens)
-          : "1200",
+          : "0",
       icon: Award,
       bg: "bg-[#f5f3ff] text-[#7c3aed]",
     },
@@ -443,9 +454,7 @@ export default function CreatorProfileDrawer({
                       },
                       {
                         label: "Date Joined",
-                        value: profileDetails?.dateJoined
-                          ? profileDetails.dateJoined
-                          : "Jan 15, 2026",
+                        value: formatDateOnly(profileDetails?.dateJoined),
                       },
                       { label: "Account Status", badge: true },
                     ].map((f, i) => (
@@ -760,14 +769,7 @@ export default function CreatorProfileDrawer({
                               {n.createdBy?.name || "Admin"}
                             </span>
                             <span className="text-[10px] text-[#9a99b0] ml-2">
-                              {new Date(n.createdAt).toLocaleDateString(
-                                "en-US",
-                                {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                },
-                              )}
+                              {formatDateOnly(n.createdAt)}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
