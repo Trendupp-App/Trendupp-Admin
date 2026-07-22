@@ -28,9 +28,10 @@ export default function AdminDashboardPage() {
     },
     {
       value: topMetrics
-        ? `${(topMetrics.totalBrands / 1000).toFixed(0)}k`
+        ? topMetrics.totalBrands >= 1000
+          ? `${(topMetrics.totalBrands / 1000).toFixed(1)}k`
+          : topMetrics.totalBrands.toLocaleString()
         : "142k",
-      label: "Total Advertisers",
       trend: "+12M vs last month",
       trendUp: true,
       icon: TrendingUp,
