@@ -7,22 +7,21 @@ export const metadata: Metadata = {
 };
 
 interface PreviewPageProps {
-  searchParams: Promise<{
+  searchParams: {
     name?: string;
     role?: string;
     email?: string;
     otp?: string;
-  }>;
+  };
 }
 
-export default async function InvitePreviewPage({
+export default function InvitePreviewPage({
   searchParams,
 }: PreviewPageProps) {
-  const params = await searchParams;
-  const name = params.name ?? "Team Member";
-  const role = params.role ?? "Admin";
-  const email = params.email ?? "";
-  const otp = params.otp ?? "";
+  const name = searchParams.name ?? "Team Member";
+  const role = searchParams.role ?? "Admin";
+  const email = searchParams.email ?? "";
+  const otp = searchParams.otp ?? "";
 
   const activationUrl =
     otp && email
