@@ -216,7 +216,7 @@ export default function TeamManagementPage() {
   const pendingStaff = staffList.filter((s) => s.status === "Pending").length;
   const rolesAvailable = 4;
 
-  // Filter staff list according to active status filter
+  // Filter staff list according to active search and status filter
   const filteredStaff = staffList.filter((s) => {
     if (activeStatusFilter === "Active" && s.status !== "Active") return false;
     if (activeStatusFilter === "Pending" && s.status !== "Pending")

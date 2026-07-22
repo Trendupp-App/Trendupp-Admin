@@ -2,6 +2,7 @@
 
 import { AdminDataTable, type AdminColumn } from "./AdminDataTable";
 import { AdminStatusBadge } from "./AdminStatusBadge";
+import { RecentCampaignDto } from "@/types/adminOverview";
 
 interface ActivityRow {
   id: string;
@@ -85,7 +86,26 @@ const COLS: AdminColumn<ActivityRow>[] = [
   },
 ];
 
-export function AdminRecentActivity() {
+interface AdminRecentActivityProps {
+  activities?: RecentCampaignDto[];
+}
+
+export function AdminRecentActivity({ activities }: AdminRecentActivityProps) {
+  const rows: ActivityRow[] = activities?.length
+    ? activities.map((item) => ({
+        id: item.id,
+        campaignId: item.id.length > 8 ? `TRD-${item.id.slice(0, 4)}` : item.id,
+        campaign: item.title,
+        brand: item.brandName,
+        status: item.status,
+        budget:
+          item.budget >= 1000000
+            ? `₦${(item.budget / 1000000).toFixed(1)}M`
+            : `₦${(item.budget / 1000).toFixed(0)}k`,
+        applications: item.applicationsCount,
+      }))
+    : MOCK;
+
   return (
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6">
       <div className="flex items-center justify-between mb-5">
@@ -98,7 +118,7 @@ export function AdminRecentActivity() {
       </div>
       <AdminDataTable
         columns={COLS}
-        data={MOCK}
+        data={rows}
         isLoading={false}
         keyExtractor={(r) => r.id}
         emptyTitle="No activity yet"

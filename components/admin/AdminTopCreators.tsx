@@ -67,7 +67,33 @@ const TIER_COLOR: Record<string, string> = {
   nano: "text-[#16a34a] bg-[#f0fdf4]",
 };
 
-export function AdminTopCreators() {
+import { TopCreatorDto } from "@/types/adminOverview";
+
+interface AdminTopCreatorsProps {
+  creators?: TopCreatorDto[];
+}
+
+export function AdminTopCreators({ creators }: AdminTopCreatorsProps) {
+  const creatorsList: Creator[] = creators?.length
+    ? creators.map((item, idx) => ({
+        rank: idx + 1,
+        name: item.name,
+        handle: item.handle.startsWith("@") ? item.handle : `@${item.handle}`,
+        initials: item.name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2),
+        tier: item.tier.toLowerCase(),
+        earnings:
+          item.totalEarnings >= 1000000
+            ? `₦${(item.totalEarnings / 1000000).toFixed(1)}M`
+            : `₦${(item.totalEarnings / 1000).toFixed(0)}K`,
+        campaigns: item.completedCampaigns,
+      }))
+    : MOCK;
+
   return (
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6">
       <div className="flex items-center justify-between mb-5">
@@ -78,7 +104,7 @@ export function AdminTopCreators() {
       </div>
 
       <div className="flex flex-col gap-3">
-        {MOCK.map(
+        {creatorsList.map(
           ({ rank, name, handle, initials, tier, earnings, campaigns }) => (
             <div key={rank} className="flex items-center gap-3 py-1">
               <span className="text-xs font-bold text-[#b0aec8] w-4 shrink-0">
