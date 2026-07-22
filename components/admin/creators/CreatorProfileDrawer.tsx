@@ -27,6 +27,7 @@ import CreatorActionModal from "./CreatorActionModal";
 import NoteModal from "./NoteModal";
 import SuccessModal from "./SuccessModal";
 import { Portal } from "@/components/ui/portal";
+import { DrawerSkeleton } from "@/components/admin/DrawerSkeleton";
 import {
   useCreatorDetails,
   useCreatorCampaignHistory,
@@ -191,7 +192,8 @@ export default function CreatorProfileDrawer({
   const [successModalMessage, setSuccessModalMessage] = useState("");
 
   /* API Hooks */
-  const { data: creatorProfile } = useCreatorDetails(creatorId, isOpen);
+  const { data: creatorProfile, isLoading: isLoadingDetails } =
+    useCreatorDetails(creatorId, isOpen);
   const { data: campaignHistoryData, isLoading: isLoadingCampaigns } =
     useCreatorCampaignHistory(creatorId, 1, 10, isOpen);
   const { data: reviewsData, isLoading: isLoadingReviews } = useCreatorReviews(
@@ -416,620 +418,632 @@ export default function CreatorProfileDrawer({
         />
 
         <div className="w-full max-w-[620px] h-full bg-white relative z-10 flex flex-col shadow-2xl overflow-y-auto">
-          {/* Top bar */}
-          <div className="flex items-center justify-between border-b border-[#e8e6f0]/60 px-6 py-4 shrink-0">
-            <button
-              onClick={onClose}
-              className="flex items-center gap-2 text-xs font-semibold text-[#7a7a9a] hover:text-[#1a1a2e] transition-colors cursor-pointer"
-            >
-              <ArrowLeft size={15} /> Back
-            </button>
-            <span className="text-sm font-bold text-[#1a1a2e]">
-              Creator Profile
-            </span>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-full hover:bg-[#f4f3f6] text-[#5a5a7a] transition-colors cursor-pointer"
-            >
-              <X size={18} />
-            </button>
-          </div>
+          {isLoadingDetails ? (
+            <DrawerSkeleton onClose={onClose} title="Creator Profile" />
+          ) : (
+            <>
+              {/* Top bar */}
+              <div className="flex items-center justify-between border-b border-[#e8e6f0]/60 px-6 py-4 shrink-0">
+                <button
+                  onClick={onClose}
+                  className="flex items-center gap-2 text-xs font-semibold text-[#7a7a9a] hover:text-[#1a1a2e] transition-colors cursor-pointer"
+                >
+                  <ArrowLeft size={15} /> Back
+                </button>
+                <span className="text-sm font-bold text-[#1a1a2e]">
+                  Creator Profile
+                </span>
+                <button
+                  onClick={onClose}
+                  className="p-1.5 rounded-full hover:bg-[#f4f3f6] text-[#5a5a7a] transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
 
-          {/* Creator Header Summary */}
-          <div className="flex flex-col items-center justify-center py-7 border-b border-[#e8e6f0]/40 shrink-0">
-            <UserAvatar initials={creatorInitials} size={72} />
-            <h3 className="text-base font-bold text-[#1a1a2e] mt-3">
-              {creatorName}
-            </h3>
-            <span className="text-xs text-[#9a99b0]">{creatorHandle}</span>
-            <div className="flex items-center gap-2 mt-2">
-              <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-[#f5f3ff] text-[#7c3aed] border border-[#e0e7ff] capitalize">
-                {creatorTier}
-              </span>
-              <AdminStatusBadge status={creatorStatus} />
-            </div>
-          </div>
+              {/* Creator Header Summary */}
+              <div className="flex flex-col items-center justify-center py-7 border-b border-[#e8e6f0]/40 shrink-0">
+                <UserAvatar initials={creatorInitials} size={72} />
+                <h3 className="text-base font-bold text-[#1a1a2e] mt-3">
+                  {creatorName}
+                </h3>
+                <span className="text-xs text-[#9a99b0]">{creatorHandle}</span>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-[#f5f3ff] text-[#7c3aed] border border-[#e0e7ff] capitalize">
+                    {creatorTier}
+                  </span>
+                  <AdminStatusBadge status={creatorStatus} />
+                </div>
+              </div>
 
-          {/* Tabs */}
-          <div className="flex border-b border-[#e8e6f0]/40 px-6 overflow-x-auto shrink-0 scrollbar-none">
-            {(
-              [
-                "Overview",
-                "Campaign History",
-                "Review",
-                "Note",
-                "Action",
-              ] as const
-            ).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={cn(
-                  "px-4 py-3 text-xs font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap",
-                  activeTab === tab
-                    ? "border-brand-pink text-brand-pink"
-                    : "border-transparent text-[#9a99b0] hover:text-[#1a1a2e]",
-                )}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
+              {/* Tabs */}
+              <div className="flex border-b border-[#e8e6f0]/40 px-6 overflow-x-auto shrink-0 scrollbar-none">
+                {(
+                  [
+                    "Overview",
+                    "Campaign History",
+                    "Review",
+                    "Note",
+                    "Action",
+                  ] as const
+                ).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={cn(
+                      "px-4 py-3 text-xs font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap",
+                      activeTab === tab
+                        ? "border-brand-pink text-brand-pink"
+                        : "border-transparent text-[#9a99b0] hover:text-[#1a1a2e]",
+                    )}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
 
-          {/* Tab Content */}
-          <div className="flex-1 flex flex-col gap-5 p-6">
-            {/* OVERVIEW TAB */}
-            {activeTab === "Overview" && (
-              <>
-                <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-4">
-                  <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
-                    Profile Details
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3.5 text-xs">
-                    {[
-                      {
-                        label: "Full name",
-                        value: profileDetails?.fullName || creatorName,
-                      },
-                      {
-                        label: "Email",
-                        value: profileDetails?.email || "alex@email.com",
-                      },
-                      {
-                        label: "Country of residence",
-                        value: profileDetails?.countryOfResidence || "Nigeria",
-                      },
-                      {
-                        label: "State / Location",
-                        value: profileDetails?.state || "Lagos",
-                      },
-                      {
-                        label: "Nationality",
-                        value: profileDetails?.nationality || "Nigeria",
-                      },
-                      {
-                        label: "Phone",
-                        value: profileDetails?.phoneNumber || "N/A",
-                      },
-                      {
-                        label: "Bio",
-                        value:
-                          profileDetails?.bio ||
-                          "Fashion content creator passionate about African aesthetics and modern style.",
-                        span: true,
-                      },
-                      {
-                        label: "Profile Completion",
-                        value: profileDetails?.profileCompletion || "100%",
-                      },
-                      {
-                        label: "Bank Account",
-                        value: profileDetails?.bankAccountStatus || "Verified",
-                        color: "text-[#16a34a] font-bold",
-                      },
-                      {
-                        label: "Date Joined",
-                        value: formatDateOnly(profileDetails?.dateJoined),
-                      },
-                      { label: "Account Status", badge: true },
-                    ].map((f, i) => (
-                      <div
-                        key={i}
-                        className={cn(
-                          "flex flex-col gap-1",
-                          f.span && "sm:col-span-2",
-                        )}
-                      >
-                        <span className="text-[#9a99b0] text-[10px] font-semibold uppercase">
-                          {f.label}
-                        </span>
-                        {f.badge ? (
-                          <div className="w-fit">
-                            <AdminStatusBadge status={creatorStatus} />
-                          </div>
-                        ) : (
-                          <span
+              {/* Tab Content */}
+              <div className="flex-1 flex flex-col gap-5 p-6">
+                {/* OVERVIEW TAB */}
+                {activeTab === "Overview" && (
+                  <>
+                    <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-4">
+                      <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
+                        Profile Details
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3.5 text-xs">
+                        {[
+                          {
+                            label: "Full name",
+                            value: profileDetails?.fullName || creatorName,
+                          },
+                          {
+                            label: "Email",
+                            value: profileDetails?.email || "alex@email.com",
+                          },
+                          {
+                            label: "Country of residence",
+                            value:
+                              profileDetails?.countryOfResidence || "Nigeria",
+                          },
+                          {
+                            label: "State / Location",
+                            value: profileDetails?.state || "Lagos",
+                          },
+                          {
+                            label: "Nationality",
+                            value: profileDetails?.nationality || "Nigeria",
+                          },
+                          {
+                            label: "Phone",
+                            value: profileDetails?.phoneNumber || "N/A",
+                          },
+                          {
+                            label: "Bio",
+                            value:
+                              profileDetails?.bio ||
+                              "Fashion content creator passionate about African aesthetics and modern style.",
+                            span: true,
+                          },
+                          {
+                            label: "Profile Completion",
+                            value: profileDetails?.profileCompletion || "100%",
+                          },
+                          {
+                            label: "Bank Account",
+                            value:
+                              profileDetails?.bankAccountStatus || "Verified",
+                            color: "text-[#16a34a] font-bold",
+                          },
+                          {
+                            label: "Date Joined",
+                            value: formatDateOnly(profileDetails?.dateJoined),
+                          },
+                          { label: "Account Status", badge: true },
+                        ].map((f, i) => (
+                          <div
+                            key={i}
                             className={cn(
-                              "text-[#1a1a2e] font-medium leading-relaxed",
-                              f.color,
+                              "flex flex-col gap-1",
+                              f.span && "sm:col-span-2",
                             )}
                           >
-                            {f.value}
-                          </span>
+                            <span className="text-[#9a99b0] text-[10px] font-semibold uppercase">
+                              {f.label}
+                            </span>
+                            {f.badge ? (
+                              <div className="w-fit">
+                                <AdminStatusBadge status={creatorStatus} />
+                              </div>
+                            ) : (
+                              <span
+                                className={cn(
+                                  "text-[#1a1a2e] font-medium leading-relaxed",
+                                  f.color,
+                                )}
+                              >
+                                {f.value}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Metrics Cards Grid Under Overview */}
+                    <div className="flex flex-col gap-3">
+                      <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
+                        Metrics
+                      </h4>
+                      <div className="grid grid-cols-5 gap-3">
+                        {metrics.map((m, i) => {
+                          const Icon = m.icon;
+                          return (
+                            <div
+                              key={i}
+                              className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-3.5 flex flex-col items-center text-center gap-1 shadow-xs"
+                            >
+                              <div
+                                className={cn(
+                                  "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+                                  m.bg,
+                                )}
+                              >
+                                <Icon size={14} />
+                              </div>
+                              <span className="text-sm font-bold text-[#1a1a2e] mt-1">
+                                {m.value}
+                              </span>
+                              <span className="text-[9px] text-[#9a99b0] font-medium uppercase tracking-wider">
+                                {m.label}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Social Accounts Section */}
+                    <div className="flex flex-col gap-3">
+                      <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
+                        Social Accounts
+                      </h4>
+                      <div className="flex flex-col gap-3">
+                        {socialAccounts && socialAccounts.length > 0 ? (
+                          socialAccounts.map((sa) => (
+                            <div
+                              key={sa.platform}
+                              className="flex items-center gap-3.5 p-3.5 bg-white border border-[#e8e6f0]/60 rounded-2xl"
+                            >
+                              <div
+                                className={cn(
+                                  "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+                                  sa.platform.toLowerCase() === "instagram"
+                                    ? "bg-[#fdf2f6] text-[#d7176f]"
+                                    : sa.platform.toLowerCase() === "youtube"
+                                      ? "bg-[#fef2f2] text-[#dc2626]"
+                                      : "bg-[#f4f3f6] text-[#1a1a2e]",
+                                )}
+                              >
+                                {sa.platform.toLowerCase() === "instagram" ? (
+                                  <FaInstagram size={14} />
+                                ) : sa.platform.toLowerCase() === "youtube" ? (
+                                  <FaYoutube size={14} />
+                                ) : (
+                                  <FaTiktok size={14} />
+                                )}
+                              </div>
+                              <div className="flex flex-col flex-1 min-w-0">
+                                <span className="text-xs font-bold text-[#1a1a2e] capitalize">
+                                  {sa.platform}
+                                </span>
+                                <span className="text-[10px] text-[#9a99b0] truncate">
+                                  {sa.handle}{" "}
+                                  {sa.followersCount
+                                    ? `(${sa.followersCount.toLocaleString()} followers)`
+                                    : ""}
+                                </span>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-3.5 p-3.5 bg-white border border-[#e8e6f0]/60 rounded-2xl">
+                              <div className="w-8 h-8 rounded-full bg-[#fdf2f6] text-[#d7176f] flex items-center justify-center shrink-0">
+                                <FaInstagram size={14} />
+                              </div>
+                              <div className="flex flex-col flex-1 min-w-0">
+                                <span className="text-xs font-bold text-[#1a1a2e]">
+                                  Instagram
+                                </span>
+                                <span className="text-[10px] text-[#9a99b0] truncate">
+                                  {creatorHandle}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-3.5 p-3.5 bg-white border border-[#e8e6f0]/60 rounded-2xl">
+                              <div className="w-8 h-8 rounded-full bg-[#f4f3f6] text-[#1a1a2e] flex items-center justify-center shrink-0">
+                                <FaTiktok size={14} />
+                              </div>
+                              <div className="flex flex-col flex-1 min-w-0">
+                                <span className="text-xs font-bold text-[#1a1a2e]">
+                                  TikTok
+                                </span>
+                                <span className="text-[10px] text-[#9a99b0] truncate">
+                                  {creatorHandle}
+                                </span>
+                              </div>
+                            </div>
+                          </>
                         )}
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    </div>
+                  </>
+                )}
 
-                {/* Metrics Cards Grid Under Overview */}
-                <div className="flex flex-col gap-3">
-                  <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
-                    Metrics
-                  </h4>
-                  <div className="grid grid-cols-5 gap-3">
-                    {metrics.map((m, i) => {
-                      const Icon = m.icon;
-                      return (
-                        <div
-                          key={i}
-                          className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-3.5 flex flex-col items-center text-center gap-1 shadow-xs"
-                        >
-                          <div
-                            className={cn(
-                              "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-                              m.bg,
-                            )}
-                          >
-                            <Icon size={14} />
-                          </div>
-                          <span className="text-sm font-bold text-[#1a1a2e] mt-1">
-                            {m.value}
-                          </span>
-                          <span className="text-[9px] text-[#9a99b0] font-medium uppercase tracking-wider">
-                            {m.label}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                {/* CAMPAIGN HISTORY TAB */}
+                {activeTab === "Campaign History" && (
+                  <div className="flex flex-col gap-4">
+                    <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
+                      Campaign History
+                    </h4>
 
-                {/* Social Accounts Section */}
-                <div className="flex flex-col gap-3">
-                  <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
-                    Social Accounts
-                  </h4>
-                  <div className="flex flex-col gap-3">
-                    {socialAccounts && socialAccounts.length > 0 ? (
-                      socialAccounts.map((sa) => (
-                        <div
-                          key={sa.platform}
-                          className="flex items-center gap-3.5 p-3.5 bg-white border border-[#e8e6f0]/60 rounded-2xl"
-                        >
+                    {isLoadingCampaigns ? (
+                      <div className="flex flex-col gap-3 py-2">
+                        {Array.from({ length: 3 }).map((_, i) => (
                           <div
-                            className={cn(
-                              "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-                              sa.platform.toLowerCase() === "instagram"
-                                ? "bg-[#fdf2f6] text-[#d7176f]"
-                                : sa.platform.toLowerCase() === "youtube"
-                                  ? "bg-[#fef2f2] text-[#dc2626]"
-                                  : "bg-[#f4f3f6] text-[#1a1a2e]",
-                            )}
+                            key={i}
+                            className="h-12 w-full bg-[#faf9fc] rounded-2xl animate-pulse flex items-center px-4 gap-4"
                           >
-                            {sa.platform.toLowerCase() === "instagram" ? (
-                              <FaInstagram size={14} />
-                            ) : sa.platform.toLowerCase() === "youtube" ? (
-                              <FaYoutube size={14} />
-                            ) : (
-                              <FaTiktok size={14} />
-                            )}
+                            <div className="w-24 h-3.5 bg-[#e8e6f0]/60 rounded-md" />
+                            <div className="w-20 h-3.5 bg-[#e8e6f0]/40 rounded-md" />
+                            <div className="w-16 h-4 bg-[#e8e6f0]/60 rounded-md ml-auto" />
                           </div>
-                          <div className="flex flex-col flex-1 min-w-0">
-                            <span className="text-xs font-bold text-[#1a1a2e] capitalize">
-                              {sa.platform}
-                            </span>
-                            <span className="text-[10px] text-[#9a99b0] truncate">
-                              {sa.handle}{" "}
-                              {sa.followersCount
-                                ? `(${sa.followersCount.toLocaleString()} followers)`
-                                : ""}
-                            </span>
-                          </div>
-                        </div>
-                      ))
+                        ))}
+                      </div>
+                    ) : displayCampaigns.length === 0 ? (
+                      <div className="py-12 px-4 flex flex-col items-center justify-center text-center bg-[#faf9fc] rounded-2xl border border-dashed border-[#e8e6f0]">
+                        <CheckCircle
+                          size={32}
+                          className="text-[#9a99b0] mb-2"
+                        />
+                        <h5 className="text-xs font-bold text-[#1a1a2e]">
+                          No Campaign History
+                        </h5>
+                        <p className="text-[11px] text-[#9a99b0] mt-0.5">
+                          This creator has not participated in any campaigns
+                          yet.
+                        </p>
+                      </div>
                     ) : (
-                      <>
-                        <div className="flex items-center gap-3.5 p-3.5 bg-white border border-[#e8e6f0]/60 rounded-2xl">
-                          <div className="w-8 h-8 rounded-full bg-[#fdf2f6] text-[#d7176f] flex items-center justify-center shrink-0">
-                            <FaInstagram size={14} />
-                          </div>
-                          <div className="flex flex-col flex-1 min-w-0">
-                            <span className="text-xs font-bold text-[#1a1a2e]">
-                              Instagram
-                            </span>
-                            <span className="text-[10px] text-[#9a99b0] truncate">
-                              {creatorHandle}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3.5 p-3.5 bg-white border border-[#e8e6f0]/60 rounded-2xl">
-                          <div className="w-8 h-8 rounded-full bg-[#f4f3f6] text-[#1a1a2e] flex items-center justify-center shrink-0">
-                            <FaTiktok size={14} />
-                          </div>
-                          <div className="flex flex-col flex-1 min-w-0">
-                            <span className="text-xs font-bold text-[#1a1a2e]">
-                              TikTok
-                            </span>
-                            <span className="text-[10px] text-[#9a99b0] truncate">
-                              {creatorHandle}
-                            </span>
-                          </div>
-                        </div>
-                      </>
+                      <div className="overflow-x-auto border border-[#e8e6f0]/60 rounded-2xl">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="border-b border-[#e8e6f0]/60 bg-[#faf9fc]">
+                              {[
+                                "Campaign",
+                                "Brand",
+                                "Status",
+                                "Fee",
+                                "Submitted",
+                              ].map((h) => (
+                                <th
+                                  key={h}
+                                  className="px-4 py-3 text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider whitespace-nowrap"
+                                >
+                                  {h}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {displayCampaigns.map((c, i) => (
+                              <tr
+                                key={c.id || i}
+                                className="border-b border-[#e8e6f0]/40 last:border-0 hover:bg-[#faf9fc] transition-colors"
+                              >
+                                <td className="px-4 py-3 font-semibold text-[#1a1a2e]">
+                                  {c.name}
+                                </td>
+                                <td className="px-4 py-3 text-[#5a5a7a]">
+                                  {c.brand}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <StatusChip status={c.status} />
+                                </td>
+                                <td className="px-4 py-3 text-[#5a5a7a] font-semibold">
+                                  {c.fee}
+                                </td>
+                                <td className="px-4 py-3 text-[#9a99b0] whitespace-nowrap">
+                                  {c.date}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     )}
                   </div>
-                </div>
-              </>
-            )}
-
-            {/* CAMPAIGN HISTORY TAB */}
-            {activeTab === "Campaign History" && (
-              <div className="flex flex-col gap-4">
-                <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
-                  Campaign History
-                </h4>
-
-                {isLoadingCampaigns ? (
-                  <div className="flex flex-col gap-3 py-2">
-                    {Array.from({ length: 3 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className="h-12 w-full bg-[#faf9fc] rounded-2xl animate-pulse flex items-center px-4 gap-4"
-                      >
-                        <div className="w-24 h-3.5 bg-[#e8e6f0]/60 rounded-md" />
-                        <div className="w-20 h-3.5 bg-[#e8e6f0]/40 rounded-md" />
-                        <div className="w-16 h-4 bg-[#e8e6f0]/60 rounded-md ml-auto" />
-                      </div>
-                    ))}
-                  </div>
-                ) : displayCampaigns.length === 0 ? (
-                  <div className="py-12 px-4 flex flex-col items-center justify-center text-center bg-[#faf9fc] rounded-2xl border border-dashed border-[#e8e6f0]">
-                    <CheckCircle size={32} className="text-[#9a99b0] mb-2" />
-                    <h5 className="text-xs font-bold text-[#1a1a2e]">
-                      No Campaign History
-                    </h5>
-                    <p className="text-[11px] text-[#9a99b0] mt-0.5">
-                      This creator has not participated in any campaigns yet.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto border border-[#e8e6f0]/60 rounded-2xl">
-                    <table className="w-full text-left border-collapse text-xs">
-                      <thead>
-                        <tr className="border-b border-[#e8e6f0]/60 bg-[#faf9fc]">
-                          {[
-                            "Campaign",
-                            "Brand",
-                            "Status",
-                            "Fee",
-                            "Submitted",
-                          ].map((h) => (
-                            <th
-                              key={h}
-                              className="px-4 py-3 text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider whitespace-nowrap"
-                            >
-                              {h}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {displayCampaigns.map((c, i) => (
-                          <tr
-                            key={c.id || i}
-                            className="border-b border-[#e8e6f0]/40 last:border-0 hover:bg-[#faf9fc] transition-colors"
-                          >
-                            <td className="px-4 py-3 font-semibold text-[#1a1a2e]">
-                              {c.name}
-                            </td>
-                            <td className="px-4 py-3 text-[#5a5a7a]">
-                              {c.brand}
-                            </td>
-                            <td className="px-4 py-3">
-                              <StatusChip status={c.status} />
-                            </td>
-                            <td className="px-4 py-3 text-[#5a5a7a] font-semibold">
-                              {c.fee}
-                            </td>
-                            <td className="px-4 py-3 text-[#9a99b0] whitespace-nowrap">
-                              {c.date}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
                 )}
-              </div>
-            )}
 
-            {/* REVIEWS TAB */}
-            {activeTab === "Review" && (
-              <div className="flex flex-col gap-5">
-                <div className="flex items-center gap-4 bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-2xl p-5">
-                  <span className="text-4xl font-black text-[#1a1a2e]">
-                    {avgRating}
-                  </span>
-                  <div className="flex flex-col gap-1">
-                    <Stars rating={Number(avgRating)} />
-                    <span className="text-[11px] text-[#9a99b0] font-medium">
-                      {displayReviews.length} reviews
-                    </span>
-                  </div>
-                </div>
-
-                {isLoadingReviews ? (
-                  <div className="flex flex-col gap-3">
-                    {Array.from({ length: 2 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 flex flex-col gap-3 animate-pulse"
-                      >
-                        <div className="flex justify-between items-center">
-                          <div className="w-28 h-4 bg-[#e8e6f0]/60 rounded-md" />
-                          <div className="w-16 h-3 bg-[#e8e6f0]/40 rounded-md" />
-                        </div>
-                        <div className="w-20 h-3 bg-[#e8e6f0]/40 rounded-md" />
-                        <div className="w-full h-10 bg-[#e8e6f0]/30 rounded-xl" />
+                {/* REVIEWS TAB */}
+                {activeTab === "Review" && (
+                  <div className="flex flex-col gap-5">
+                    <div className="flex items-center gap-4 bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-2xl p-5">
+                      <span className="text-4xl font-black text-[#1a1a2e]">
+                        {avgRating}
+                      </span>
+                      <div className="flex flex-col gap-1">
+                        <Stars rating={Number(avgRating)} />
+                        <span className="text-[11px] text-[#9a99b0] font-medium">
+                          {displayReviews.length} reviews
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                ) : displayReviews.length === 0 ? (
-                  <div className="py-12 px-4 flex flex-col items-center justify-center text-center bg-[#faf9fc] rounded-2xl border border-dashed border-[#e8e6f0]">
-                    <Star size={32} className="text-[#9a99b0] mb-2" />
-                    <h5 className="text-xs font-bold text-[#1a1a2e]">
-                      No Brand Reviews Yet
-                    </h5>
-                    <p className="text-[11px] text-[#9a99b0] mt-0.5">
-                      No brand reviews or ratings have been submitted for this
-                      creator.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    {displayReviews.map((r, i) => (
-                      <div
-                        key={r.id || i}
-                        className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 flex flex-col gap-2 shadow-xs"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-[#1a1a2e]">
-                            {r.brand}
-                          </span>
-                          <span className="text-[10px] text-[#9a99b0]">
-                            {r.date}
-                          </span>
-                        </div>
-                        <Stars rating={r.rating} />
-                        <p className="text-xs text-[#5a5a7a] leading-relaxed">
-                          {r.text}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* NOTES TAB */}
-            {activeTab === "Note" && (
-              <div className="flex flex-col gap-5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h4 className="text-sm font-bold text-[#1a1a2e]">
-                      Internal Notes
-                    </h4>
-                    <p className="text-[11px] text-[#9a99b0] mt-0.5">
-                      Not visible to creator
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setEditingNoteId(null);
-                      setNoteModalTitle("Add note");
-                      setNoteInitialValue("");
-                      setIsNoteModalOpen(true);
-                    }}
-                    className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-brand-pink text-white text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer"
-                  >
-                    <Plus size={13} /> Add Note
-                  </button>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  {notesData.length === 0 ? (
-                    <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-2xl p-6 text-center text-xs text-[#9a99b0] font-medium">
-                      No internal notes recorded yet for this creator.
                     </div>
-                  ) : (
-                    notesData.map((n) => (
-                      <div
-                        key={n.id}
-                        className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 flex flex-col gap-2 shadow-xs"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="text-xs font-bold text-[#1a1a2e]">
-                              {n.createdBy?.name || "Admin"}
-                            </span>
-                            <span className="text-[10px] text-[#9a99b0] ml-2">
-                              {formatDateOnly(n.createdAt)}
-                            </span>
+
+                    {isLoadingReviews ? (
+                      <div className="flex flex-col gap-3">
+                        {Array.from({ length: 2 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 flex flex-col gap-3 animate-pulse"
+                          >
+                            <div className="flex justify-between items-center">
+                              <div className="w-28 h-4 bg-[#e8e6f0]/60 rounded-md" />
+                              <div className="w-16 h-3 bg-[#e8e6f0]/40 rounded-md" />
+                            </div>
+                            <div className="w-20 h-3 bg-[#e8e6f0]/40 rounded-md" />
+                            <div className="w-full h-10 bg-[#e8e6f0]/30 rounded-xl" />
                           </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => {
-                                setEditingNoteId(n.id);
-                                setNoteModalTitle("Edit note");
-                                setNoteInitialValue(n.note);
-                                setIsNoteModalOpen(true);
-                              }}
-                              className="p-1 rounded-lg hover:bg-[#f4f3f6] text-[#9a99b0] hover:text-[#5a5a7a] transition-colors cursor-pointer"
-                            >
-                              <Pencil size={12} />
-                            </button>
-                            <button
-                              onClick={() =>
-                                deleteNoteMutation.mutate({
-                                  id: creatorId,
-                                  noteId: n.id,
-                                })
-                              }
-                              className="p-1 rounded-lg hover:bg-[#fef2f2] text-[#9a99b0] hover:text-[#dc2626] transition-colors cursor-pointer"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        </div>
-                        <p className="text-xs text-[#5a5a7a] leading-relaxed">
-                          {n.note}
+                        ))}
+                      </div>
+                    ) : displayReviews.length === 0 ? (
+                      <div className="py-12 px-4 flex flex-col items-center justify-center text-center bg-[#faf9fc] rounded-2xl border border-dashed border-[#e8e6f0]">
+                        <Star size={32} className="text-[#9a99b0] mb-2" />
+                        <h5 className="text-xs font-bold text-[#1a1a2e]">
+                          No Brand Reviews Yet
+                        </h5>
+                        <p className="text-[11px] text-[#9a99b0] mt-0.5">
+                          No brand reviews or ratings have been submitted for
+                          this creator.
                         </p>
                       </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
+                    ) : (
+                      <div className="flex flex-col gap-3">
+                        {displayReviews.map((r, i) => (
+                          <div
+                            key={r.id || i}
+                            className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 flex flex-col gap-2 shadow-xs"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-[#1a1a2e]">
+                                {r.brand}
+                              </span>
+                              <span className="text-[10px] text-[#9a99b0]">
+                                {r.date}
+                              </span>
+                            </div>
+                            <Stars rating={r.rating} />
+                            <p className="text-xs text-[#5a5a7a] leading-relaxed">
+                              {r.text}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
-            {/* ACTION TAB */}
-            {activeTab === "Action" && (
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#fffbeb] border border-[#fde68a] text-[#92400e] text-xs font-semibold">
-                  <AlertTriangle
-                    size={14}
-                    className="shrink-0 text-[#f59e0b]"
-                  />
-                  Actions require confirmation and are recorded in the audit
-                  trail.
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  {ACTIONS.map((a) => {
-                    const Icon = a.icon;
-                    return (
+                {/* NOTES TAB */}
+                {activeTab === "Note" && (
+                  <div className="flex flex-col gap-5">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="text-sm font-bold text-[#1a1a2e]">
+                          Internal Notes
+                        </h4>
+                        <p className="text-[11px] text-[#9a99b0] mt-0.5">
+                          Not visible to creator
+                        </p>
+                      </div>
                       <button
-                        key={a.actionType}
-                        onClick={() => setActiveAction(a.actionType)}
-                        className={cn(
-                          "w-full text-left p-4 rounded-2xl border flex items-start gap-3.5 transition-all cursor-pointer hover:shadow-xs",
-                          a.bg,
-                          a.border,
-                        )}
+                        onClick={() => {
+                          setEditingNoteId(null);
+                          setNoteModalTitle("Add note");
+                          setNoteInitialValue("");
+                          setIsNoteModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-brand-pink text-white text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer"
                       >
-                        <div
-                          className={cn(
-                            "w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5",
-                            a.iconBg,
-                            a.color,
-                          )}
-                        >
-                          <Icon size={16} />
+                        <Plus size={13} /> Add Note
+                      </button>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                      {notesData.length === 0 ? (
+                        <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-2xl p-6 text-center text-xs text-[#9a99b0] font-medium">
+                          No internal notes recorded yet for this creator.
                         </div>
-                        <div className="flex flex-col gap-0.5">
-                          <span
+                      ) : (
+                        notesData.map((n) => (
+                          <div
+                            key={n.id}
+                            className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 flex flex-col gap-2 shadow-xs"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="text-xs font-bold text-[#1a1a2e]">
+                                  {n.createdBy?.name || "Admin"}
+                                </span>
+                                <span className="text-[10px] text-[#9a99b0] ml-2">
+                                  {formatDateOnly(n.createdAt)}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => {
+                                    setEditingNoteId(n.id);
+                                    setNoteModalTitle("Edit note");
+                                    setNoteInitialValue(n.note);
+                                    setIsNoteModalOpen(true);
+                                  }}
+                                  className="p-1 rounded-lg hover:bg-[#f4f3f6] text-[#9a99b0] hover:text-[#5a5a7a] transition-colors cursor-pointer"
+                                >
+                                  <Pencil size={12} />
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    deleteNoteMutation.mutate({
+                                      id: creatorId,
+                                      noteId: n.id,
+                                    })
+                                  }
+                                  className="p-1 rounded-lg hover:bg-[#fef2f2] text-[#9a99b0] hover:text-[#dc2626] transition-colors cursor-pointer"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            </div>
+                            <p className="text-xs text-[#5a5a7a] leading-relaxed">
+                              {n.note}
+                            </p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ACTION TAB */}
+                {activeTab === "Action" && (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#fffbeb] border border-[#fde68a] text-[#92400e] text-xs font-semibold">
+                      <AlertTriangle
+                        size={14}
+                        className="shrink-0 text-[#f59e0b]"
+                      />
+                      Actions require confirmation and are recorded in the audit
+                      trail.
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                      {ACTIONS.map((a) => {
+                        const Icon = a.icon;
+                        return (
+                          <button
+                            key={a.actionType}
+                            onClick={() => setActiveAction(a.actionType)}
                             className={cn(
-                              "text-sm font-bold",
-                              a.destructive
-                                ? "text-[#dc2626]"
-                                : "text-[#1a1a2e]",
+                              "w-full text-left p-4 rounded-2xl border flex items-start gap-3.5 transition-all cursor-pointer hover:shadow-xs",
+                              a.bg,
+                              a.border,
                             )}
                           >
-                            {a.label}
-                          </span>
-                          <span className="text-[11px] text-[#9a99b0] leading-relaxed">
-                            {a.desc}
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                            <div
+                              className={cn(
+                                "w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5",
+                                a.iconBg,
+                                a.color,
+                              )}
+                            >
+                              <Icon size={16} />
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                              <span
+                                className={cn(
+                                  "text-sm font-bold",
+                                  a.destructive
+                                    ? "text-[#dc2626]"
+                                    : "text-[#1a1a2e]",
+                                )}
+                              >
+                                {a.label}
+                              </span>
+                              <span className="text-[11px] text-[#9a99b0] leading-relaxed">
+                                {a.desc}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+
+              {/* Action confirmation Modal */}
+              <CreatorActionModal
+                action={activeAction}
+                onClose={() => setActiveAction(null)}
+                onConfirm={() => {
+                  if (activeAction === "changeTier") {
+                    setSuccessModalTitle("Creator tier changed successfully");
+                    setSuccessModalMessage(
+                      "You have successfully changed the creator tier to another tier",
+                    );
+                  } else if (activeAction === "suspend") {
+                    setSuccessModalTitle("Account Suspended");
+                    setSuccessModalMessage(
+                      "You have successfully suspended this creator account",
+                    );
+                  } else if (activeAction === "delete") {
+                    setSuccessModalTitle("Account Deleted");
+                    setSuccessModalMessage(
+                      "You have successfully deleted this creator account",
+                    );
+                  } else {
+                    setSuccessModalTitle("Action Successful");
+                    setSuccessModalMessage(
+                      "The requested action completed successfully",
+                    );
+                  }
+                  setIsSuccessModalOpen(true);
+                  setActiveAction(null);
+                }}
+              />
+
+              {/* Note Modal (Add/Edit) */}
+              {isNoteModalOpen && (
+                <NoteModal
+                  isOpen={isNoteModalOpen}
+                  onClose={() => {
+                    setIsNoteModalOpen(false);
+                    setEditingNoteId(null);
+                  }}
+                  initialValue={noteInitialValue}
+                  title={noteModalTitle}
+                  onSave={(value) => {
+                    if (editingNoteId) {
+                      updateNoteMutation.mutate({
+                        id: creatorId,
+                        noteId: editingNoteId,
+                        note: value,
+                      });
+                    } else {
+                      addNoteMutation.mutate({
+                        id: creatorId,
+                        note: value,
+                      });
+                    }
+                    setIsNoteModalOpen(false);
+                    setEditingNoteId(null);
+                  }}
+                />
+              )}
+
+              {/* Success Modal */}
+              {isSuccessModalOpen && (
+                <SuccessModal
+                  isOpen={isSuccessModalOpen}
+                  onClose={() => setIsSuccessModalOpen(false)}
+                  title={successModalTitle}
+                  message={successModalMessage}
+                />
+              )}
+            </>
+          )}
         </div>
-
-        {/* Action confirmation Modal */}
-        <CreatorActionModal
-          action={activeAction}
-          onClose={() => setActiveAction(null)}
-          onConfirm={() => {
-            if (activeAction === "changeTier") {
-              setSuccessModalTitle("Creator tier changed successfully");
-              setSuccessModalMessage(
-                "You have successfully changed the creator tier to another tier",
-              );
-            } else if (activeAction === "suspend") {
-              setSuccessModalTitle("Account Suspended");
-              setSuccessModalMessage(
-                "You have successfully suspended this creator account",
-              );
-            } else if (activeAction === "delete") {
-              setSuccessModalTitle("Account Deleted");
-              setSuccessModalMessage(
-                "You have successfully deleted this creator account",
-              );
-            } else {
-              setSuccessModalTitle("Action Successful");
-              setSuccessModalMessage(
-                "The requested action completed successfully",
-              );
-            }
-            setIsSuccessModalOpen(true);
-            setActiveAction(null);
-          }}
-        />
-
-        {/* Note Modal (Add/Edit) */}
-        {isNoteModalOpen && (
-          <NoteModal
-            isOpen={isNoteModalOpen}
-            onClose={() => {
-              setIsNoteModalOpen(false);
-              setEditingNoteId(null);
-            }}
-            initialValue={noteInitialValue}
-            title={noteModalTitle}
-            onSave={(value) => {
-              if (editingNoteId) {
-                updateNoteMutation.mutate({
-                  id: creatorId,
-                  noteId: editingNoteId,
-                  note: value,
-                });
-              } else {
-                addNoteMutation.mutate({
-                  id: creatorId,
-                  note: value,
-                });
-              }
-              setIsNoteModalOpen(false);
-              setEditingNoteId(null);
-            }}
-          />
-        )}
-
-        {/* Success Modal */}
-        {isSuccessModalOpen && (
-          <SuccessModal
-            isOpen={isSuccessModalOpen}
-            onClose={() => setIsSuccessModalOpen(false)}
-            title={successModalTitle}
-            message={successModalMessage}
-          />
-        )}
       </div>
     </Portal>
   );
