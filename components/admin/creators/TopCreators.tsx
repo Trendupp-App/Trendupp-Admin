@@ -17,15 +17,19 @@ export default function TopCreators() {
   const creators = topCreatorsList?.length
     ? topCreatorsList.map((c, idx) => ({
         rank: idx + 1,
-        name: c.name,
+        name: c.name || "Creator",
         tier: c.tier || "Micro",
-        handle: c.handle.startsWith("@") ? c.handle : `@${c.handle}`,
+        handle: c.handle
+          ? c.handle.startsWith("@")
+            ? c.handle
+            : `@${c.handle}`
+          : "@creator",
         earnings:
-          c.totalEarnings >= 1000000
-            ? `₦${(c.totalEarnings / 1000000).toFixed(1)}M`
-            : `₦${(c.totalEarnings / 1000).toFixed(0)}K`,
-        campaigns: c.completedCampaigns,
-        initials: c.name
+          (c.totalEarnings ?? 0) >= 1000000
+            ? `₦${((c.totalEarnings ?? 0) / 1000000).toFixed(1)}M`
+            : `₦${((c.totalEarnings ?? 0) / 1000).toFixed(0)}K`,
+        campaigns: c.completedCampaigns ?? 0,
+        initials: (c.name || "Creator")
           .split(" ")
           .map((n) => n[0])
           .join("")

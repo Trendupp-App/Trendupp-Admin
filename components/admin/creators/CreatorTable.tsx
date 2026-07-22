@@ -184,19 +184,23 @@ export default function CreatorTable() {
 
   const apiCreators = paginatedResponse?.data;
   const listItems: CreatorItem[] = apiCreators?.length
-    ? apiCreators.map((c) => ({
-        id: c.id,
-        creatorId: `CRT-${c.id.slice(0, 4).toUpperCase()}`,
-        name: c.name,
-        handle: c.handle.startsWith("@") ? c.handle : `@${c.handle}`,
-        email: c.email,
+    ? apiCreators.map((c, idx) => ({
+        id: c.id || `creator-${idx}`,
+        creatorId: `CRT-${(c.id || "0000").slice(0, 4).toUpperCase()}`,
+        name: c.name || "Creator",
+        handle: c.handle
+          ? c.handle.startsWith("@")
+            ? c.handle
+            : `@${c.handle}`
+          : "@creator",
+        email: c.email || "—",
         country: "Nigeria",
         tier: (c.tier as "Mega" | "Macro" | "Micro" | "Nano") || "Micro",
         niche: c.niche || "General",
         gender: "Female",
         platforms: ["IG", "TikTok"],
         completion: 100,
-        totalEarnings: c.totalEarnings,
+        totalEarnings: c.totalEarnings ?? 0,
         revisionCount: 0,
         status:
           c.status === "active"
