@@ -35,7 +35,7 @@ export default function EditStaffModal({
   currentRole,
   onSuccess,
 }: EditStaffModalProps) {
-  const [selectedRole, setSelectedRole] = useState("Customer Support");
+  const [selectedRole, setSelectedRole] = useState("Support Agent");
 
   useEffect(() => {
     if (isOpen) {
