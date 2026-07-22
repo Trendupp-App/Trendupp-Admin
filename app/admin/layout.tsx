@@ -24,7 +24,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/reports": "Analytics",
   "/admin/reports/audit": "Audit Logs",
   "/admin/notifications": "Notifications",
-  "/admin/team": "Team Management",
+  "/admin/team": "Team & Access",
   "/admin/settings": "Settings",
 };
 

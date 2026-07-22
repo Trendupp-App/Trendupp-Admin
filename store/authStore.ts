@@ -1,9 +1,8 @@
 import { OnboardingStepsCompleted } from "@/types/Onboarding";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-
-export type UserRole = "creator" | "brand" | "super_admin";
-
+export type UserRole =
+  "super_admin" | "owner" | "finance_admin" | "moderator" | "support_agent";
 export interface AuthUser {
   id: string;
   email: string;

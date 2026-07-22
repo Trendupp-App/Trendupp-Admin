@@ -21,7 +21,8 @@ function formatValidationErrorMessage(message: unknown): string {
   if (!message) return "";
 
   if (Array.isArray(message)) {
-    return message.map((msg) => formatSingleMessage(String(msg))).join(". ");
+    if (message.length === 0) return "";
+    return formatSingleMessage(String(message[0]));
   }
 
   if (typeof message === "string") {
@@ -47,7 +48,7 @@ function formatSingleMessage(msg: string): string {
 apiClient.interceptors.response.use(
   (res) => res,
   (error) => {
-    const isAuthEndpoint = error.config?.url?.startsWith("/auth/");
+    const isAuthEndpoint = error.config?.url?.includes("/auth/");
     if (
       error.response?.status === 401 &&
       !isAuthEndpoint &&
@@ -58,6 +59,9 @@ apiClient.interceptors.response.use(
     }
 
     if (error.response?.data?.message) {
+      if (Array.isArray(error.response.data.message)) {
+        error.response.data.originalMessages = error.response.data.message;
+      }
       error.response.data.message = formatValidationErrorMessage(
         error.response.data.message,
       );

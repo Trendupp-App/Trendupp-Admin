@@ -3,8 +3,6 @@ import { toast } from "sonner";
 import { AxiosError } from "axios";
 import {
   profileApi,
-  UpdateProfileSocialsPayload,
-  UpdateProfilePayoutPayload,
   NotificationSettings,
   SecuritySettings,
   ChangePasswordPayload,
@@ -48,82 +46,6 @@ export function useUpdatePersonalInfo() {
     },
     onError: (err: AxiosError<{ message?: string }>) => {
       toast.error(err?.response?.data?.message ?? "Could not update profile");
-    },
-  });
-}
-
-export function useUpdateProfileNiches() {
-  const updateUser = useAuthStore((s) => s.updateUser);
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (payload: { nicheIds: string[] }) =>
-      profileApi.updateNiches(payload),
-    onSuccess: ({ data }) => {
-      const u = data?.user || data;
-      // Sync global auth store
-      updateUser({
-        niches: u?.niches,
-      });
-      // Invalidate queries to refresh view
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-      toast.success(data?.message ?? "Niches updated successfully");
-    },
-    onError: (err: AxiosError<{ message?: string }>) => {
-      toast.error(err?.response?.data?.message ?? "Could not update niches");
-    },
-  });
-}
-
-export function useUpdateProfileSocials() {
-  const updateUser = useAuthStore((s) => s.updateUser);
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (payload: UpdateProfileSocialsPayload) =>
-      profileApi.updateSocials(payload),
-    onSuccess: ({ data }) => {
-      const u = data?.user || data;
-      // Sync global auth store
-      updateUser({
-        socialsConnected: u?.socialsConnected,
-        assignedTier: u?.assignedTier,
-      });
-      // Invalidate queries to refresh view
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-      toast.success(data?.message ?? "Social accounts updated successfully");
-    },
-    onError: (err: AxiosError<{ message?: string }>) => {
-      toast.error(
-        err?.response?.data?.message ?? "Could not update social connections",
-      );
-    },
-  });
-}
-
-export function useUpdateProfilePayout() {
-  const updateUser = useAuthStore((s) => s.updateUser);
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (payload: UpdateProfilePayoutPayload) =>
-      profileApi.updatePayout(payload),
-    onSuccess: ({ data }) => {
-      const u = data?.user || data;
-      // Sync global auth store
-      updateUser({
-        bankName: u?.bankName,
-        bankAccountNumber: u?.bankAccountNumber,
-        bankAccountName: u?.bankAccountName,
-      });
-      // Invalidate queries to refresh view
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-      toast.success(data?.message ?? "Payout details saved successfully");
-    },
-    onError: (err: AxiosError<{ message?: string }>) => {
-      toast.error(
-        err?.response?.data?.message ?? "Could not save payout details",
-      );
     },
   });
 }
@@ -268,12 +190,5 @@ export function useBrandProfile(id: string | null) {
     queryFn: () => usersApi.getExploreBrandProfile(id!).then((r) => r.data),
     enabled: !!id,
     staleTime: 1000 * 60,
-  });
-}
-export function useTopPerformers() {
-  return useQuery({
-    queryKey: ["top-performers"],
-    queryFn: () => usersApi.getTopPerformers().then((r) => r.data),
-    staleTime: 1000 * 60 * 5,
   });
 }

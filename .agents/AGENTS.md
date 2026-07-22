@@ -16,6 +16,8 @@ These rules must be followed without exception by all AI coding assistants pair 
   - Once the feature is complete and verified, **checkout `feature/admin-dashboard` and merge the sub-task branch into it**.
   - Perform final verification checks on `feature/admin-dashboard` and push it to the remote repository.
 
+  - Always raise a PR once a new feature has been worked on and verified
+
 ---
 
 ## 2. Commit Quality & Pre-Commit Pipelines

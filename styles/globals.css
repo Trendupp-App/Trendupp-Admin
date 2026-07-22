@@ -224,3 +224,9 @@ nextjs-portal,
 [data-nextjs-toast-outer] {
   display: none !important;
 }
+
+/* Invite activation progress bar animation */
+@keyframes progress {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
