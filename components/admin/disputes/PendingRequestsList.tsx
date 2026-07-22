@@ -32,7 +32,7 @@ export default function PendingRequestsList({
       {disputes.map((dispute, index) => {
         const brand = getBrandName(dispute.campaignId);
         const creator = getCreatorName(dispute.creatorId);
-        const reqCode = `REQ-${0o12 + index}`;
+        const reqCode = `REQ-${String(12 + index).padStart(3, "0")}`;
 
         return (
           <div
