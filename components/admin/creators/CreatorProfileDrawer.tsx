@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   X,
   ArrowLeft,
@@ -19,7 +19,7 @@ import {
   ShieldCheck,
   Layers,
 } from "lucide-react";
-import { FaTiktok, FaInstagram } from "react-icons/fa";
+import { FaTiktok, FaInstagram, FaYoutube } from "react-icons/fa";
 import { cn } from "@/lib/utils";
 import UserAvatar from "@/shared/UserAvatar";
 import { AdminStatusBadge } from "../AdminStatusBadge";
@@ -27,6 +27,15 @@ import CreatorActionModal from "./CreatorActionModal";
 import NoteModal from "./NoteModal";
 import SuccessModal from "./SuccessModal";
 import { Portal } from "@/components/ui/portal";
+import {
+  useCreatorDetails,
+  useCreatorCampaignHistory,
+  useCreatorReviews,
+  useCreatorNotes,
+  useAddCreatorNote,
+  useUpdateCreatorNote,
+  useDeleteCreatorNote,
+} from "@/hooks/useAdminCreators";
 
 interface CreatorProfileDrawerProps {
   isOpen: boolean;
@@ -35,72 +44,6 @@ interface CreatorProfileDrawerProps {
 }
 
 type TabType = "Overview" | "Campaign History" | "Review" | "Note" | "Action";
-
-/* ── mock data ─────────────────────────────────────── */
-const CAMPAIGNS = [
-  {
-    name: "Summer Glow",
-    brand: "GlowBrand",
-    status: "Completed",
-    fee: "₦150K",
-    date: "Jan 20, 2026",
-  },
-  {
-    name: "Summer Glow",
-    brand: "GlowBrand",
-    status: "Completed",
-    fee: "₦150K",
-    date: "Jan 20, 2026",
-  },
-  {
-    name: "Summer Glow",
-    brand: "GlowBrand",
-    status: "Active",
-    fee: "₦150K",
-    date: "Jan 20, 2026",
-  },
-  {
-    name: "Summer Glow",
-    brand: "GlowBrand",
-    status: "Applied",
-    fee: "₦150K",
-    date: "Jan 20, 2026",
-  },
-];
-
-const REVIEWS = [
-  {
-    brand: "GlowBrand",
-    date: "Feb 15, 2026",
-    rating: 5,
-    text: "Exceptional content quality and professional communication.",
-  },
-  {
-    brand: "FashionNG",
-    date: "Mar 1, 2026",
-    rating: 5,
-    text: "Delivered beyond expectations. Will work again.",
-  },
-  {
-    brand: "StyleHouse",
-    date: "Mar 20, 2026",
-    rating: 4,
-    text: "Great creator, very responsive and creative.",
-  },
-];
-
-const NOTES = [
-  {
-    author: "Admin Jane",
-    date: "Feb 1, 2026",
-    text: "Flagged as top performer. Recommend for premium campaigns.",
-  },
-  {
-    author: "Admin Mike",
-    date: "Mar 15, 2026",
-    text: "Verified bank details manually. All good.",
-  },
-];
 
 const ACTIONS = [
   {
@@ -126,17 +69,27 @@ const ACTIONS = [
   {
     label: "Reactivate Account",
     actionType: "reactivate" as const,
-    desc: "Restore creator access, if currently suspended.",
+    desc: "Restore full account privileges for this creator.",
     icon: ShieldCheck,
     color: "text-[#16a34a]",
-    border: "border-[#e8e6f0]",
-    bg: "bg-white",
-    iconBg: "bg-[#f0fdf4]",
+    border: "border-[#bbf7d0]",
+    bg: "bg-[#f0fdf4]",
+    iconBg: "bg-[#dcfce7]",
   },
   {
-    label: "Delete Account",
+    label: "Change Creator Tier",
+    actionType: "changeTier" as const,
+    desc: "Manually adjust creator tier level (Nano, Micro, Macro, Mega).",
+    icon: Layers,
+    color: "text-[#2f63eb]",
+    border: "border-[#dbeafe]",
+    bg: "bg-[#eff6ff]",
+    iconBg: "bg-[#dbeafe]",
+  },
+  {
+    label: "Delete Creator Account",
     actionType: "delete" as const,
-    desc: "Permanently remove creator account. This cannot be undone.",
+    desc: "Permanently delete account and all associated creator data.",
     icon: Trash2,
     color: "text-[#dc2626]",
     border: "border-[#fecaca]",
@@ -144,30 +97,23 @@ const ACTIONS = [
     iconBg: "bg-[#fee2e2]",
     destructive: true,
   },
-  {
-    label: "Change Creator Tier",
-    actionType: "changeTier" as const,
-    desc: "Manually update the creator's tier classification.",
-    icon: Layers,
-    color: "text-[#2f63eb]",
-    border: "border-[#e8e6f0]",
-    bg: "bg-white",
-    iconBg: "bg-[#edf2fe]",
-  },
 ];
 
-/* ── helpers ────────────────────────────────────────── */
 function StatusChip({ status }: { status: string }) {
   const map: Record<string, string> = {
+    COMPLETED: "bg-[#f0fdf4] text-[#16a34a]",
     Completed: "bg-[#f0fdf4] text-[#16a34a]",
+    ACTIVE: "bg-[#eff6ff] text-[#2563eb]",
     Active: "bg-[#eff6ff] text-[#2563eb]",
+    APPLIED: "bg-[#fdf4ff] text-[#9333ea]",
     Applied: "bg-[#fdf4ff] text-[#9333ea]",
+    PENDING: "bg-[#fff7ed] text-[#ea580c]",
     Pending: "bg-[#fff7ed] text-[#ea580c]",
   };
   return (
     <span
       className={cn(
-        "px-2.5 py-0.5 rounded-md text-[10px] font-bold",
+        "px-2.5 py-0.5 rounded-md text-[10px] font-bold capitalize",
         map[status] ?? "bg-[#f4f3f6] text-[#7a7a9a]",
       )}
     >
@@ -184,7 +130,9 @@ function Stars({ rating, max = 5 }: { rating: number; max?: number }) {
           key={i}
           size={13}
           className={
-            i < rating ? "text-[#f59e0b] fill-[#f59e0b]" : "text-[#e5e7eb]"
+            i < Math.round(rating)
+              ? "text-[#f59e0b] fill-[#f59e0b]"
+              : "text-[#e5e7eb]"
           }
         />
       ))}
@@ -192,7 +140,30 @@ function Stars({ rating, max = 5 }: { rating: number; max?: number }) {
   );
 }
 
-/* ── main component ─────────────────────────────────── */
+function formatDateOnly(dateStr?: string | null): string {
+  if (!dateStr) return "—";
+  const cleanDate = dateStr.split("T")[0];
+  const parsed = new Date(cleanDate.includes("-") ? cleanDate : dateStr);
+  if (isNaN(parsed.getTime())) return cleanDate || "—";
+  return parsed.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatFollowerCount(count?: number | null): string {
+  if (count !== undefined && count !== null) {
+    const num = Number(count);
+    if (!isNaN(num) && num > 0) {
+      if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+      if (num >= 1_000) return `${(num / 1_000).toFixed(0)}K`;
+      return num.toLocaleString();
+    }
+  }
+  return "0";
+}
+
 export default function CreatorProfileDrawer({
   isOpen,
   onClose,
@@ -212,11 +183,26 @@ export default function CreatorProfileDrawer({
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [noteModalTitle, setNoteModalTitle] = useState("Add note");
   const [noteInitialValue, setNoteInitialValue] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 
   /* Success Modal states */
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [successModalTitle, setSuccessModalTitle] = useState("");
   const [successModalMessage, setSuccessModalMessage] = useState("");
+
+  /* API Hooks */
+  const { data: creatorProfile } = useCreatorDetails(creatorId, isOpen);
+  const { data: campaignHistoryData, isLoading: isLoadingCampaigns } =
+    useCreatorCampaignHistory(creatorId, 1, 10, isOpen);
+  const { data: reviewsData, isLoading: isLoadingReviews } = useCreatorReviews(
+    creatorId,
+    isOpen,
+  );
+  const { data: notesData = [] } = useCreatorNotes(creatorId, isOpen);
+
+  const addNoteMutation = useAddCreatorNote();
+  const updateNoteMutation = useUpdateCreatorNote();
+  const deleteNoteMutation = useDeleteCreatorNote();
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
@@ -225,44 +211,201 @@ export default function CreatorProfileDrawer({
     };
   }, [isOpen]);
 
-  if (!isOpen || !creatorId) return null;
+  const profileDetails = creatorProfile?.profileDetails;
+  const metricsData = creatorProfile?.metrics;
+  const socialAccounts = creatorProfile?.socialAccounts;
 
-  const avgRating = (
-    REVIEWS.reduce((s, r) => s + r.rating, 0) / REVIEWS.length
-  ).toFixed(1);
+  // Header displays
+  const creatorName = profileDetails?.fullName || "Creator Profile";
+  const creatorHandle = profileDetails?.username
+    ? profileDetails.username.startsWith("@")
+      ? profileDetails.username
+      : `@${profileDetails.username}`
+    : "@creator";
 
+  const creatorInitials = useMemo(() => {
+    return creatorName
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  }, [creatorName]);
+
+  const creatorTier = profileDetails?.tier || "Micro";
+  const creatorStatus = (
+    profileDetails?.accountStatus || "active"
+  ).toLowerCase();
+
+  // Dynamic reviews array
+  const displayReviews = useMemo(() => {
+    if (reviewsData && Array.isArray(reviewsData) && reviewsData.length > 0) {
+      return reviewsData.map((r) => ({
+        id: r.id,
+        brand: r.brandName || "Brand Partner",
+        date: formatDateOnly(r.createdAt),
+        rating: r.rating || 5,
+        text: r.comment || "Great creator to collaborate with.",
+      }));
+    }
+    return [];
+  }, [reviewsData]);
+
+  // Dynamic campaigns array
+  const displayCampaigns = useMemo(() => {
+    if (
+      campaignHistoryData?.data &&
+      Array.isArray(campaignHistoryData.data) &&
+      campaignHistoryData.data.length > 0
+    ) {
+      return campaignHistoryData.data.map((c) => ({
+        id: c.id,
+        name: c.campaignTitle || "Campaign",
+        brand: c.brandName || "Brand",
+        status: c.status || "COMPLETED",
+        fee: c.fee ? `₦${(c.fee / 1000).toFixed(0)}K` : "₦0",
+        date: formatDateOnly(c.submittedAt),
+      }));
+    }
+    return [];
+  }, [campaignHistoryData]);
+
+  const avgRating = useMemo(() => {
+    if (displayReviews.length > 0) {
+      return (
+        displayReviews.reduce((s, r) => s + r.rating, 0) / displayReviews.length
+      ).toFixed(1);
+    }
+    return "0.0";
+  }, [displayReviews]);
+
+  const totalFollowersCount = useMemo(() => {
+    if (!creatorProfile) return 0;
+
+    // 1. Root level properties
+    const rootObj = creatorProfile as unknown as Record<string, unknown>;
+    const rootVal =
+      rootObj["total followers"] ??
+      rootObj["total_followers"] ??
+      rootObj["totalFollowers"] ??
+      rootObj["followers"];
+    if (rootVal !== undefined && rootVal !== null) {
+      const num = Number(rootVal);
+      if (!isNaN(num) && num > 0) return num;
+    }
+
+    // 2. Metrics object properties
+    const m = (metricsData || rootObj.metrics) as
+      Record<string, unknown> | undefined;
+    if (m) {
+      const rawVal =
+        m["total followers"] ??
+        m["total_followers"] ??
+        m["totalFollowers"] ??
+        m["followers"];
+      if (rawVal !== undefined && rawVal !== null) {
+        const num = Number(rawVal);
+        if (!isNaN(num) && num > 0) return num;
+      }
+    }
+
+    // 3. Profile details object properties
+    const pd = (profileDetails || rootObj.profileDetails) as
+      Record<string, unknown> | undefined;
+    if (pd) {
+      const rawVal =
+        pd["total followers"] ??
+        pd["total_followers"] ??
+        pd["totalFollowers"] ??
+        pd["followers"] ??
+        pd["followersCount"];
+      if (rawVal !== undefined && rawVal !== null) {
+        const num = Number(rawVal);
+        if (!isNaN(num) && num > 0) return num;
+      }
+    }
+
+    // 4. Stats object properties
+    const st = rootObj.stats as Record<string, unknown> | undefined;
+    if (st) {
+      const rawVal =
+        st["total followers"] ??
+        st["total_followers"] ??
+        st["totalFollowers"] ??
+        st["followers"];
+      if (rawVal !== undefined && rawVal !== null) {
+        const num = Number(rawVal);
+        if (!isNaN(num) && num > 0) return num;
+      }
+    }
+
+    // 5. Sum of socialAccounts
+    if (
+      socialAccounts &&
+      Array.isArray(socialAccounts) &&
+      socialAccounts.length > 0
+    ) {
+      const sum = socialAccounts.reduce(
+        (acc, sa) => acc + (sa.followersCount || 0),
+        0,
+      );
+      if (sum > 0) return sum;
+    }
+
+    return 0;
+  }, [creatorProfile, metricsData, profileDetails, socialAccounts]);
+
+  // Metrics under Overview (derived from GET /api/v1/admin/creators/{id} -> metrics)
   const metrics = [
     {
       label: "Followers",
-      value: "450K",
+      value: formatFollowerCount(totalFollowersCount),
       icon: Users,
       bg: "bg-[#fdf2f6] text-[#d7176f]",
     },
     {
       label: "Engagement",
-      value: "4.2%",
+      value:
+        metricsData?.onTimeSubmissionRate !== undefined
+          ? `${metricsData.onTimeSubmissionRate}%`
+          : "0%",
       icon: TrendingUp,
       bg: "bg-[#edf2fe] text-[#2f63eb]",
     },
     {
       label: "Campaigns",
-      value: "18",
+      value:
+        metricsData?.completedCampaigns !== undefined
+          ? String(metricsData.completedCampaigns)
+          : String(displayCampaigns.length),
       icon: CheckCircle,
       bg: "bg-[#f0fdf4] text-[#16a34a]",
     },
     {
       label: "Earnings",
-      value: "₦2.4M",
+      value:
+        metricsData?.totalEarnings !== undefined
+          ? `₦${
+              metricsData.totalEarnings >= 1000000
+                ? (metricsData.totalEarnings / 1000000).toFixed(1) + "M"
+                : (metricsData.totalEarnings / 1000).toFixed(0) + "K"
+            }`
+          : "₦0",
       icon: Wallet,
       bg: "bg-[#fff7ed] text-[#ea580c]",
     },
     {
       label: "Tokens",
-      value: "1200",
+      value:
+        metricsData?.totalTokens !== undefined
+          ? String(metricsData.totalTokens)
+          : "0",
       icon: Award,
       bg: "bg-[#f5f3ff] text-[#7c3aed]",
     },
   ];
+
+  if (!isOpen || !creatorId) return null;
 
   return (
     <Portal>
@@ -273,7 +416,7 @@ export default function CreatorProfileDrawer({
         />
 
         <div className="w-full max-w-[620px] h-full bg-white relative z-10 flex flex-col shadow-2xl overflow-y-auto">
-          {/* ── Top bar ─────── */}
+          {/* Top bar */}
           <div className="flex items-center justify-between border-b border-[#e8e6f0]/60 px-6 py-4 shrink-0">
             <button
               onClick={onClose}
@@ -292,22 +435,22 @@ export default function CreatorProfileDrawer({
             </button>
           </div>
 
-          {/* ── Creator Summary ─────── */}
+          {/* Creator Header Summary */}
           <div className="flex flex-col items-center justify-center py-7 border-b border-[#e8e6f0]/40 shrink-0">
-            <UserAvatar initials="AO" size={72} />
+            <UserAvatar initials={creatorInitials} size={72} />
             <h3 className="text-base font-bold text-[#1a1a2e] mt-3">
-              Alex Okafor
+              {creatorName}
             </h3>
-            <span className="text-xs text-[#9a99b0]">@alexokafor</span>
+            <span className="text-xs text-[#9a99b0]">{creatorHandle}</span>
             <div className="flex items-center gap-2 mt-2">
-              <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-[#f5f3ff] text-[#7c3aed] border border-[#e0e7ff]">
-                Micro
+              <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-[#f5f3ff] text-[#7c3aed] border border-[#e0e7ff] capitalize">
+                {creatorTier}
               </span>
-              <AdminStatusBadge status="pending" />
+              <AdminStatusBadge status={creatorStatus} />
             </div>
           </div>
 
-          {/* ── Tabs ─────── */}
+          {/* Tabs */}
           <div className="flex border-b border-[#e8e6f0]/40 px-6 overflow-x-auto shrink-0 scrollbar-none">
             {(
               [
@@ -333,9 +476,9 @@ export default function CreatorProfileDrawer({
             ))}
           </div>
 
-          {/* ── Tab Content ─────── */}
+          {/* Tab Content */}
           <div className="flex-1 flex flex-col gap-5 p-6">
-            {/* OVERVIEW */}
+            {/* OVERVIEW TAB */}
             {activeTab === "Overview" && (
               <>
                 <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-4">
@@ -344,24 +487,50 @@ export default function CreatorProfileDrawer({
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3.5 text-xs">
                     {[
-                      { label: "Full name", value: "Alex Okafor" },
-                      { label: "Email", value: "alex@email.com" },
-                      { label: "Country of residence", value: "Nigeria" },
-                      { label: "State", value: "Lagos" },
-                      { label: "Nationality", value: "Nigeria" },
+                      {
+                        label: "Full name",
+                        value: profileDetails?.fullName || creatorName,
+                      },
+                      {
+                        label: "Email",
+                        value: profileDetails?.email || "alex@email.com",
+                      },
+                      {
+                        label: "Country of residence",
+                        value: profileDetails?.countryOfResidence || "Nigeria",
+                      },
+                      {
+                        label: "State / Location",
+                        value: profileDetails?.state || "Lagos",
+                      },
+                      {
+                        label: "Nationality",
+                        value: profileDetails?.nationality || "Nigeria",
+                      },
+                      {
+                        label: "Phone",
+                        value: profileDetails?.phoneNumber || "N/A",
+                      },
                       {
                         label: "Bio",
                         value:
+                          profileDetails?.bio ||
                           "Fashion content creator passionate about African aesthetics and modern style.",
                         span: true,
                       },
-                      { label: "Profile Completion", value: "100%" },
+                      {
+                        label: "Profile Completion",
+                        value: profileDetails?.profileCompletion || "100%",
+                      },
                       {
                         label: "Bank Account",
-                        value: "Verified",
+                        value: profileDetails?.bankAccountStatus || "Verified",
                         color: "text-[#16a34a] font-bold",
                       },
-                      { label: "Date Joined", value: "Jan 15, 2026" },
+                      {
+                        label: "Date Joined",
+                        value: formatDateOnly(profileDetails?.dateJoined),
+                      },
                       { label: "Account Status", badge: true },
                     ].map((f, i) => (
                       <div
@@ -376,7 +545,7 @@ export default function CreatorProfileDrawer({
                         </span>
                         {f.badge ? (
                           <div className="w-fit">
-                            <AdminStatusBadge status="active" />
+                            <AdminStatusBadge status={creatorStatus} />
                           </div>
                         ) : (
                           <span
@@ -393,6 +562,7 @@ export default function CreatorProfileDrawer({
                   </div>
                 </div>
 
+                {/* Metrics Cards Grid Under Overview */}
                 <div className="flex flex-col gap-3">
                   <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
                     Metrics
@@ -403,7 +573,7 @@ export default function CreatorProfileDrawer({
                       return (
                         <div
                           key={i}
-                          className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-3.5 flex flex-col items-center text-center gap-1"
+                          className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-3.5 flex flex-col items-center text-center gap-1 shadow-xs"
                         >
                           <div
                             className={cn(
@@ -425,135 +595,235 @@ export default function CreatorProfileDrawer({
                   </div>
                 </div>
 
+                {/* Social Accounts Section */}
                 <div className="flex flex-col gap-3">
                   <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
                     Social Accounts
                   </h4>
                   <div className="flex flex-col gap-3">
-                    <div className="flex items-center gap-3.5 p-3.5 bg-white border border-[#e8e6f0]/60 rounded-2xl">
-                      <div className="w-8 h-8 rounded-full bg-[#fdf2f6] text-[#d7176f] flex items-center justify-center shrink-0">
-                        <FaInstagram size={14} />
-                      </div>
-                      <div className="flex flex-col flex-1 text-xs">
-                        <span className="font-bold text-[#1a1a2e]">
-                          @alexokafor
-                        </span>
-                        <span className="text-[10px] text-[#9a99b0] font-medium">
-                          28.6K · Last synced: Today
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3.5 p-3.5 bg-white border border-[#e8e6f0]/60 rounded-2xl">
-                      <div className="w-8 h-8 rounded-full bg-[#f4f3f6] text-[#7a7a9a] flex items-center justify-center shrink-0">
-                        <FaTiktok size={13} />
-                      </div>
-                      <div className="flex flex-col flex-1 text-xs">
-                        <span className="font-bold text-[#9a99b0]">TikTok</span>
-                        <span className="text-[10px] text-[#dc2626] font-semibold">
-                          Not connected
-                        </span>
-                      </div>
-                    </div>
+                    {socialAccounts && socialAccounts.length > 0 ? (
+                      socialAccounts.map((sa) => (
+                        <div
+                          key={sa.platform}
+                          className="flex items-center gap-3.5 p-3.5 bg-white border border-[#e8e6f0]/60 rounded-2xl"
+                        >
+                          <div
+                            className={cn(
+                              "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+                              sa.platform.toLowerCase() === "instagram"
+                                ? "bg-[#fdf2f6] text-[#d7176f]"
+                                : sa.platform.toLowerCase() === "youtube"
+                                  ? "bg-[#fef2f2] text-[#dc2626]"
+                                  : "bg-[#f4f3f6] text-[#1a1a2e]",
+                            )}
+                          >
+                            {sa.platform.toLowerCase() === "instagram" ? (
+                              <FaInstagram size={14} />
+                            ) : sa.platform.toLowerCase() === "youtube" ? (
+                              <FaYoutube size={14} />
+                            ) : (
+                              <FaTiktok size={14} />
+                            )}
+                          </div>
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <span className="text-xs font-bold text-[#1a1a2e] capitalize">
+                              {sa.platform}
+                            </span>
+                            <span className="text-[10px] text-[#9a99b0] truncate">
+                              {sa.handle}{" "}
+                              {sa.followersCount
+                                ? `(${sa.followersCount.toLocaleString()} followers)`
+                                : ""}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-3.5 p-3.5 bg-white border border-[#e8e6f0]/60 rounded-2xl">
+                          <div className="w-8 h-8 rounded-full bg-[#fdf2f6] text-[#d7176f] flex items-center justify-center shrink-0">
+                            <FaInstagram size={14} />
+                          </div>
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <span className="text-xs font-bold text-[#1a1a2e]">
+                              Instagram
+                            </span>
+                            <span className="text-[10px] text-[#9a99b0] truncate">
+                              {creatorHandle}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3.5 p-3.5 bg-white border border-[#e8e6f0]/60 rounded-2xl">
+                          <div className="w-8 h-8 rounded-full bg-[#f4f3f6] text-[#1a1a2e] flex items-center justify-center shrink-0">
+                            <FaTiktok size={14} />
+                          </div>
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <span className="text-xs font-bold text-[#1a1a2e]">
+                              TikTok
+                            </span>
+                            <span className="text-[10px] text-[#9a99b0] truncate">
+                              {creatorHandle}
+                            </span>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </>
             )}
 
-            {/* CAMPAIGN HISTORY */}
+            {/* CAMPAIGN HISTORY TAB */}
             {activeTab === "Campaign History" && (
               <div className="flex flex-col gap-4">
-                <h4 className="text-sm font-bold text-[#1a1a2e]">
+                <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
                   Campaign History
                 </h4>
-                <div className="overflow-x-auto rounded-2xl border border-[#e8e6f0]/60">
-                  <table className="w-full text-xs text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-[#e8e6f0]/60 bg-[#faf9fc]">
-                        {[
-                          "Campaign Name",
-                          "Brand",
-                          "Status",
-                          "Proposed Fee",
-                          "Date Applied",
-                        ].map((h) => (
-                          <th
-                            key={h}
-                            className="px-4 py-3 text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider whitespace-nowrap"
-                          >
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {CAMPAIGNS.map((c, i) => (
-                        <tr
-                          key={i}
-                          className="border-b border-[#e8e6f0]/40 last:border-0 hover:bg-[#faf9fc] transition-colors"
-                        >
-                          <td className="px-4 py-3 font-semibold text-[#1a1a2e]">
-                            {c.name}
-                          </td>
-                          <td className="px-4 py-3 text-[#5a5a7a]">
-                            {c.brand}
-                          </td>
-                          <td className="px-4 py-3">
-                            <StatusChip status={c.status} />
-                          </td>
-                          <td className="px-4 py-3 text-[#5a5a7a]">{c.fee}</td>
-                          <td className="px-4 py-3 text-[#9a99b0] whitespace-nowrap">
-                            {c.date}
-                          </td>
+
+                {isLoadingCampaigns ? (
+                  <div className="flex flex-col gap-3 py-2">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="h-12 w-full bg-[#faf9fc] rounded-2xl animate-pulse flex items-center px-4 gap-4"
+                      >
+                        <div className="w-24 h-3.5 bg-[#e8e6f0]/60 rounded-md" />
+                        <div className="w-20 h-3.5 bg-[#e8e6f0]/40 rounded-md" />
+                        <div className="w-16 h-4 bg-[#e8e6f0]/60 rounded-md ml-auto" />
+                      </div>
+                    ))}
+                  </div>
+                ) : displayCampaigns.length === 0 ? (
+                  <div className="py-12 px-4 flex flex-col items-center justify-center text-center bg-[#faf9fc] rounded-2xl border border-dashed border-[#e8e6f0]">
+                    <CheckCircle size={32} className="text-[#9a99b0] mb-2" />
+                    <h5 className="text-xs font-bold text-[#1a1a2e]">
+                      No Campaign History
+                    </h5>
+                    <p className="text-[11px] text-[#9a99b0] mt-0.5">
+                      This creator has not participated in any campaigns yet.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto border border-[#e8e6f0]/60 rounded-2xl">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="border-b border-[#e8e6f0]/60 bg-[#faf9fc]">
+                          {[
+                            "Campaign",
+                            "Brand",
+                            "Status",
+                            "Fee",
+                            "Submitted",
+                          ].map((h) => (
+                            <th
+                              key={h}
+                              className="px-4 py-3 text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider whitespace-nowrap"
+                            >
+                              {h}
+                            </th>
+                          ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {displayCampaigns.map((c, i) => (
+                          <tr
+                            key={c.id || i}
+                            className="border-b border-[#e8e6f0]/40 last:border-0 hover:bg-[#faf9fc] transition-colors"
+                          >
+                            <td className="px-4 py-3 font-semibold text-[#1a1a2e]">
+                              {c.name}
+                            </td>
+                            <td className="px-4 py-3 text-[#5a5a7a]">
+                              {c.brand}
+                            </td>
+                            <td className="px-4 py-3">
+                              <StatusChip status={c.status} />
+                            </td>
+                            <td className="px-4 py-3 text-[#5a5a7a] font-semibold">
+                              {c.fee}
+                            </td>
+                            <td className="px-4 py-3 text-[#9a99b0] whitespace-nowrap">
+                              {c.date}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* REVIEW */}
+            {/* REVIEWS TAB */}
             {activeTab === "Review" && (
               <div className="flex flex-col gap-5">
-                {/* Average rating card */}
                 <div className="flex items-center gap-4 bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-2xl p-5">
                   <span className="text-4xl font-black text-[#1a1a2e]">
                     {avgRating}
                   </span>
                   <div className="flex flex-col gap-1">
-                    <Stars rating={Math.round(Number(avgRating))} />
+                    <Stars rating={Number(avgRating)} />
                     <span className="text-[11px] text-[#9a99b0] font-medium">
-                      {REVIEWS.length} reviews
+                      {displayReviews.length} reviews
                     </span>
                   </div>
                 </div>
 
-                {/* Individual reviews */}
-                <div className="flex flex-col gap-3">
-                  {REVIEWS.map((r, i) => (
-                    <div
-                      key={i}
-                      className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 flex flex-col gap-2"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#1a1a2e]">
-                          {r.brand}
-                        </span>
-                        <span className="text-[10px] text-[#9a99b0]">
-                          {r.date}
-                        </span>
+                {isLoadingReviews ? (
+                  <div className="flex flex-col gap-3">
+                    {Array.from({ length: 2 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 flex flex-col gap-3 animate-pulse"
+                      >
+                        <div className="flex justify-between items-center">
+                          <div className="w-28 h-4 bg-[#e8e6f0]/60 rounded-md" />
+                          <div className="w-16 h-3 bg-[#e8e6f0]/40 rounded-md" />
+                        </div>
+                        <div className="w-20 h-3 bg-[#e8e6f0]/40 rounded-md" />
+                        <div className="w-full h-10 bg-[#e8e6f0]/30 rounded-xl" />
                       </div>
-                      <Stars rating={r.rating} />
-                      <p className="text-xs text-[#5a5a7a] leading-relaxed">
-                        {r.text}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : displayReviews.length === 0 ? (
+                  <div className="py-12 px-4 flex flex-col items-center justify-center text-center bg-[#faf9fc] rounded-2xl border border-dashed border-[#e8e6f0]">
+                    <Star size={32} className="text-[#9a99b0] mb-2" />
+                    <h5 className="text-xs font-bold text-[#1a1a2e]">
+                      No Brand Reviews Yet
+                    </h5>
+                    <p className="text-[11px] text-[#9a99b0] mt-0.5">
+                      No brand reviews or ratings have been submitted for this
+                      creator.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {displayReviews.map((r, i) => (
+                      <div
+                        key={r.id || i}
+                        className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 flex flex-col gap-2 shadow-xs"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-[#1a1a2e]">
+                            {r.brand}
+                          </span>
+                          <span className="text-[10px] text-[#9a99b0]">
+                            {r.date}
+                          </span>
+                        </div>
+                        <Stars rating={r.rating} />
+                        <p className="text-xs text-[#5a5a7a] leading-relaxed">
+                          {r.text}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
-            {/* NOTE */}
+            {/* NOTES TAB */}
             {activeTab === "Note" && (
               <div className="flex flex-col gap-5">
                 <div className="flex items-start justify-between">
@@ -567,6 +837,7 @@ export default function CreatorProfileDrawer({
                   </div>
                   <button
                     onClick={() => {
+                      setEditingNoteId(null);
                       setNoteModalTitle("Add note");
                       setNoteInitialValue("");
                       setIsNoteModalOpen(true);
@@ -578,75 +849,88 @@ export default function CreatorProfileDrawer({
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  {NOTES.map((n, i) => (
-                    <div
-                      key={i}
-                      className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 flex flex-col gap-2"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="text-xs font-bold text-[#1a1a2e]">
-                            {n.author}
-                          </span>
-                          <span className="text-[10px] text-[#9a99b0] ml-2">
-                            {n.date}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              setNoteModalTitle("Edit note");
-                              setNoteInitialValue(n.text);
-                              setIsNoteModalOpen(true);
-                            }}
-                            className="p-1 rounded-lg hover:bg-[#f4f3f6] text-[#9a99b0] hover:text-[#5a5a7a] transition-colors cursor-pointer"
-                          >
-                            <Pencil size={12} />
-                          </button>
-                          <button className="p-1 rounded-lg hover:bg-[#fef2f2] text-[#9a99b0] hover:text-[#dc2626] transition-colors cursor-pointer">
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      </div>
-                      <p className="text-xs text-[#5a5a7a] leading-relaxed">
-                        {n.text}
-                      </p>
+                  {notesData.length === 0 ? (
+                    <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-2xl p-6 text-center text-xs text-[#9a99b0] font-medium">
+                      No internal notes recorded yet for this creator.
                     </div>
-                  ))}
+                  ) : (
+                    notesData.map((n) => (
+                      <div
+                        key={n.id}
+                        className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 flex flex-col gap-2 shadow-xs"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-xs font-bold text-[#1a1a2e]">
+                              {n.createdBy?.name || "Admin"}
+                            </span>
+                            <span className="text-[10px] text-[#9a99b0] ml-2">
+                              {formatDateOnly(n.createdAt)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                setEditingNoteId(n.id);
+                                setNoteModalTitle("Edit note");
+                                setNoteInitialValue(n.note);
+                                setIsNoteModalOpen(true);
+                              }}
+                              className="p-1 rounded-lg hover:bg-[#f4f3f6] text-[#9a99b0] hover:text-[#5a5a7a] transition-colors cursor-pointer"
+                            >
+                              <Pencil size={12} />
+                            </button>
+                            <button
+                              onClick={() =>
+                                deleteNoteMutation.mutate({
+                                  id: creatorId,
+                                  noteId: n.id,
+                                })
+                              }
+                              className="p-1 rounded-lg hover:bg-[#fef2f2] text-[#9a99b0] hover:text-[#dc2626] transition-colors cursor-pointer"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-xs text-[#5a5a7a] leading-relaxed">
+                          {n.note}
+                        </p>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             )}
 
-            {/* ACTION */}
+            {/* ACTION TAB */}
             {activeTab === "Action" && (
               <div className="flex flex-col gap-4">
-                {/* Warning banner */}
                 <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#fffbeb] border border-[#fde68a] text-[#92400e] text-xs font-semibold">
                   <AlertTriangle
                     size={14}
                     className="shrink-0 text-[#f59e0b]"
                   />
                   Actions require confirmation and are recorded in the audit
-                  log.
+                  trail.
                 </div>
 
-                {/* Action rows */}
                 <div className="flex flex-col gap-3">
-                  {ACTIONS.map((a, i) => {
+                  {ACTIONS.map((a) => {
                     const Icon = a.icon;
                     return (
                       <button
-                        key={i}
+                        key={a.actionType}
                         onClick={() => setActiveAction(a.actionType)}
                         className={cn(
-                          "flex items-center gap-4 w-full text-left px-5 py-4 rounded-2xl border transition-all hover:brightness-95 cursor-pointer",
+                          "w-full text-left p-4 rounded-2xl border flex items-start gap-3.5 transition-all cursor-pointer hover:shadow-xs",
                           a.bg,
                           a.border,
                         )}
                       >
                         <div
                           className={cn(
-                            "w-9 h-9 rounded-full flex items-center justify-center shrink-0",
+                            "w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5",
                             a.iconBg,
                             a.color,
                           )}
@@ -712,12 +996,27 @@ export default function CreatorProfileDrawer({
         {isNoteModalOpen && (
           <NoteModal
             isOpen={isNoteModalOpen}
-            onClose={() => setIsNoteModalOpen(false)}
+            onClose={() => {
+              setIsNoteModalOpen(false);
+              setEditingNoteId(null);
+            }}
             initialValue={noteInitialValue}
             title={noteModalTitle}
             onSave={(value) => {
-              // Simply mock saving for frontend demonstration
-              console.log("Saved note:", value);
+              if (editingNoteId) {
+                updateNoteMutation.mutate({
+                  id: creatorId,
+                  noteId: editingNoteId,
+                  note: value,
+                });
+              } else {
+                addNoteMutation.mutate({
+                  id: creatorId,
+                  note: value,
+                });
+              }
+              setIsNoteModalOpen(false);
+              setEditingNoteId(null);
             }}
           />
         )}

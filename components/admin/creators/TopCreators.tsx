@@ -2,119 +2,130 @@
 
 import Link from "next/link";
 import UserAvatar from "@/shared/UserAvatar";
+import { useTopCreators } from "@/hooks/useAdminCreators";
 
-const TOP_CREATORS = [
-  {
-    rank: 1,
-    name: "Tolu Fashola",
-    tier: "Mega",
-    handle: "@tolustyles",
-    earnings: "₦2.1M",
-    campaigns: 23,
-    initials: "TF",
-    rankColor: "bg-[#f59e0b] text-white",
-    badgeColor: "bg-[#fff7ed] text-[#ea580c] border-[#ffedd5]",
-  },
-  {
-    rank: 2,
-    name: "Amara Osei",
-    tier: "Macro",
-    handle: "@amara.creates",
-    earnings: "₦847K",
-    campaigns: 14,
-    initials: "AO",
-    rankColor: "bg-[#fbbf24] text-white",
-    badgeColor: "bg-[#eff6ff] text-[#2563eb] border-[#dbeafe]",
-  },
-  {
-    rank: 3,
-    name: "Ngozi Eze",
-    tier: "Micro",
-    handle: "@ngozi.beauty",
-    earnings: "₦441K",
-    campaigns: 11,
-    initials: "NE",
-    rankColor: "bg-[#fcd34d] text-white",
-    badgeColor: "bg-[#f5f3ff] text-[#7c3aed] border-[#ede9fe]",
-  },
-  {
-    rank: 4,
-    name: "Chidi Nwosu",
-    tier: "Micro",
-    handle: "@chidiplays",
-    earnings: "₦312K",
-    campaigns: 7,
-    initials: "CN",
-    rankColor: "bg-[#e5e7eb] text-[#5a5a7a]",
-    badgeColor: "bg-[#f5f3ff] text-[#7c3aed] border-[#ede9fe]",
-  },
-  {
-    rank: 5,
-    name: "Emeka Dev",
-    tier: "Nano",
-    handle: "@emekadev",
-    earnings: "₦98K",
-    campaigns: 3,
-    initials: "ED",
-    rankColor: "bg-[#e5e7eb] text-[#5a5a7a]",
-    badgeColor: "bg-[#f0fdf4] text-[#16a34a] border-[#dcfce7]",
-  },
-];
+const TIER_BADGE_COLORS: Record<string, string> = {
+  Mega: "bg-[#fff7ed] text-[#ea580c] border-[#ffedd5]",
+  Macro: "bg-[#eff6ff] text-[#2563eb] border-[#dbeafe]",
+  Micro: "bg-[#f5f3ff] text-[#7c3aed] border-[#ede9fe]",
+  Nano: "bg-[#f0fdf4] text-[#16a34a] border-[#dcfce7]",
+};
 
 export default function TopCreators() {
+  const { data: topCreatorsList, isLoading } = useTopCreators();
+
+  const creators = topCreatorsList?.length
+    ? topCreatorsList.map((c, idx) => ({
+        rank: idx + 1,
+        name: c.name || "Creator",
+        tier: c.tier || "Micro",
+        handle: c.handle
+          ? c.handle.startsWith("@")
+            ? c.handle
+            : `@${c.handle}`
+          : "@creator",
+        earnings:
+          (c.totalEarnings ?? 0) >= 1000000
+            ? `₦${((c.totalEarnings ?? 0) / 1000000).toFixed(1)}M`
+            : `₦${((c.totalEarnings ?? 0) / 1000).toFixed(0)}K`,
+        campaigns: c.completedCampaigns ?? 0,
+        initials: (c.name || "Creator")
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2),
+        rankColor:
+          idx < 3 ? "bg-[#f59e0b] text-white" : "bg-[#e5e7eb] text-[#5a5a7a]",
+        badgeColor:
+          TIER_BADGE_COLORS[c.tier] ||
+          "bg-[#f5f3ff] text-[#7c3aed] border-[#ede9fe]",
+      }))
+    : [];
+
   return (
-    <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5 h-full">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-[#1a1a2e]">Top Creators</h2>
+    <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-sm font-semibold text-[#1a1a2e]">Top Creators</h2>
+          <span className="text-xs text-[#9a99b0]">By total earnings</span>
+        </div>
         <Link
-          href="#"
-          className="text-xs font-bold text-brand-pink hover:opacity-90"
+          href="/admin/users/creators"
+          className="text-xs font-bold text-brand-pink hover:underline"
         >
-          View All
+          View all
         </Link>
       </div>
 
-      <div className="flex flex-col gap-4">
-        {TOP_CREATORS.map((c) => (
-          <div key={c.rank} className="flex items-center gap-3">
-            {/* Rank Badge */}
+      <div className="flex flex-col gap-3.5">
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
             <div
-              className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${c.rankColor}`}
+              key={i}
+              className="flex items-center justify-between p-3.5 rounded-2xl bg-[#faf9fc] animate-pulse"
             >
-              {c.rank}
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-6 h-6 rounded-full bg-[#e8e6f0]/60 shrink-0" />
+                <div className="w-10 h-10 rounded-full bg-[#e8e6f0]/60 shrink-0" />
+                <div className="flex flex-col gap-1.5 min-w-0">
+                  <div className="w-24 h-3.5 rounded-md bg-[#e8e6f0]/60" />
+                  <div className="w-16 h-3 rounded-md bg-[#e8e6f0]/40" />
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-1.5 pl-2">
+                <div className="w-14 h-3.5 rounded-md bg-[#e8e6f0]/60" />
+                <div className="w-12 h-3 rounded-md bg-[#e8e6f0]/40" />
+              </div>
             </div>
-
-            {/* Avatar */}
-            <UserAvatar initials={c.initials} size={36} />
-
-            {/* Creator details */}
-            <div className="flex-1 min-w-0 flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-[#1a1a2e] truncate">
-                  {c.name}
-                </span>
+          ))
+        ) : creators.length === 0 ? (
+          <div className="py-8 text-center text-xs text-[#9a99b0]">
+            No top creators data available.
+          </div>
+        ) : (
+          creators.map((c) => (
+            <div
+              key={c.rank}
+              className="flex items-center justify-between p-3.5 rounded-2xl bg-[#faf9fc] hover:bg-[#f4f3f6] transition-colors"
+            >
+              <div className="flex items-center gap-3 min-w-0">
                 <span
-                  className={`px-1.5 py-0.5 rounded text-[8px] font-bold border ${c.badgeColor}`}
+                  className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center shrink-0 ${c.rankColor}`}
                 >
-                  {c.tier}
+                  {c.rank}
+                </span>
+
+                <UserAvatar initials={c.initials} size={40} />
+
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-[#1a1a2e] truncate">
+                      {c.name}
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 rounded-md text-[9px] font-bold border ${c.badgeColor}`}
+                    >
+                      {c.tier}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-[#9a99b0] truncate">
+                    {c.handle}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-end shrink-0 pl-2">
+                <span className="text-xs font-bold text-[#1a1a2e]">
+                  {c.earnings}
+                </span>
+                <span className="text-[10px] text-[#9a99b0]">
+                  {c.campaigns} campaigns
                 </span>
               </div>
-              <span className="text-[10px] text-[#9a99b0] mt-0.5 truncate">
-                {c.handle}
-              </span>
             </div>
-
-            {/* Stats */}
-            <div className="text-right flex flex-col shrink-0">
-              <span className="text-xs font-bold text-brand-pink">
-                {c.earnings}
-              </span>
-              <span className="text-[9px] text-[#9a99b0] font-medium">
-                {c.campaigns} campaigns
-              </span>
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </section>
   );
