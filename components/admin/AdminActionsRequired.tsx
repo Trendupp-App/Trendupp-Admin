@@ -25,7 +25,7 @@ export function AdminActionsRequired({
           <h2 className="text-xs font-bold text-[#1a1a2e]">Actions Required</h2>
         </div>
         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white shadow-xs">
-          4 urgent
+          {unresolved} urgent
         </span>
       </div>
 
