@@ -236,7 +236,6 @@ test.describe("Admin Panel Navigation", () => {
       'input[placeholder="Search name or email..."]',
       "Test Team",
     );
-    await page.waitForTimeout(400);
     await expect(
       page.locator("tbody").locator("text=Adaeze Okonkwo"),
     ).not.toBeVisible();
@@ -246,8 +245,9 @@ test.describe("Admin Panel Navigation", () => {
 
     // Clear search
     await page.fill('input[placeholder="Search name or email..."]', "");
-    await page.waitForTimeout(400);
-
+    await expect(
+      page.locator("tbody").locator("text=Adaeze Okonkwo"),
+    ).toBeVisible();
     // Open Edit role modal
     await page.click('button:has-text("Edit") >> nth=0');
     await expect(page.locator("text=Edit — Adaeze Okonkwo")).toBeVisible();
