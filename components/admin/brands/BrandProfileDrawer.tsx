@@ -103,14 +103,56 @@ export default function BrandProfileDrawer({
     };
   }, [isOpen]);
 
-  const profileDetails = brandData?.profileDetails;
+  const header = brandData?.header;
+  const brandDetails = brandData?.brandDetails;
+  const brandRepresentative = brandData?.brandRepresentative;
   const metricsData = brandData?.metrics;
+  const profileDetails = brandData?.profileDetails;
 
-  const brandName = profileDetails?.brandName || "Pepsi Nigeria";
-  const brandEmail = profileDetails?.email || "pepsi@email.com";
-  const brandWebsite = profileDetails?.website || "pepsi.com.ng";
-  const brandIndustry = profileDetails?.industry || "FMCG";
-  const brandStatus = (profileDetails?.accountStatus || "active").toLowerCase();
+  const brandName =
+    header?.brandName ||
+    brandDetails?.brandName ||
+    profileDetails?.brandName ||
+    "Brand Profile";
+  const brandEmail = brandDetails?.email || profileDetails?.email || "N/A";
+  const brandWebsite =
+    header?.websiteUrl ||
+    brandDetails?.website ||
+    profileDetails?.website ||
+    "N/A";
+  const brandLogoUrl = header?.logoUrl || null;
+  const brandIndustry = header?.industry || profileDetails?.industry || "FMCG";
+  const brandStatus = (
+    header?.status ||
+    brandRepresentative?.accountStatus ||
+    profileDetails?.accountStatus ||
+    "ACTIVE"
+  ).toLowerCase();
+
+  const repName =
+    brandRepresentative?.fullName ||
+    profileDetails?.representativeName ||
+    brandName;
+  const repEmail =
+    brandRepresentative?.email ||
+    profileDetails?.representativeEmail ||
+    brandEmail;
+  const repPhone =
+    brandRepresentative?.phoneNumber ||
+    profileDetails?.representativePhone ||
+    "N/A";
+  const repCompletion =
+    brandRepresentative?.profileCompletion ??
+    profileDetails?.profileCompletion ??
+    0;
+  const repJoined =
+    brandRepresentative?.dateJoined || profileDetails?.dateJoined || "N/A";
+
+  const monthlyBudgetDisplay = brandDetails?.monthlyBudget
+    ? `₦${(brandDetails.monthlyBudget / 1000000).toFixed(1)}M`
+    : profileDetails?.monthlyBudget
+      ? `₦${(profileDetails.monthlyBudget / 1000000).toFixed(1)}M`
+      : "N/A";
 
   const formatDateOnly = (dateStr?: string) => {
     if (!dateStr) return "N/A";
@@ -139,17 +181,7 @@ export default function BrandProfileDrawer({
         date: formatDateOnly(c.startDate || c.createdAt),
       }));
     }
-    return [
-      {
-        id: "c1",
-        title: "Summer Refresh 2024",
-        status: "ACTIVE",
-        budget: "₦12.5M",
-        spent: "₦4.2M",
-        creators: 18,
-        date: "Jun 01, 2025",
-      },
-    ];
+    return [];
   }, [campaignHistoryData]);
 
   if (!isOpen || !brandId) return null;
@@ -191,7 +223,11 @@ export default function BrandProfileDrawer({
                 {brandName.toLowerCase().includes("pepsi") ? (
                   <PepsiLogo />
                 ) : (
-                  <UserAvatar initials={brandName.slice(0, 2)} size={72} />
+                  <UserAvatar
+                    avatarUrl={brandLogoUrl}
+                    initials={brandName.slice(0, 2)}
+                    size={72}
+                  />
                 )}
                 <h3 className="text-base font-bold text-[#1a1a2e] mt-3">
                   {brandName}
@@ -265,8 +301,7 @@ export default function BrandProfileDrawer({
                             Bio
                           </span>
                           <span className="font-bold text-[#1a1a2e] mt-0.5 block leading-relaxed">
-                            {profileDetails?.bio ||
-                              "A brand committed to refreshing moments and inspiring connections through bold, modern flavors."}
+                            {brandDetails?.bio || profileDetails?.bio || "N/A"}
                           </span>
                         </div>
                         <div>
@@ -274,7 +309,9 @@ export default function BrandProfileDrawer({
                             Country
                           </span>
                           <span className="font-bold text-[#1a1a2e] mt-0.5 block">
-                            {profileDetails?.countryOfResidence || "Nigeria"}
+                            {brandDetails?.country ||
+                              profileDetails?.countryOfResidence ||
+                              "Nigeria"}
                           </span>
                         </div>
                         <div>
@@ -282,9 +319,10 @@ export default function BrandProfileDrawer({
                             State/City
                           </span>
                           <span className="font-bold text-[#1a1a2e] mt-0.5 block">
-                            {profileDetails?.state ||
+                            {brandDetails?.stateCity ||
+                              profileDetails?.state ||
                               profileDetails?.city ||
-                              "Lagos/Ikeja"}
+                              "N/A"}
                           </span>
                         </div>
                         <div>
@@ -292,9 +330,7 @@ export default function BrandProfileDrawer({
                             Monthly Budget
                           </span>
                           <span className="font-bold text-[#1a1a2e] mt-0.5 block">
-                            {profileDetails?.monthlyBudget
-                              ? `₦${(profileDetails.monthlyBudget / 1000000).toFixed(1)}M`
-                              : "₦4.7M"}
+                            {monthlyBudgetDisplay}
                           </span>
                         </div>
                       </div>
@@ -308,8 +344,7 @@ export default function BrandProfileDrawer({
                             Full name
                           </span>
                           <span className="font-bold text-[#1a1a2e] mt-0.5 block">
-                            {profileDetails?.representativeName ||
-                              "Chisom Mary"}
+                            {repName}
                           </span>
                         </div>
                         <div>
@@ -317,8 +352,7 @@ export default function BrandProfileDrawer({
                             Email
                           </span>
                           <span className="font-bold text-[#1a1a2e] mt-0.5 block">
-                            {profileDetails?.representativeEmail ||
-                              "amara@email.com"}
+                            {repEmail}
                           </span>
                         </div>
                         <div>
@@ -326,8 +360,7 @@ export default function BrandProfileDrawer({
                             Phone Number
                           </span>
                           <span className="font-bold text-[#1a1a2e] mt-0.5 block">
-                            {profileDetails?.representativePhone ||
-                              "+2348077238262"}
+                            {repPhone}
                           </span>
                         </div>
                         <div>
@@ -335,7 +368,7 @@ export default function BrandProfileDrawer({
                             Profile Completion
                           </span>
                           <span className="font-bold text-[#10b981] mt-0.5 block">
-                            {profileDetails?.profileCompletion ?? 100}%
+                            {repCompletion}%
                           </span>
                         </div>
                         <div>
@@ -343,8 +376,7 @@ export default function BrandProfileDrawer({
                             Date Joined
                           </span>
                           <span className="font-bold text-[#1a1a2e] mt-0.5 block">
-                            {formatDateOnly(profileDetails?.dateJoined) ||
-                              "Jan 15, 2026"}
+                            {formatDateOnly(repJoined)}
                           </span>
                         </div>
                         <div>
@@ -370,7 +402,7 @@ export default function BrandProfileDrawer({
                             className="text-[#2f63eb] mb-1"
                           />
                           <span className="text-base font-black text-[#1a1a2e]">
-                            {metricsData?.totalCampaigns ?? 14}
+                            {metricsData?.totalCampaigns ?? 0}
                           </span>
                           <span className="text-[10px] font-bold text-[#7a7a9a]">
                             Total Campaigns
@@ -383,8 +415,8 @@ export default function BrandProfileDrawer({
                           />
                           <span className="text-base font-black text-[#1a1a2e]">
                             {metricsData?.totalSpend
-                              ? `₦${(metricsData.totalSpend / 1000000).toFixed(0)}M`
-                              : "₦28M"}
+                              ? `₦${metricsData.totalSpend.toLocaleString()}`
+                              : "₦0"}
                           </span>
                           <span className="text-[10px] font-bold text-[#7a7a9a]">
                             Total Spend
@@ -393,7 +425,7 @@ export default function BrandProfileDrawer({
                         <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-2xl p-3 flex flex-col items-center justify-center text-center">
                           <Play size={16} className="text-[#16a34a] mb-1" />
                           <span className="text-base font-black text-[#1a1a2e]">
-                            {metricsData?.activeCampaigns ?? 3}
+                            {metricsData?.activeCampaigns ?? 0}
                           </span>
                           <span className="text-[10px] font-bold text-[#7a7a9a]">
                             Active Campaigns
@@ -402,7 +434,10 @@ export default function BrandProfileDrawer({
                         <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-2xl p-3 flex flex-col items-center justify-center text-center">
                           <Star size={16} className="text-[#ca8a04] mb-1" />
                           <span className="text-base font-black text-[#1a1a2e]">
-                            {metricsData?.avgCreatorRating ?? "4.7 / 5"}
+                            {metricsData?.avgCreatorRating !== undefined &&
+                            metricsData?.avgCreatorRating !== null
+                              ? `${metricsData.avgCreatorRating} / 5`
+                              : "0.0 / 5"}
                           </span>
                           <span className="text-[10px] font-bold text-[#7a7a9a]">
                             Avg Creator Rating

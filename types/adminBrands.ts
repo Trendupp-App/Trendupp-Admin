@@ -48,21 +48,34 @@ export interface CountryBreakdownDto {
 
 export interface AdminBrandListItem {
   id: string;
-  brandId: string;
-  brandName: string;
+  displayId?: string;
+  brandId?: string;
+  brandName?: string;
   logoUrl?: string | null;
-  email: string;
-  representativeName: string;
-  representativeEmail: string;
-  industry: string;
-  location: string;
-  city?: string;
-  country: string;
-  profileCompletion: number;
+  email?: string;
+  advertiser?: {
+    brandName?: string;
+    logoUrl?: string | null;
+  };
+  representative?: {
+    name?: string;
+    email?: string;
+  };
+  representativeName?: string;
+  representativeEmail?: string;
+  industry?: string;
+  location?:
+    | string
+    | { city?: string | null; country?: string | null; state?: string | null }
+    | null;
+  city?: string | null;
+  country?: string | null;
+  profileCompletion?: number;
   status: "ACTIVE" | "SUSPENDED" | "PENDING" | string;
-  totalSpend: number;
-  campaignsCount: number;
-  joinedAt: string;
+  totalSpend?: number;
+  campaignsCount?: number;
+  joinedAt?: string;
+  joinDate?: string;
 }
 
 export interface BrandListQueryParams {
@@ -86,35 +99,63 @@ export interface PaginatedBrandsResponse {
   };
 }
 
-export interface BrandProfileDetailsDto {
-  id: string;
-  brandName: string;
-  email: string;
-  website?: string | null;
-  bio?: string | null;
-  countryOfResidence?: string | null;
-  state?: string | null;
-  city?: string | null;
-  monthlyBudget?: number | null;
-  representativeName?: string | null;
-  representativeEmail?: string | null;
-  representativePhone?: string | null;
-  profileCompletion?: number;
-  dateJoined?: string;
-  accountStatus?: string;
-  industry?: string;
+export interface BrandHeaderDto {
+  brandName?: string | null;
+  websiteUrl?: string | null;
+  logoUrl?: string | null;
+  industry?: string | null;
+  status?: string | null;
 }
 
-export interface BrandProfileMetricsDto {
-  totalCampaigns?: number;
-  totalSpend?: number;
-  activeCampaigns?: number;
-  avgCreatorRating?: number;
+export interface BrandDetailsSectionDto {
+  brandName?: string | null;
+  email?: string | null;
+  website?: string | null;
+  bio?: string | null;
+  country?: string | null;
+  stateCity?: string | null;
+  monthlyBudget?: number | null;
+}
+
+export interface BrandRepresentativeDto {
+  fullName?: string | null;
+  email?: string | null;
+  phoneNumber?: string | null;
+  profileCompletion?: number | null;
+  dateJoined?: string | null;
+  accountStatus?: string | null;
+}
+
+export interface BrandMetricsDto {
+  totalCampaigns?: number | null;
+  totalSpend?: number | null;
+  activeCampaigns?: number | null;
+  avgCreatorRating?: number | string | null;
 }
 
 export interface AdminBrandDetails {
-  profileDetails: BrandProfileDetailsDto;
-  metrics: BrandProfileMetricsDto;
+  header?: BrandHeaderDto;
+  brandDetails?: BrandDetailsSectionDto;
+  brandRepresentative?: BrandRepresentativeDto;
+  metrics?: BrandMetricsDto;
+
+  profileDetails?: {
+    brandName?: string | null;
+    email?: string | null;
+    website?: string | null;
+    bio?: string | null;
+    countryOfResidence?: string | null;
+    state?: string | null;
+    city?: string | null;
+    monthlyBudget?: number | null;
+    representativeName?: string | null;
+    representativeEmail?: string | null;
+    representativePhone?: string | null;
+    profileCompletion?: number | null;
+    dateJoined?: string | null;
+    accountStatus?: string | null;
+    industry?: string | null;
+  };
 }
 
 export interface BrandCampaignHistoryItem {
