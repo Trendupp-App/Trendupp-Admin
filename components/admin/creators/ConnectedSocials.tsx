@@ -27,7 +27,7 @@ export default function ConnectedSocials() {
             Connected socials
           </h3>
           <span className="text-[10px] text-[#9a99b0] font-medium">
-            5 connected social
+            5 connected socials
           </span>
         </div>
         <select className="h-7 px-2 bg-[#faf9fc] border border-[#e8e6f0]/60 text-[#1a1a2e] text-[10px] font-semibold rounded-lg outline-none cursor-pointer">
