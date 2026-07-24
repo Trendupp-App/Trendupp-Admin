@@ -51,12 +51,7 @@ export default function BrandActiveUsersChart() {
         count: d.count,
       }));
     }
-    return [
-      { label: "Week 1", count: 850 },
-      { label: "Week 2", count: 1800 },
-      { label: "Week 3", count: 1450 },
-      { label: "Week 4", count: 2100 },
-    ];
+    return [];
   }, [apiData]);
 
   if (isLoading) {

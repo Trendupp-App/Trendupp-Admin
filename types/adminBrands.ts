@@ -1,7 +1,9 @@
 export interface BrandSummaryDto {
-  totalBrands: number;
+  totalAdvertisers?: number;
+  totalBrands?: number;
   profileCompleted: number;
-  suspendedBrands: number;
+  suspendedAdvertisers?: number;
+  suspendedBrands?: number;
   pendingProfileCompletion: number;
 }
 

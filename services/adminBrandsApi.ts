@@ -61,6 +61,12 @@ export const adminBrandsApi = {
   getBrandById: (id: string) =>
     apiClient.get<AdminBrandDetails>(`/admin/brands/${id}`),
 
+  // 9b. Suspend & Reactivate Brand Account
+  suspendBrand: (id: string) =>
+    apiClient.patch<{ message: string }>(`/admin/users/${id}/suspend`),
+  reactivateBrand: (id: string) =>
+    apiClient.patch<{ message: string }>(`/admin/users/${id}/reactivate`),
+
   // 10. Brand Campaign History
   getBrandCampaignHistory: (id: string, page = 1, limit = 10) =>
     apiClient.get<{

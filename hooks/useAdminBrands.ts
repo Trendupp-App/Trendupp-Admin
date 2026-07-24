@@ -98,6 +98,46 @@ export function useBrandDetails(id: string | null, enabled: boolean = true) {
   });
 }
 
+export function useSuspendBrand() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => adminBrandsApi.suspendBrand(id),
+    onSuccess: (res, id) => {
+      queryClient.invalidateQueries({
+        queryKey: ["admin-brand-details", id],
+      });
+      queryClient.invalidateQueries({ queryKey: ["admin-brands-list"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-brand-summary"] });
+      toast.success(res.data?.message || "Brand account suspended");
+    },
+    onError: (err: AxiosError<{ message?: string }>) => {
+      toast.error(
+        err.response?.data?.message || "Failed to suspend brand account",
+      );
+    },
+  });
+}
+
+export function useReactivateBrand() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => adminBrandsApi.reactivateBrand(id),
+    onSuccess: (res, id) => {
+      queryClient.invalidateQueries({
+        queryKey: ["admin-brand-details", id],
+      });
+      queryClient.invalidateQueries({ queryKey: ["admin-brands-list"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-brand-summary"] });
+      toast.success(res.data?.message || "Brand account reactivated");
+    },
+    onError: (err: AxiosError<{ message?: string }>) => {
+      toast.error(
+        err.response?.data?.message || "Failed to reactivate brand account",
+      );
+    },
+  });
+}
+
 export function useBrandCampaignHistory(
   id: string | null,
   page = 1,

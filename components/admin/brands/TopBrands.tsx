@@ -47,48 +47,7 @@ export default function TopBrands({ onViewAll }: { onViewAll?: () => void }) {
       });
     }
 
-    return [
-      {
-        rank: 1,
-        name: "Pepsi",
-        web: "www.pepsi.ng",
-        logoUrl: null,
-        spend: "₦2.1M",
-        campaigns: 23,
-      },
-      {
-        rank: 2,
-        name: "Pepsi",
-        web: "www.pepsi.ng",
-        logoUrl: null,
-        spend: "₦847K",
-        campaigns: 14,
-      },
-      {
-        rank: 3,
-        name: "Pepsi",
-        web: "www.pepsi.ng",
-        logoUrl: null,
-        spend: "₦441K",
-        campaigns: 11,
-      },
-      {
-        rank: 4,
-        name: "Pepsi",
-        web: "www.pepsi.ng",
-        logoUrl: null,
-        spend: "₦312K",
-        campaigns: 7,
-      },
-      {
-        rank: 5,
-        name: "Pepsi",
-        web: "www.pepsi.ng",
-        logoUrl: null,
-        spend: "₦98K",
-        campaigns: 3,
-      },
-    ];
+    return [];
   }, [apiData]);
 
   if (isLoading) {

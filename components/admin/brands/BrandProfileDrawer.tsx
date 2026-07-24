@@ -29,6 +29,8 @@ import {
   useAddBrandNote,
   useUpdateBrandNote,
   useDeleteBrandNote,
+  useSuspendBrand,
+  useReactivateBrand,
 } from "@/hooks/useAdminBrands";
 
 interface BrandProfileDrawerProps {
@@ -95,6 +97,8 @@ export default function BrandProfileDrawer({
   const addNoteMutation = useAddBrandNote();
   const updateNoteMutation = useUpdateBrandNote();
   const deleteNoteMutation = useDeleteBrandNote();
+  const suspendBrandMutation = useSuspendBrand();
+  const reactivateBrandMutation = useReactivateBrand();
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
@@ -562,7 +566,7 @@ export default function BrandProfileDrawer({
                               <button
                                 onClick={() => {
                                   deleteNoteMutation.mutate({
-                                    id: brandId,
+                                    id: noteItem.brandId || brandId!,
                                     noteId: noteItem.id,
                                   });
                                 }}
@@ -632,11 +636,33 @@ export default function BrandProfileDrawer({
                 action={activeAction}
                 onClose={() => setActiveAction(null)}
                 onConfirm={() => {
-                  setSuccessModalTitle("Action Successful");
-                  setSuccessModalMessage(
-                    "The requested brand action has completed.",
-                  );
-                  setIsSuccessModalOpen(true);
+                  if (activeAction === "suspend" && brandId) {
+                    suspendBrandMutation.mutate(brandId, {
+                      onSuccess: () => {
+                        setSuccessModalTitle("Account Suspended");
+                        setSuccessModalMessage(
+                          "You have successfully suspended this brand account.",
+                        );
+                        setIsSuccessModalOpen(true);
+                      },
+                    });
+                  } else if (activeAction === "reactivate" && brandId) {
+                    reactivateBrandMutation.mutate(brandId, {
+                      onSuccess: () => {
+                        setSuccessModalTitle("Account Reactivated");
+                        setSuccessModalMessage(
+                          "You have successfully reactivated this brand account.",
+                        );
+                        setIsSuccessModalOpen(true);
+                      },
+                    });
+                  } else {
+                    setSuccessModalTitle("Action Successful");
+                    setSuccessModalMessage(
+                      "The requested brand action has completed.",
+                    );
+                    setIsSuccessModalOpen(true);
+                  }
                   setActiveAction(null);
                 }}
               />

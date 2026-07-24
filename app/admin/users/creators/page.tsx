@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import CreatorStats from "@/components/admin/creators/CreatorStats";
-import CreatorRetentionBanner from "@/components/admin/creators/CreatorRetentionBanner";
+
 import SignupGrowthChart from "@/components/admin/creators/SignupGrowthChart";
 import ActiveUsersChart from "@/components/admin/creators/ActiveUsersChart";
 import TopCreators from "@/components/admin/creators/TopCreators";
@@ -53,9 +53,6 @@ export default function CreatorManagementPage() {
       {/* Full Analytics Charts & Widgets (Displayed when mode is Charts) */}
       {viewMode === "Charts" ? (
         <div className="flex flex-col gap-6">
-          {/* Retention Rate Banner */}
-          <CreatorRetentionBanner />
-
           {/* Row 1: Signup Growth & Active Users Charts Side-by-Side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <SignupGrowthChart />

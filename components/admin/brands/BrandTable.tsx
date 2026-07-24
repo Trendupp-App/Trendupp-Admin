@@ -48,7 +48,7 @@ export default function BrandTable() {
     limit: 10,
   });
 
-  const formatDateOnly = (dateStr?: string) => {
+  const formatDateOnly = (dateStr?: string | null) => {
     if (!dateStr) return "N/A";
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
@@ -59,99 +59,89 @@ export default function BrandTable() {
     });
   };
 
-  const brandsList = useMemo(() => {
-    if (
-      apiData?.data &&
-      Array.isArray(apiData.data) &&
-      apiData.data.length > 0
-    ) {
-      return apiData.data.map((b) => ({
-        id: b.id,
-        advertiserId: b.brandId || `#AD-${b.id.slice(0, 4)}`,
-        name: b.brandName || "Brand Name",
-        logoUrl: b.logoUrl,
-        email: b.email || "info@brand.com",
-        repName: b.representativeName || "Representative",
-        repEmail: b.representativeEmail || b.email || "rep@brand.com",
-        industry: b.industry || "General",
-        location:
-          b.location || `${b.city || "Lagos"}, ${b.country || "Nigeria"}`,
-        completion: b.profileCompletion ?? 100,
-        status: (b.status || "ACTIVE").toLowerCase(),
-        totalSpend: b.totalSpend || 0,
-        campaigns: b.campaignsCount || 0,
-        joined: formatDateOnly(b.joinedAt),
-      }));
+  const formatLocation = (
+    loc: unknown,
+    city?: string | null,
+    country?: string | null,
+  ): string => {
+    if (typeof loc === "string" && loc.trim()) return loc;
+    if (loc && typeof loc === "object") {
+      const lObj = loc as { city?: string; country?: string; state?: string };
+      const parts = [lObj.city || lObj.state, lObj.country].filter(Boolean);
+      if (parts.length > 0) return parts.join(", ");
     }
+    const parts = [city, country].filter(Boolean);
+    if (parts.length > 0) return parts.join(", ");
+    return "Nigeria";
+  };
 
-    // Default mock matching screenshot design
-    return [
-      {
-        id: "a145597a-f606-4308-8675-dea603dee12b",
-        advertiserId: "#AD-1001",
-        name: "Pepsi Nigeria",
-        logoUrl: null,
-        email: "emeka@pepsi.ng",
-        repName: "Emeka Obi",
-        repEmail: "emeka@pepsi.ng",
-        industry: "Beverages",
-        location: "Lagos, Nigeria",
-        completion: 100,
-        status: "active",
-        totalSpend: 4500000,
-        campaigns: 14,
-        joined: "Oct 12, 2023",
-      },
-      {
-        id: "b205597a-f606-4308-8675-dea603dee12c",
-        advertiserId: "#AD-1002",
-        name: "MTN Nigeria",
-        logoUrl: null,
-        email: "s.johnson@mtn.ng",
-        repName: "Sarah Johnson",
-        repEmail: "s.johnson@mtn.ng",
-        industry: "Telecomm",
-        location: "Abuja, Nigeria",
-        completion: 40,
-        status: "suspended",
-        totalSpend: 12200000,
-        campaigns: 32,
-        joined: "Jan 05, 2023",
-      },
-      {
-        id: "c305597a-f606-4308-8675-dea603dee12d",
-        advertiserId: "#AD-1003",
-        name: "Flutterwave",
-        logoUrl: null,
-        email: "dojo@flutterwavego.com",
-        repName: "David Ojo",
-        repEmail: "dojo@flutterwavego.com",
-        industry: "Fintech",
-        location: "Lagos, Nigeria",
-        completion: 60,
-        status: "pending",
-        totalSpend: 0,
-        campaigns: 0,
-        joined: "Nov 22, 2023",
-      },
-      {
-        id: "d405597a-f606-4308-8675-dea603dee12e",
-        advertiserId: "#AD-1004",
-        name: "Jumia",
-        logoUrl: null,
-        email: "a.bello@jumia.com",
-        repName: "Amina Bello",
-        repEmail: "a.bello@jumia.com",
-        industry: "E-commerce",
-        location: "Lagos, Nigeria",
-        completion: 80,
-        status: "active",
-        totalSpend: 6900000,
-        campaigns: 24,
-        joined: "Mar 15, 2022",
-      },
-    ];
-  }, [apiData]);
+  const brandsList = useMemo(() => {
+    if (apiData?.data && Array.isArray(apiData.data)) {
+      let mapped = apiData.data.map((b) => {
+        const brandName = b.advertiser?.brandName || b.brandName || "Brand";
+        const logoUrl = b.advertiser?.logoUrl || b.logoUrl || null;
+        const repName =
+          b.representative?.name || b.representativeName || brandName;
+        const repEmail =
+          b.representative?.email || b.representativeEmail || b.email || "";
+        const advertiserId =
+          b.displayId || b.brandId || `#AD-${b.id.slice(0, 4)}`;
+        const joinedDate = b.joinDate || b.joinedAt;
+
+        const repAccountStatus = (
+          b.representative as { accountStatus?: string } | undefined
+        )?.accountStatus;
+
+        const rawStatus = String(
+          b.status ||
+            (b as unknown as { accountStatus?: string }).accountStatus ||
+            repAccountStatus ||
+            "ACTIVE",
+        ).toUpperCase();
+
+        const normalizedStatus =
+          rawStatus === "SUSPENDED"
+            ? "suspended"
+            : rawStatus === "PENDING"
+              ? "pending"
+              : "active";
+
+        return {
+          id: b.id,
+          advertiserId,
+          name: brandName,
+          logoUrl,
+          email: repEmail,
+          repName,
+          repEmail,
+          industry: b.industry || "General",
+          location: formatLocation(b.location, b.city, b.country),
+          completion: b.profileCompletion ?? 0,
+          status: normalizedStatus,
+          totalSpend: b.totalSpend || 0,
+          campaigns: b.campaignsCount || 0,
+          joined: formatDateOnly(joinedDate || undefined),
+        };
+      });
+
+      if (activeTab === "Onboarded") {
+        mapped = mapped.filter((b) => b.status === "active");
+      } else if (activeTab === "Suspended") {
+        mapped = mapped.filter((b) => b.status === "suspended");
+      } else if (activeTab === "Pending") {
+        mapped = mapped.filter((b) => b.status === "pending");
+      }
+
+      if (selectedStatus !== "All") {
+        mapped = mapped.filter(
+          (b) => b.status === selectedStatus.toLowerCase(),
+        );
+      }
+
+      return mapped;
+    }
+    return [];
+  }, [apiData, activeTab, selectedStatus]);
 
   const handleRowClick = (brandId: string) => {
     setSelectedBrandId(brandId);

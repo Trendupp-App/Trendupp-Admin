@@ -53,6 +53,7 @@ export default function UserAvatar({
           src={resolvedUrl}
           alt="User avatar"
           fill
+          unoptimized
           className="object-cover"
           onError={() => setImgError(true)}
         />

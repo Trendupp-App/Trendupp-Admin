@@ -30,40 +30,36 @@ export default function BrandStats() {
 
   const kpis: AdminKpiCardProps[] = [
     {
-      value:
-        summary?.totalBrands !== undefined
-          ? summary.totalBrands.toLocaleString()
-          : "3,847",
+      value: (
+        summary?.totalAdvertisers ??
+        summary?.totalBrands ??
+        0
+      ).toLocaleString(),
       label: "Total Advertisers",
       icon: Users,
       iconBg: "bg-[#fdf2f6]",
       iconColor: "text-[#d7176f]",
     },
     {
-      value:
-        summary?.profileCompleted !== undefined
-          ? summary.profileCompleted.toLocaleString()
-          : "3,124",
+      value: (summary?.profileCompleted ?? 0).toLocaleString(),
       label: "Profile Completion",
       icon: CheckCircle,
       iconBg: "bg-[#f0fdf4]",
       iconColor: "text-[#16a34a]",
     },
     {
-      value:
-        summary?.suspendedBrands !== undefined
-          ? summary.suspendedBrands.toLocaleString()
-          : "187",
+      value: (
+        summary?.suspendedAdvertisers ??
+        summary?.suspendedBrands ??
+        0
+      ).toLocaleString(),
       label: "Suspended",
       icon: Lock,
       iconBg: "bg-[#fef2f2]",
       iconColor: "text-[#dc2626]",
     },
     {
-      value:
-        summary?.pendingProfileCompletion !== undefined
-          ? summary.pendingProfileCompletion.toLocaleString()
-          : "536",
+      value: (summary?.pendingProfileCompletion ?? 0).toLocaleString(),
       label: "Pending Profile Completion",
       icon: Clock,
       iconBg: "bg-[#fff7ed]",

@@ -24,13 +24,7 @@ export default function BrandDistributions() {
         pct: item.percentage,
       }));
     }
-    return [
-      { label: "Tech", count: 1842, pct: 48 },
-      { label: "Fashion", count: 1204, pct: 31 },
-      { label: "Beauty", count: 687, pct: 18 },
-      { label: "Food & Beverage", count: 114, pct: 3 },
-      { label: "Finance", count: 114, pct: 3 },
-    ];
+    return [];
   }, [industryData]);
 
   const countries = useMemo(() => {
@@ -41,14 +35,7 @@ export default function BrandDistributions() {
         pct: item.percentage,
       }));
     }
-    return [
-      { label: "Nigeria", count: 1842, pct: 48 },
-      { label: "Ghana", count: 1204, pct: 31 },
-      { label: "Kenya", count: 687, pct: 18 },
-      { label: "Togo", count: 114, pct: 3 },
-      { label: "Benin Republic", count: 134, pct: 3.5 },
-      { label: "Uganda", count: 114, pct: 3 },
-    ];
+    return [];
   }, [countryData]);
 
   if (isLoadingIndustry || isLoadingCountry) {

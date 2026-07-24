@@ -25,14 +25,7 @@ export default function BrandProfileCompletionCard() {
       });
     }
 
-    // Default fallback from screenshot design
-    return [
-      { label: "100%", count: "1,842", widthPct: "75%" },
-      { label: "80%", count: "1,204", widthPct: "55%" },
-      { label: "20%", count: "687", widthPct: "30%" },
-      { label: "40%", count: "114", widthPct: "15%" },
-      { label: "60%", count: "114", widthPct: "15%" },
-    ];
+    return [];
   }, [apiData]);
 
   if (isLoading) {
