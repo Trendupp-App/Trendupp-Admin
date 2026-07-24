@@ -18,9 +18,9 @@ import ActivateChatModal from "@/components/admin/disputes/ActivateChatModal";
 import ActiveChatsGrid from "@/components/admin/disputes/ActiveChatsGrid";
 import ClosedDisputesTable from "@/components/admin/disputes/ClosedDisputesTable";
 import DisputeDetailView from "@/components/admin/disputes/DisputeDetailView";
+import DisputeSkeleton from "@/components/admin/disputes/DisputeSkeleton";
 import { Dispute, ResolveDisputePayload } from "@/types/dispute";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
 
 import { useAuthStore } from "@/store/authStore";
 
@@ -200,7 +200,10 @@ export default function AdminDisputesPage() {
 
   const handleConfirmActivate = () => {
     if (!activateDisputeTarget) return;
-    activateMutation.mutate({ id: activateDisputeTarget.id });
+    activateMutation.mutate({
+      id: activateDisputeTarget.id,
+      financeAdminId: user?.id || "b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22",
+    });
   };
 
   const handleResolveSubmit = (payload: ResolveDisputePayload) => {
@@ -255,13 +258,8 @@ export default function AdminDisputesPage() {
         closedCount={closedDisputes.length}
       />
 
-      {/* Loading Indicator */}
-      {isListLoading && (
-        <div className="flex items-center justify-center py-12 text-[#9a99b0] gap-2">
-          <Loader2 className="animate-spin" size={20} />
-          <span className="text-xs font-semibold">Loading disputes...</span>
-        </div>
-      )}
+      {/* Loading Shimmer Indicator */}
+      {isListLoading && <DisputeSkeleton />}
 
       {/* Tab Content */}
       {!isListLoading && activeTab === "pending" && (
