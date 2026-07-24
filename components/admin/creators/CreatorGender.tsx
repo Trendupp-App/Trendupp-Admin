@@ -1,6 +1,20 @@
 "use client";
 
+import { useCreatorGenderDistribution } from "@/hooks/useAdminCreators";
+
 export default function CreatorGender() {
+  const { data: genderData, isLoading } = useCreatorGenderDistribution();
+
+  const items = genderData?.length
+    ? genderData.map((g) => ({
+        name: g.gender,
+        count: g.count,
+        pct: Math.round(g.percentage),
+        color:
+          g.gender.toLowerCase() === "male" ? "bg-[#2f63eb]" : "bg-brand-pink",
+      }))
+    : [];
+
   return (
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-4.5">
       <div>
@@ -8,26 +22,39 @@ export default function CreatorGender() {
       </div>
 
       <div className="flex flex-col gap-4">
-        {[
-          { name: "Male", count: 1204, pct: 31, color: "bg-brand-pink" },
-          { name: "Female", count: 687, pct: 18, color: "bg-[#2f63eb]" },
-        ].map((g) => (
-          <div key={g.name} className="flex flex-col gap-1.5">
-            <div className="flex justify-between items-center text-xs">
-              <span className="font-semibold text-[#1a1a2e]">{g.name}</span>
-              <span className="font-bold text-[#1a1a2e]">
-                {g.count.toLocaleString()}{" "}
-                <span className="text-[#9a99b0] font-normal">({g.pct}%)</span>
-              </span>
+        {isLoading ? (
+          Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="flex flex-col gap-2 animate-pulse">
+              <div className="flex justify-between items-center">
+                <div className="w-16 h-3.5 rounded-md bg-[#e8e6f0]/60" />
+                <div className="w-12 h-3.5 rounded-md bg-[#e8e6f0]/60" />
+              </div>
+              <div className="w-full h-1.5 bg-[#e8e6f0]/40 rounded-full" />
             </div>
-            <div className="w-full h-1.5 bg-[#f4f3f6] rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${g.color}`}
-                style={{ width: `${g.pct}%` }}
-              />
-            </div>
+          ))
+        ) : items.length === 0 ? (
+          <div className="py-8 text-center text-xs text-[#9a99b0]">
+            No gender data available.
           </div>
-        ))}
+        ) : (
+          items.map((g) => (
+            <div key={g.name} className="flex flex-col gap-1.5">
+              <div className="flex justify-between items-center text-xs">
+                <span className="font-semibold text-[#1a1a2e]">{g.name}</span>
+                <span className="font-bold text-[#1a1a2e]">
+                  {g.count.toLocaleString()}{" "}
+                  <span className="text-[#9a99b0] font-normal">({g.pct}%)</span>
+                </span>
+              </div>
+              <div className="w-full h-1.5 bg-[#f4f3f6] rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${g.color}`}
+                  style={{ width: `${g.pct}%` }}
+                />
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </section>
   );

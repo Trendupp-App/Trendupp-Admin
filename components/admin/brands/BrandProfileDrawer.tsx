@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   X,
   ArrowLeft,
@@ -11,7 +11,6 @@ import {
   Pencil,
   Trash2,
   Plus,
-  AlertTriangle,
   Ban,
   ShieldCheck,
 } from "lucide-react";
@@ -19,7 +18,20 @@ import { cn } from "@/lib/utils";
 import { AdminStatusBadge } from "../AdminStatusBadge";
 import BrandActionModal from "./BrandActionModal";
 import SuccessModal from "../creators/SuccessModal";
+import NoteModal from "../creators/NoteModal";
 import { Portal } from "@/components/ui/portal";
+import { DrawerSkeleton } from "@/components/admin/DrawerSkeleton";
+import UserAvatar from "@/shared/UserAvatar";
+import {
+  useBrandDetails,
+  useBrandCampaignHistory,
+  useBrandNotes,
+  useAddBrandNote,
+  useUpdateBrandNote,
+  useDeleteBrandNote,
+  useSuspendBrand,
+  useReactivateBrand,
+} from "@/hooks/useAdminBrands";
 
 interface BrandProfileDrawerProps {
   isOpen: boolean;
@@ -32,7 +44,7 @@ type TabType = "Overview" | "Campaign History" | "Notes" | "Actions";
 const PepsiLogo = () => (
   <svg
     viewBox="0 0 100 100"
-    className="w-18 h-18 rounded-full overflow-hidden shadow-sm shrink-0"
+    className="w-18 h-18 rounded-full overflow-hidden shadow-xs shrink-0"
   >
     <path
       d="M 50,5 A 45,45 0 0 1 95,50 C 95,50 80,35 50,45 C 20,55 5,50 5,50 A 45,45 0 0 1 50,5 Z"
@@ -59,29 +71,34 @@ export default function BrandProfileDrawer({
     "suspend" | "reactivate" | "delete" | null
   >(null);
 
-  /* Note state */
-  const [notes, setNotes] = useState([
-    {
-      id: 1,
-      author: "Admin Segun",
-      date: "Jul 12, 2024",
-      text: "Brand requested rate review — escalated to finance team.",
-    },
-    {
-      id: 2,
-      author: "Admin Amina",
-      date: "Jun 5, 2024",
-      text: "Verified business registration documents.",
-    },
-  ]);
-  const [isWritingNote, setIsWritingNote] = useState(false);
-  const [noteText, setNoteText] = useState("");
-  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+  /* Note Modal states */
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [noteModalTitle, setNoteModalTitle] = useState("Add note");
+  const [noteInitialValue, setNoteInitialValue] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 
-  /* Success states */
-  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
-  const [successTitle, setSuccessTitle] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
+  /* Success Modal states */
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [successModalTitle, setSuccessModalTitle] = useState("");
+  const [successModalMessage, setSuccessModalMessage] = useState("");
+
+  /* API Hooks */
+  const { data: brandData, isLoading: isLoadingDetails } = useBrandDetails(
+    brandId,
+    isOpen,
+  );
+  const { data: campaignHistoryData, isLoading: isLoadingCampaigns } =
+    useBrandCampaignHistory(brandId, 1, 10, isOpen);
+  const { data: notesData = [], isLoading: isLoadingNotes } = useBrandNotes(
+    brandId,
+    isOpen,
+  );
+
+  const addNoteMutation = useAddBrandNote();
+  const updateNoteMutation = useUpdateBrandNote();
+  const deleteNoteMutation = useDeleteBrandNote();
+  const suspendBrandMutation = useSuspendBrand();
+  const reactivateBrandMutation = useReactivateBrand();
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
@@ -90,47 +107,88 @@ export default function BrandProfileDrawer({
     };
   }, [isOpen]);
 
-  if (!isOpen || !brandId) return null;
+  const header = brandData?.header;
+  const brandDetails = brandData?.brandDetails;
+  const brandRepresentative = brandData?.brandRepresentative;
+  const metricsData = brandData?.metrics;
+  const profileDetails = brandData?.profileDetails;
 
-  const handleSaveNote = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!noteText.trim()) return;
+  const brandName =
+    header?.brandName ||
+    brandDetails?.brandName ||
+    profileDetails?.brandName ||
+    "Brand Profile";
+  const brandEmail = brandDetails?.email || profileDetails?.email || "N/A";
+  const brandWebsite =
+    header?.websiteUrl ||
+    brandDetails?.website ||
+    profileDetails?.website ||
+    "N/A";
+  const brandLogoUrl = header?.logoUrl || null;
+  const brandIndustry = header?.industry || profileDetails?.industry || "FMCG";
+  const brandStatus = (
+    header?.status ||
+    brandRepresentative?.accountStatus ||
+    profileDetails?.accountStatus ||
+    "ACTIVE"
+  ).toLowerCase();
 
-    if (editingNoteId) {
-      setNotes(
-        notes.map((n) =>
-          n.id === editingNoteId ? { ...n, text: noteText } : n,
-        ),
-      );
-      setEditingNoteId(null);
-    } else {
-      setNotes([
-        {
-          id: Date.now(),
-          author: "Super Admin",
-          date: new Date().toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          }),
-          text: noteText,
-        },
-        ...notes,
-      ]);
+  const repName =
+    brandRepresentative?.fullName ||
+    profileDetails?.representativeName ||
+    brandName;
+  const repEmail =
+    brandRepresentative?.email ||
+    profileDetails?.representativeEmail ||
+    brandEmail;
+  const repPhone =
+    brandRepresentative?.phoneNumber ||
+    profileDetails?.representativePhone ||
+    "N/A";
+  const repCompletion =
+    brandRepresentative?.profileCompletion ??
+    profileDetails?.profileCompletion ??
+    0;
+  const repJoined =
+    brandRepresentative?.dateJoined || profileDetails?.dateJoined || "N/A";
+
+  const monthlyBudgetDisplay = brandDetails?.monthlyBudget
+    ? `₦${(brandDetails.monthlyBudget / 1000000).toFixed(1)}M`
+    : profileDetails?.monthlyBudget
+      ? `₦${(profileDetails.monthlyBudget / 1000000).toFixed(1)}M`
+      : "N/A";
+
+  const formatDateOnly = (dateStr?: string) => {
+    if (!dateStr) return "N/A";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  const displayCampaigns = useMemo(() => {
+    if (
+      campaignHistoryData?.data &&
+      Array.isArray(campaignHistoryData.data) &&
+      campaignHistoryData.data.length > 0
+    ) {
+      return campaignHistoryData.data.map((c) => ({
+        id: c.id,
+        title: c.campaignTitle || "Campaign Title",
+        status: c.status || "ACTIVE",
+        budget: c.budget ? `₦${(c.budget / 1000000).toFixed(1)}M` : "₦0",
+        spent: c.spentAmount ? `₦${(c.spentAmount / 1000).toFixed(0)}K` : "₦0",
+        creators: c.creatorsJoinedCount || 0,
+        date: formatDateOnly(c.startDate || c.createdAt),
+      }));
     }
-    setNoteText("");
-    setIsWritingNote(false);
-  };
+    return [];
+  }, [campaignHistoryData]);
 
-  const startEditNote = (id: number, text: string) => {
-    setEditingNoteId(id);
-    setNoteText(text);
-    setIsWritingNote(true);
-  };
-
-  const deleteNote = (id: number) => {
-    setNotes(notes.filter((n) => n.id !== id));
-  };
+  if (!isOpen || !brandId) return null;
 
   return (
     <Portal>
@@ -141,474 +199,515 @@ export default function BrandProfileDrawer({
         />
 
         <div className="w-full max-w-[620px] h-full bg-white relative z-10 flex flex-col shadow-2xl overflow-y-auto">
-          {/* Header bar */}
-          <div className="flex items-center justify-between border-b border-[#e8e6f0]/60 px-6 py-4 shrink-0">
-            <button
-              onClick={onClose}
-              className="flex items-center gap-2 text-xs font-semibold text-[#7a7a9a] hover:text-[#1a1a2e] transition-colors cursor-pointer"
-            >
-              <ArrowLeft size={15} /> Back
-            </button>
-            <span className="text-sm font-bold text-[#1a1a2e]">
-              Brand Profile
-            </span>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-full hover:bg-[#f4f3f6] text-[#5a5a7a] transition-colors cursor-pointer"
-            >
-              <X size={18} />
-            </button>
-          </div>
-
-          {/* Brand Summary info */}
-          <div className="flex flex-col items-center justify-center py-7 border-b border-[#e8e6f0]/40 shrink-0">
-            <PepsiLogo />
-            <h3 className="text-base font-bold text-[#1a1a2e] mt-3">
-              Pepsi Nigeria
-            </h3>
-            <span className="text-xs text-[#9a99b0]">pepsi.com.ng</span>
-            <div className="flex items-center gap-2 mt-2">
-              <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-[#faf9fc] text-[#7a7a9a] border border-[#e8e6f0]">
-                FMCG
-              </span>
-              <AdminStatusBadge status="active" />
-            </div>
-          </div>
-
-          {/* Navigation Tabs */}
-          <div className="flex border-b border-[#e8e6f0]/40 px-6 overflow-x-auto shrink-0 scrollbar-none">
-            {(
-              ["Overview", "Campaign History", "Notes", "Actions"] as const
-            ).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={cn(
-                  "px-4 py-3 text-xs font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap",
-                  activeTab === tab
-                    ? "border-brand-pink text-brand-pink"
-                    : "border-transparent text-[#9a99b0] hover:text-[#1a1a2e]",
-                )}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-
-          {/* Tab Content */}
-          <div className="flex-1 flex flex-col gap-5 p-6">
-            {/* OVERVIEW TAB */}
-            {activeTab === "Overview" && (
-              <>
-                {/* Brand details box */}
-                <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-4 text-left">
-                  <h3 className="text-xs font-bold text-[#1a1a2e]">
-                    Brand Details
-                  </h3>
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-3.5 text-xs">
-                    {[
-                      { label: "Brand name", val: "Pepsi Company" },
-                      { label: "Email", val: "pepsi@email.com" },
-                      { label: "Website", val: "www.pepsi.com.ng" },
-                      {
-                        label: "Bio",
-                        val: "A brand committed to refreshing moments and inspiring connections through bold, modern flavors.",
-                        fullWidth: true,
-                      },
-                      { label: "Country", val: "Nigeria" },
-                      { label: "State/City", val: "Lagos/Ikeja" },
-                      { label: "Monthly Budget", val: "₦4.7M" },
-                    ].map((row, i) => (
-                      <div
-                        key={i}
-                        className={cn(
-                          "flex flex-col gap-1",
-                          row.fullWidth ? "col-span-2" : "",
-                        )}
-                      >
-                        <span className="text-[10px] font-semibold text-[#9a99b0]">
-                          {row.label}
-                        </span>
-                        <span className="font-semibold text-[#1a1a2e] leading-relaxed">
-                          {row.val}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="border-t border-[#e8e6f0]/40 pt-4.5">
-                    <h3 className="text-xs font-bold text-[#1a1a2e] mb-3.5">
-                      Brand Representative
-                    </h3>
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-3.5 text-xs">
-                      {[
-                        { label: "Full name", val: "Chisom Mary" },
-                        { label: "Email", val: "amara@email.com" },
-                        { label: "Phone Number", val: "+2348077238262" },
-                        { label: "Profile Completion", val: "100%" },
-                        { label: "Date Joined", val: "Jan 15, 2026" },
-                        {
-                          label: "Account Status",
-                          val: (
-                            <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-[#f0fdf4] text-[#16a34a]">
-                              Active
-                            </span>
-                          ),
-                        },
-                      ].map((row, i) => (
-                        <div key={i} className="flex flex-col gap-1">
-                          <span className="text-[10px] font-semibold text-[#9a99b0]">
-                            {row.label}
-                          </span>
-                          <span className="font-semibold text-[#1a1a2e]">
-                            {row.val}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Metrics cards row */}
-                <div>
-                  <h3 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider mb-3 text-left">
-                    Metrics
-                  </h3>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    {[
-                      {
-                        label: "Total Campaigns",
-                        val: "14",
-                        icon: Briefcase,
-                        bg: "bg-[#edf2fe] text-[#2f63eb]",
-                      },
-                      {
-                        label: "Total Spend",
-                        val: "₦28M",
-                        icon: TrendingUp,
-                        bg: "bg-[#fdf2f6] text-[#d7176f]",
-                      },
-                      {
-                        label: "Active Campaigns",
-                        val: "3",
-                        icon: Play,
-                        bg: "bg-[#f0fdf4] text-[#16a34a]",
-                      },
-                      {
-                        label: "Avg Creator Rating",
-                        val: "4.7 / 5",
-                        icon: Star,
-                        bg: "bg-[#fff7ed] text-[#ea580c]",
-                      },
-                    ].map((m, i) => {
-                      const Icon = m.icon;
-                      return (
-                        <div
-                          key={i}
-                          className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-3.5 flex flex-col gap-3 items-start text-left"
-                        >
-                          <div
-                            className={cn(
-                              "w-7 h-7 rounded-full flex items-center justify-center shrink-0",
-                              m.bg,
-                            )}
-                          >
-                            <Icon size={14} />
-                          </div>
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-[10px] font-medium text-[#9a99b0]">
-                              {m.label}
-                            </span>
-                            <span className="text-xs font-bold text-[#1a1a2e]">
-                              {m.val}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* CAMPAIGN HISTORY TAB */}
-            {activeTab === "Campaign History" && (
-              <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-4 text-left">
-                <h3 className="text-xs font-bold text-[#1a1a2e]">
-                  Campaign History
-                </h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="border-b border-[#e8e6f0]/40 text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
-                        <th className="pb-3 pl-1">Campaign Name</th>
-                        <th className="pb-3">Creators</th>
-                        <th className="pb-3">Status</th>
-                        <th className="pb-3">Budget</th>
-                        <th className="pb-3 text-right pr-1">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#e8e6f0]/30 font-medium">
-                      {[
-                        {
-                          name: "Summer Glow",
-                          creator: "Chisom mary",
-                          status: (
-                            <span className="px-2 py-0.5 rounded bg-[#f4f3f6] text-[#7a7a9a] text-[10px] font-bold">
-                              Completed
-                            </span>
-                          ),
-                          budget: "₦150K",
-                          date: "Jan 20, 2026",
-                        },
-                        {
-                          name: "Summer Glow",
-                          creator: "Chisom mary",
-                          status: (
-                            <span className="px-2 py-0.5 rounded bg-[#f4f3f6] text-[#7a7a9a] text-[10px] font-bold">
-                              Completed
-                            </span>
-                          ),
-                          budget: "₦150K",
-                          date: "Jan 20, 2026",
-                        },
-                        {
-                          name: "Summer Glow",
-                          creator: "Chisom mary",
-                          status: (
-                            <span className="px-2 py-0.5 rounded bg-[#f0fdf4] text-[#16a34a] text-[10px] font-bold">
-                              Active
-                            </span>
-                          ),
-                          budget: "₦150K",
-                          date: "Jan 20, 2026",
-                        },
-                        {
-                          name: "Summer Glow",
-                          creator: "—",
-                          status: (
-                            <span className="px-2 py-0.5 rounded bg-[#eff6ff] text-[#2f63eb] text-[10px] font-bold">
-                              Draft
-                            </span>
-                          ),
-                          budget: "₦150K",
-                          date: "Jan 20, 2026",
-                        },
-                      ].map((row, i) => (
-                        <tr key={i}>
-                          <td className="py-3 pl-1 font-bold text-[#1a1a2e]">
-                            {row.name}
-                          </td>
-                          <td className="py-3 text-[#5a5a7a]">{row.creator}</td>
-                          <td className="py-3">{row.status}</td>
-                          <td className="py-3 text-[#5a5a7a]">{row.budget}</td>
-                          <td className="py-3 text-right pr-1 text-[#9a99b0]">
-                            {row.date}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+          {isLoadingDetails ? (
+            <DrawerSkeleton onClose={onClose} title="Brand Profile" />
+          ) : (
+            <>
+              {/* Top bar */}
+              <div className="flex items-center justify-between border-b border-[#e8e6f0]/60 px-6 py-4 shrink-0">
+                <button
+                  onClick={onClose}
+                  className="flex items-center gap-2 text-xs font-semibold text-[#7a7a9a] hover:text-[#1a1a2e] transition-colors cursor-pointer"
+                >
+                  <ArrowLeft size={15} /> Back
+                </button>
+                <span className="text-sm font-bold text-[#1a1a2e]">
+                  Brand Profile
+                </span>
+                <button
+                  onClick={onClose}
+                  className="p-1.5 rounded-full hover:bg-[#f4f3f6] text-[#5a5a7a] transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
               </div>
-            )}
 
-            {/* NOTES TAB */}
-            {activeTab === "Notes" && (
-              <div className="flex flex-col gap-4 text-left">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-xs font-bold text-[#5a5a7a] uppercase tracking-wider">
-                    Admin Notes
-                  </h3>
-                  {!isWritingNote && (
-                    <button
-                      onClick={() => {
-                        setIsWritingNote(true);
-                        setEditingNoteId(null);
-                        setNoteText("");
-                      }}
-                      className="h-8 px-3 rounded-lg bg-brand-pink text-white text-[10px] font-bold cursor-pointer hover:opacity-90 flex items-center gap-1"
-                    >
-                      <Plus size={12} /> Add Note
-                    </button>
-                  )}
-                </div>
-
-                {/* Note text editor inline */}
-                {isWritingNote && (
-                  <form
-                    onSubmit={handleSaveNote}
-                    className="bg-white border border-[#e8e6f0] rounded-2xl p-4.5 flex flex-col gap-3"
-                  >
-                    <textarea
-                      required
-                      placeholder="Write your internal note here..."
-                      value={noteText}
-                      onChange={(e) => setNoteText(e.target.value)}
-                      className="w-full h-24 border border-[#e8e6f0] rounded-xl p-3 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 resize-none font-medium placeholder-[#b0aec8]"
-                    />
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="submit"
-                        className="h-8 px-4 bg-brand-pink text-white text-[10px] font-bold rounded-lg cursor-pointer"
-                      >
-                        Save Note
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsWritingNote(false)}
-                        className="text-[10px] font-bold text-[#7a7a9a] hover:text-[#1a1a2e] cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                )}
-
-                {/* Notes list */}
-                <div className="flex flex-col gap-3">
-                  {notes.map((n) => (
-                    <div
-                      key={n.id}
-                      className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4.5 flex flex-col gap-2.5"
-                    >
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-1.5 text-[10px]">
-                          <span className="font-bold text-[#1a1a2e]">
-                            {n.author}
-                          </span>
-                          <span className="text-[#9a99b0]">{n.date}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-[#9a99b0]">
-                          <button
-                            onClick={() => startEditNote(n.id, n.text)}
-                            className="p-1 hover:bg-[#f4f3f6] rounded-md transition-colors cursor-pointer hover:text-[#1a1a2e]"
-                          >
-                            <Pencil size={11} />
-                          </button>
-                          <button
-                            onClick={() => deleteNote(n.id)}
-                            className="p-1 hover:bg-[#fecaca]/30 rounded-md transition-colors cursor-pointer hover:text-[#dc2626]"
-                          >
-                            <Trash2 size={11} />
-                          </button>
-                        </div>
-                      </div>
-                      <p className="text-xs text-[#5a5a7a] leading-relaxed">
-                        {n.text}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ACTIONS TAB */}
-            {activeTab === "Actions" && (
-              <div className="flex flex-col gap-4 text-left">
-                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#fffbeb] border border-[#fde68a] text-[#92400e] text-xs font-semibold">
-                  <AlertTriangle
-                    size={14}
-                    className="shrink-0 text-[#f59e0b]"
+              {/* Header Summary */}
+              <div className="flex flex-col items-center justify-center py-7 border-b border-[#e8e6f0]/40 shrink-0">
+                {brandName.toLowerCase().includes("pepsi") ? (
+                  <PepsiLogo />
+                ) : (
+                  <UserAvatar
+                    avatarUrl={brandLogoUrl}
+                    initials={brandName.slice(0, 2)}
+                    size={72}
                   />
-                  Actions require confirmation and are recorded in the audit
-                  log.
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  {[
-                    {
-                      label: "Suspend Account",
-                      desc: "Temporarily restrict creator access to the platform.",
-                      action: "suspend" as const,
-                      bg: "bg-[#fffbeb] border-[#fde68a] text-[#ea580c]",
-                      iconBg: "bg-[#fff7ed]",
-                    },
-                    {
-                      label: "Reactivate Account",
-                      desc: "Restore full platform access for a previously suspended brand account.",
-                      action: "reactivate" as const,
-                      bg: "bg-white border-[#e8e6f0] text-[#16a34a]",
-                      iconBg: "bg-[#f0fdf4]",
-                    },
-                    {
-                      label: "Delete Account",
-                      desc: "Permanently remove brand account. This cannot be undone.",
-                      action: "delete" as const,
-                      bg: "bg-[#fef2f2] border-[#fecaca] text-[#dc2626]",
-                      iconBg: "bg-[#fee2e2]",
-                    },
-                  ].map((a, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setActiveAction(a.action)}
-                      className={cn(
-                        "flex items-center gap-4 w-full text-left px-5 py-4 rounded-2xl border transition-all hover:brightness-95 cursor-pointer",
-                        a.bg,
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "w-9 h-9 rounded-full flex items-center justify-center shrink-0",
-                          a.iconBg,
-                        )}
-                      >
-                        {a.action === "suspend" ? (
-                          <Ban size={16} />
-                        ) : (
-                          <ShieldCheck size={16} />
-                        )}
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-sm font-bold">{a.label}</span>
-                        <span className="text-[11px] text-[#9a99b0] leading-relaxed">
-                          {a.desc}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
+                )}
+                <h3 className="text-base font-bold text-[#1a1a2e] mt-3">
+                  {brandName}
+                </h3>
+                <span className="text-xs text-[#9a99b0]">{brandWebsite}</span>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-[#f5f3ff] text-[#7c3aed] border border-[#e0e7ff] uppercase">
+                    {brandIndustry}
+                  </span>
+                  <AdminStatusBadge status={brandStatus} />
                 </div>
               </div>
-            )}
-          </div>
+
+              {/* Tabs Bar */}
+              <div className="flex border-b border-[#e8e6f0]/40 px-6 overflow-x-auto shrink-0 scrollbar-none">
+                {(
+                  ["Overview", "Campaign History", "Notes", "Actions"] as const
+                ).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={cn(
+                      "px-4 py-3 text-xs font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap",
+                      activeTab === tab
+                        ? "border-brand-pink text-brand-pink"
+                        : "border-transparent text-[#9a99b0] hover:text-[#1a1a2e]",
+                    )}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+
+              {/* Tab Content */}
+              <div className="flex-1 flex flex-col gap-5 p-6">
+                {/* OVERVIEW TAB */}
+                {activeTab === "Overview" && (
+                  <>
+                    {/* Brand Details Card */}
+                    <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-4">
+                      <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
+                        Brand Details
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3.5 text-xs">
+                        <div>
+                          <span className="text-[#9a99b0] block text-[10px]">
+                            Brand name
+                          </span>
+                          <span className="font-bold text-[#1a1a2e] mt-0.5 block">
+                            {brandName}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[#9a99b0] block text-[10px]">
+                            Email
+                          </span>
+                          <span className="font-bold text-[#1a1a2e] mt-0.5 block">
+                            {brandEmail}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[#9a99b0] block text-[10px]">
+                            Website
+                          </span>
+                          <span className="font-bold text-[#1a1a2e] mt-0.5 block">
+                            {brandWebsite}
+                          </span>
+                        </div>
+                        <div className="sm:col-span-2">
+                          <span className="text-[#9a99b0] block text-[10px]">
+                            Bio
+                          </span>
+                          <span className="font-bold text-[#1a1a2e] mt-0.5 block leading-relaxed">
+                            {brandDetails?.bio || profileDetails?.bio || "N/A"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[#9a99b0] block text-[10px]">
+                            Country
+                          </span>
+                          <span className="font-bold text-[#1a1a2e] mt-0.5 block">
+                            {brandDetails?.country ||
+                              profileDetails?.countryOfResidence ||
+                              "Nigeria"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[#9a99b0] block text-[10px]">
+                            State/City
+                          </span>
+                          <span className="font-bold text-[#1a1a2e] mt-0.5 block">
+                            {brandDetails?.stateCity ||
+                              profileDetails?.state ||
+                              profileDetails?.city ||
+                              "N/A"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[#9a99b0] block text-[10px]">
+                            Monthly Budget
+                          </span>
+                          <span className="font-bold text-[#1a1a2e] mt-0.5 block">
+                            {monthlyBudgetDisplay}
+                          </span>
+                        </div>
+                      </div>
+
+                      <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider pt-2 border-t border-[#e8e6f0]/40">
+                        Brand Representative
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3.5 text-xs">
+                        <div>
+                          <span className="text-[#9a99b0] block text-[10px]">
+                            Full name
+                          </span>
+                          <span className="font-bold text-[#1a1a2e] mt-0.5 block">
+                            {repName}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[#9a99b0] block text-[10px]">
+                            Email
+                          </span>
+                          <span className="font-bold text-[#1a1a2e] mt-0.5 block">
+                            {repEmail}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[#9a99b0] block text-[10px]">
+                            Phone Number
+                          </span>
+                          <span className="font-bold text-[#1a1a2e] mt-0.5 block">
+                            {repPhone}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[#9a99b0] block text-[10px]">
+                            Profile Completion
+                          </span>
+                          <span className="font-bold text-[#10b981] mt-0.5 block">
+                            {repCompletion}%
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[#9a99b0] block text-[10px]">
+                            Date Joined
+                          </span>
+                          <span className="font-bold text-[#1a1a2e] mt-0.5 block">
+                            {formatDateOnly(repJoined)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[#9a99b0] block text-[10px]">
+                            Account Status
+                          </span>
+                          <div className="mt-0.5">
+                            <AdminStatusBadge status={brandStatus} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Metrics Strip Card */}
+                    <div className="flex flex-col gap-3">
+                      <h4 className="text-[10px] font-bold text-[#7a7a9a] uppercase tracking-wider">
+                        Metrics
+                      </h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-2xl p-3 flex flex-col items-center justify-center text-center">
+                          <Briefcase
+                            size={16}
+                            className="text-[#2f63eb] mb-1"
+                          />
+                          <span className="text-base font-black text-[#1a1a2e]">
+                            {metricsData?.totalCampaigns ?? 0}
+                          </span>
+                          <span className="text-[10px] font-bold text-[#7a7a9a]">
+                            Total Campaigns
+                          </span>
+                        </div>
+                        <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-2xl p-3 flex flex-col items-center justify-center text-center">
+                          <TrendingUp
+                            size={16}
+                            className="text-[#ea580c] mb-1"
+                          />
+                          <span className="text-base font-black text-[#1a1a2e]">
+                            {metricsData?.totalSpend
+                              ? `₦${metricsData.totalSpend.toLocaleString()}`
+                              : "₦0"}
+                          </span>
+                          <span className="text-[10px] font-bold text-[#7a7a9a]">
+                            Total Spend
+                          </span>
+                        </div>
+                        <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-2xl p-3 flex flex-col items-center justify-center text-center">
+                          <Play size={16} className="text-[#16a34a] mb-1" />
+                          <span className="text-base font-black text-[#1a1a2e]">
+                            {metricsData?.activeCampaigns ?? 0}
+                          </span>
+                          <span className="text-[10px] font-bold text-[#7a7a9a]">
+                            Active Campaigns
+                          </span>
+                        </div>
+                        <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-2xl p-3 flex flex-col items-center justify-center text-center">
+                          <Star size={16} className="text-[#ca8a04] mb-1" />
+                          <span className="text-base font-black text-[#1a1a2e]">
+                            {metricsData?.avgCreatorRating !== undefined &&
+                            metricsData?.avgCreatorRating !== null
+                              ? `${metricsData.avgCreatorRating} / 5`
+                              : "0.0 / 5"}
+                          </span>
+                          <span className="text-[10px] font-bold text-[#7a7a9a]">
+                            Avg Creator Rating
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* CAMPAIGN HISTORY TAB */}
+                {activeTab === "Campaign History" && (
+                  <div className="flex flex-col gap-3">
+                    <h4 className="text-xs font-bold text-[#1a1a2e]">
+                      Campaign History
+                    </h4>
+                    {isLoadingCampaigns ? (
+                      <div className="p-4 text-center text-xs text-[#9a99b0]">
+                        Loading campaign history...
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto rounded-2xl border border-[#e8e6f0]/60">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="bg-[#faf9fc] border-b border-[#e8e6f0]/60 text-[10px] font-extrabold uppercase text-[#7a7a9a]">
+                              <th className="py-3 px-3">Title</th>
+                              <th className="py-3 px-3">Status</th>
+                              <th className="py-3 px-3">Budget</th>
+                              <th className="py-3 px-3">Spent</th>
+                              <th className="py-3 px-3">Creators</th>
+                              <th className="py-3 px-3">Start Date</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#e8e6f0]/40">
+                            {displayCampaigns.map((c) => (
+                              <tr key={c.id}>
+                                <td className="py-3 px-3 font-bold text-[#1a1a2e]">
+                                  {c.title}
+                                </td>
+                                <td className="py-3 px-3">
+                                  <AdminStatusBadge status={c.status} />
+                                </td>
+                                <td className="py-3 px-3 font-bold text-[#1a1a2e]">
+                                  {c.budget}
+                                </td>
+                                <td className="py-3 px-3 font-bold text-[#1a1a2e]">
+                                  {c.spent}
+                                </td>
+                                <td className="py-3 px-3 font-bold text-[#1a1a2e]">
+                                  {c.creators}
+                                </td>
+                                <td className="py-3 px-3 text-[#7a7a9a]">
+                                  {c.date}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* NOTES TAB */}
+                {activeTab === "Notes" && (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-[#1a1a2e]">
+                        Internal Admin Notes
+                      </h4>
+                      <button
+                        onClick={() => {
+                          setEditingNoteId(null);
+                          setNoteInitialValue("");
+                          setNoteModalTitle("Add note");
+                          setIsNoteModalOpen(true);
+                        }}
+                        className="px-3 py-1.5 bg-brand-pink text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-xs cursor-pointer"
+                      >
+                        <Plus size={14} /> Add Note
+                      </button>
+                    </div>
+
+                    {isLoadingNotes ? (
+                      <div className="p-4 text-center text-xs text-[#9a99b0]">
+                        Loading notes...
+                      </div>
+                    ) : notesData.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-[#9a99b0] bg-[#faf9fc] rounded-2xl border border-[#e8e6f0]/60">
+                        No internal notes added yet.
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-3">
+                        {notesData.map((noteItem) => (
+                          <div
+                            key={noteItem.id}
+                            className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-2xl p-4 flex flex-col gap-2 relative group"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-bold text-[#1a1a2e]">
+                                {noteItem.adminName || "Admin"}
+                              </span>
+                              <span className="text-[10px] text-[#9a99b0]">
+                                {formatDateOnly(noteItem.createdAt)}
+                              </span>
+                            </div>
+                            <p className="text-xs text-[#5a5a7a] leading-relaxed">
+                              {noteItem.note}
+                            </p>
+                            <div className="flex items-center gap-2 justify-end pt-1">
+                              <button
+                                onClick={() => {
+                                  setEditingNoteId(noteItem.id);
+                                  setNoteInitialValue(noteItem.note);
+                                  setNoteModalTitle("Edit note");
+                                  setIsNoteModalOpen(true);
+                                }}
+                                className="p-1 hover:bg-[#e8e6f0]/60 text-[#7a7a9a] rounded-md transition-colors cursor-pointer"
+                              >
+                                <Pencil size={13} />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  deleteNoteMutation.mutate({
+                                    id: noteItem.brandId || brandId!,
+                                    noteId: noteItem.id,
+                                  });
+                                }}
+                                className="p-1 hover:bg-red-50 text-red-500 rounded-md transition-colors cursor-pointer"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ACTIONS TAB */}
+                {activeTab === "Actions" && (
+                  <div className="flex flex-col gap-3">
+                    <h4 className="text-xs font-bold text-[#1a1a2e]">
+                      Account Actions
+                    </h4>
+                    <div className="grid grid-cols-1 gap-3">
+                      <button
+                        onClick={() => setActiveAction("suspend")}
+                        className="p-4 bg-white border border-[#e8e6f0]/60 rounded-2xl flex items-center justify-between hover:bg-[#fef2f2] transition-colors cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-[#fef2f2] text-[#dc2626] flex items-center justify-center font-bold">
+                            <Ban size={18} />
+                          </div>
+                          <div className="flex flex-col text-left">
+                            <span className="text-xs font-bold text-[#1a1a2e]">
+                              Suspend Brand
+                            </span>
+                            <span className="text-[10px] text-[#9a99b0]">
+                              Temporarily freeze advertiser campaigns
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => setActiveAction("reactivate")}
+                        className="p-4 bg-white border border-[#e8e6f0]/60 rounded-2xl flex items-center justify-between hover:bg-[#f0fdf4] transition-colors cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-[#f0fdf4] text-[#16a34a] flex items-center justify-center font-bold">
+                            <ShieldCheck size={18} />
+                          </div>
+                          <div className="flex flex-col text-left">
+                            <span className="text-xs font-bold text-[#1a1a2e]">
+                              Reactivate Brand
+                            </span>
+                            <span className="text-[10px] text-[#9a99b0]">
+                              Restore full account privileges
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action confirmation Modal */}
+              <BrandActionModal
+                action={activeAction}
+                onClose={() => setActiveAction(null)}
+                onConfirm={() => {
+                  if (activeAction === "suspend" && brandId) {
+                    suspendBrandMutation.mutate(brandId, {
+                      onSuccess: () => {
+                        setSuccessModalTitle("Account Suspended");
+                        setSuccessModalMessage(
+                          "You have successfully suspended this brand account.",
+                        );
+                        setIsSuccessModalOpen(true);
+                      },
+                    });
+                  } else if (activeAction === "reactivate" && brandId) {
+                    reactivateBrandMutation.mutate(brandId, {
+                      onSuccess: () => {
+                        setSuccessModalTitle("Account Reactivated");
+                        setSuccessModalMessage(
+                          "You have successfully reactivated this brand account.",
+                        );
+                        setIsSuccessModalOpen(true);
+                      },
+                    });
+                  } else {
+                    setSuccessModalTitle("Action Successful");
+                    setSuccessModalMessage(
+                      "The requested brand action has completed.",
+                    );
+                    setIsSuccessModalOpen(true);
+                  }
+                  setActiveAction(null);
+                }}
+              />
+
+              {/* Note Modal */}
+              {isNoteModalOpen && (
+                <NoteModal
+                  isOpen={isNoteModalOpen}
+                  onClose={() => {
+                    setIsNoteModalOpen(false);
+                    setEditingNoteId(null);
+                  }}
+                  initialValue={noteInitialValue}
+                  title={noteModalTitle}
+                  onSave={(value) => {
+                    if (editingNoteId) {
+                      updateNoteMutation.mutate({
+                        id: brandId,
+                        noteId: editingNoteId,
+                        note: value,
+                      });
+                    } else {
+                      addNoteMutation.mutate({
+                        id: brandId,
+                        note: value,
+                      });
+                    }
+                    setIsNoteModalOpen(false);
+                    setEditingNoteId(null);
+                  }}
+                />
+              )}
+
+              {/* Success Modal */}
+              {isSuccessModalOpen && (
+                <SuccessModal
+                  isOpen={isSuccessModalOpen}
+                  onClose={() => setIsSuccessModalOpen(false)}
+                  title={successModalTitle}
+                  message={successModalMessage}
+                />
+              )}
+            </>
+          )}
         </div>
-
-        {/* Brand Actions Modal */}
-        {activeAction && (
-          <BrandActionModal
-            action={activeAction}
-            onClose={() => setActiveAction(null)}
-            onConfirm={() => {
-              if (activeAction === "suspend") {
-                setSuccessTitle("Account Suspended");
-                setSuccessMsg(
-                  "You have successfully suspended this brand account",
-                );
-              } else if (activeAction === "reactivate") {
-                setSuccessTitle("Account Reactivated");
-                setSuccessMsg(
-                  "You have successfully reactivated this brand account",
-                );
-              } else {
-                setSuccessTitle("Account Deleted");
-                setSuccessMsg(
-                  "You have successfully deleted this brand account",
-                );
-              }
-              setIsSuccessOpen(true);
-            }}
-          />
-        )}
-
-        {/* Success Modal */}
-        {isSuccessOpen && (
-          <SuccessModal
-            isOpen={isSuccessOpen}
-            onClose={() => setIsSuccessOpen(false)}
-            title={successTitle}
-            message={successMsg}
-          />
-        )}
       </div>
     </Portal>
   );

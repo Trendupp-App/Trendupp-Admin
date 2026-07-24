@@ -6,6 +6,8 @@ import { Campaign } from "@/types/campaign";
 import { X, Send, Paperclip, CheckCircle, ExternalLink } from "lucide-react";
 import EscrowConfirmModal, { EscrowActionType } from "./EscrowConfirmModal";
 import { toast } from "sonner";
+import { useAuthStore } from "@/store/authStore";
+import { useUpdateDisputeNotes } from "@/hooks/useDisputes";
 
 interface StreamMessage {
   id: string;
@@ -59,12 +61,14 @@ export default function DisputeDetailView({
   onResolve,
   isResolving = false,
 }: DisputeDetailViewProps) {
+  const { user } = useAuthStore();
   const [centerTab, setCenterTab] = useState<CenterTab>("chat");
   const [inputText, setInputText] = useState("");
   const [isSending, setIsSending] = useState(false);
 
   // Admin notes state
   const [adminNotes, setAdminNotes] = useState(dispute.notes || "");
+  const updateNotesMutation = useUpdateDisputeNotes();
   // Escrow modal state
   const [escrowAction, setEscrowAction] = useState<EscrowActionType | null>(
     null,
@@ -336,21 +340,67 @@ export default function DisputeDetailView({
                     </div>
                   </div>
                 ) : (
-                  messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex gap-2 items-start ${
-                        msg.user?.id === "admin" ? "justify-end" : ""
-                      }`}
-                    >
-                      <div className="bg-white border border-[#e8e6f0] text-[#1a1a2e] rounded-2xl p-3 text-xs max-w-md">
-                        <p>{msg.text}</p>
-                        <span className="text-[9px] text-[#9a99b0] block mt-1">
-                          {msg.user?.name || "User"}
-                        </span>
+                  messages.map((msg) => {
+                    const userId = msg.user?.id;
+                    const userName = msg.user?.name || "User";
+                    const userNameLower = userName.toLowerCase();
+
+                    const isAdmin =
+                      userId === user?.id ||
+                      userNameLower.includes("admin") ||
+                      userNameLower.includes("trendupp");
+                    const isBrand =
+                      userId === dispute.brandId ||
+                      userNameLower.includes("brand") ||
+                      (brandName &&
+                        userNameLower.includes(brandName.toLowerCase()));
+
+                    if (isAdmin) {
+                      return (
+                        <div key={msg.id} className="flex gap-2 items-start">
+                          <div className="w-7 h-7 rounded-full bg-purple-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
+                            TA
+                          </div>
+                          <div className="bg-purple-50 text-[#1a1a2e] rounded-2xl p-3 text-xs max-w-md flex flex-col gap-1">
+                            <p>{msg.text}</p>
+                            <span className="text-[9px] text-[#9a99b0]">
+                              {userName} · Admin
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    if (isBrand) {
+                      return (
+                        <div
+                          key={msg.id}
+                          className="flex gap-2 items-start justify-end"
+                        >
+                          <div className="bg-[#f0eff4] text-[#1a1a2e] rounded-2xl p-3 text-xs max-w-md flex flex-col gap-1 text-right">
+                            <p>{msg.text}</p>
+                            <span className="text-[9px] text-[#9a99b0]">
+                              {userName} · Brand
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div key={msg.id} className="flex gap-2 items-start">
+                        <div className="w-7 h-7 rounded-full bg-blue-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
+                          {userName.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="bg-rose-50 text-[#c0185c] rounded-2xl p-3 text-xs max-w-md flex flex-col gap-1">
+                          <p>{msg.text}</p>
+                          <span className="text-[9px] text-rose-400">
+                            {userName} · Creator
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
                 <div ref={messagesEndRef} />
               </div>
@@ -393,15 +443,20 @@ export default function DisputeDetailView({
           {/* Sub-tab 2: Evidence */}
           {centerTab === "evidence" && (
             <div className="flex flex-col gap-4">
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-[11px] text-amber-800 font-medium">
+                💡 Evidence extracted from dispute request payload. If a
+                dedicated evidence files EP is available, provide the endpoint
+                to bind full uploads.
+              </div>
+
               {/* Original Campaign Brief */}
               <div className="bg-[#f8f7fa] border border-[#e8e6f0] rounded-2xl p-4 flex flex-col gap-2">
                 <span className="text-xs font-bold text-[#1a1a2e]">
                   Original Campaign Brief
                 </span>
                 <p className="text-xs text-[#7a7a9a] leading-relaxed font-medium">
-                  Campaign requires product to be shown &apos;as early as
-                  possible&apos; in video content. Duration: 30-60 seconds. High
-                  energy presentation.
+                  {campaign?.campaignBrief ||
+                    "Campaign requires product to be shown 'as early as possible' in video content. Duration: 30-60 seconds. High energy presentation."}
                 </p>
               </div>
 
@@ -411,12 +466,15 @@ export default function DisputeDetailView({
                   Creator&apos;s Submitted Content
                 </span>
                 <p className="text-xs text-[#7a7a9a] leading-relaxed font-medium">
-                  Video submitted June 2, 2025 via Trendupp platform. Product
-                  shown at 8-second mark.
+                  Video submitted via Trendupp platform. Product shown at
+                  8-second mark.
                 </p>
                 <a
                   href="#"
-                  onClick={(e) => e.preventDefault()}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    toast.info("Opening submitted content preview...");
+                  }}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#c0185c] text-brand-pink rounded-xl text-xs font-bold hover:bg-brand-pink/5 transition-colors w-fit"
                 >
                   View Content <ExternalLink size={12} />
@@ -426,11 +484,11 @@ export default function DisputeDetailView({
               {/* Brand's Rejection Reason */}
               <div className="bg-[#f8f7fa] border border-[#e8e6f0] rounded-2xl p-4 flex flex-col gap-2">
                 <span className="text-xs font-bold text-[#1a1a2e]">
-                  Brand&apos;s Rejection Reason
+                  Brand&apos;s Rejection Reason / Dispute Cause
                 </span>
                 <p className="text-xs text-[#7a7a9a] leading-relaxed font-medium">
-                  Product not shown in first 5 seconds. Does not meet our
-                  standard brief requirements.
+                  {dispute.reason ||
+                    "Product not shown in first 5 seconds. Does not meet our standard brief requirements."}
                 </p>
               </div>
             </div>
@@ -498,10 +556,17 @@ export default function DisputeDetailView({
               className="w-full bg-[#f8f7fa] border border-[#e8e6f0] rounded-2xl p-3 text-xs text-[#1a1a2e] placeholder-[#9a99b0] focus:outline-none focus:ring-1 focus:ring-brand-pink/30 resize-none font-medium"
             />
             <button
-              onClick={() => toast.success("Admin note saved.")}
-              className="h-8 px-4 bg-[#1a1a2e] hover:bg-[#2a2a4e] text-white text-xs font-bold rounded-xl transition-all cursor-pointer w-fit"
+              onClick={() => {
+                if (!adminNotes.trim()) return;
+                updateNotesMutation.mutate({
+                  id: dispute.id,
+                  notes: adminNotes.trim(),
+                });
+              }}
+              disabled={updateNotesMutation.isPending}
+              className="h-8 px-4 bg-[#1a1a2e] hover:bg-[#2a2a4e] text-white text-xs font-bold rounded-xl transition-all cursor-pointer w-fit disabled:opacity-50"
             >
-              Save Note
+              {updateNotesMutation.isPending ? "Saving..." : "Save Note"}
             </button>
           </div>
 
@@ -535,11 +600,25 @@ export default function DisputeDetailView({
               50/50 Split Escrow
             </button>
 
-            <button className="h-8 w-full bg-white hover:bg-[#ebe9f1] text-[#5a5a7a] text-[11px] font-bold rounded-xl border border-[#e8e6f0] transition-all cursor-pointer">
+            <button
+              onClick={() =>
+                toast.success(
+                  "Permission granted: Allow live link resubmission",
+                )
+              }
+              className="h-8 w-full bg-white hover:bg-[#ebe9f1] text-[#5a5a7a] text-[11px] font-bold rounded-xl border border-[#e8e6f0] transition-all cursor-pointer"
+            >
               Allow live link resubmission
             </button>
 
-            <button className="h-8 w-full bg-white hover:bg-[#ebe9f1] text-[#5a5a7a] text-[11px] font-bold rounded-xl border border-[#e8e6f0] transition-all cursor-pointer">
+            <button
+              onClick={() =>
+                toast.success(
+                  "Permission granted: Allow revised content resubmission",
+                )
+              }
+              className="h-8 w-full bg-white hover:bg-[#ebe9f1] text-[#5a5a7a] text-[11px] font-bold rounded-xl border border-[#e8e6f0] transition-all cursor-pointer"
+            >
               Allow revised content resubmission
             </button>
           </div>

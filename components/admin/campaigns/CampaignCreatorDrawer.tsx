@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { X, ArrowRight, ExternalLink, Info, Send, Check } from "lucide-react";
+import { useState, useMemo } from "react";
+import { X, ArrowRight, Send, Check } from "lucide-react";
 import UserAvatar from "@/shared/UserAvatar";
 import { Portal } from "@/components/ui/portal";
 
-interface CreatorDrawerData {
+export interface CreatorDrawerData {
   id: string;
   name: string;
   handle: string;
@@ -19,6 +19,17 @@ interface CreatorDrawerData {
   questionComment: string;
   responseMessage?: string;
   isResponded?: boolean;
+  followers?: string | number;
+  totalFollowers?: string | number;
+  tier?: string;
+  metrics?: {
+    totalFollowers?: number | string;
+    "total followers"?: number | string;
+    total_followers?: number | string;
+    completedCampaigns?: number;
+    totalEarnings?: number;
+    onTimeSubmissionRate?: number;
+  };
 }
 
 interface CampaignCreatorDrawerProps {
@@ -43,6 +54,40 @@ export default function CampaignCreatorDrawer({
   onSendReply = () => {},
 }: CampaignCreatorDrawerProps) {
   const [replyText, setReplyText] = useState("");
+
+  const followerCount = useMemo(() => {
+    if (!creator) return "0";
+    const m = creator.metrics as Record<string, unknown> | undefined;
+    if (m) {
+      const val =
+        m["total followers"] ?? m["total_followers"] ?? m["totalFollowers"];
+      if (val !== undefined && val !== null) {
+        const num = Number(val);
+        if (!isNaN(num) && num > 0) {
+          if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+          if (num >= 1_000) return `${(num / 1_000).toFixed(0)}K`;
+          return String(num);
+        }
+        if (typeof val === "string" && val.trim()) return val;
+      }
+    }
+    if (
+      creator.totalFollowers !== undefined &&
+      creator.totalFollowers !== null
+    ) {
+      const num = Number(creator.totalFollowers);
+      if (!isNaN(num) && num > 0) {
+        if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+        if (num >= 1_000) return `${(num / 1_000).toFixed(0)}K`;
+        return String(num);
+      }
+      return String(creator.totalFollowers);
+    }
+    if (creator.followers) {
+      return String(creator.followers);
+    }
+    return "0";
+  }, [creator]);
 
   if (!creator) return null;
 
@@ -99,15 +144,16 @@ export default function CampaignCreatorDrawer({
 
             <div className="flex items-center justify-between gap-4 mt-2">
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#7c3aed] text-white">
-                  Micro
-                </span>
                 <span className="text-[10px] font-semibold text-white/90">
-                  180K followers
+                  {followerCount.includes("follower")
+                    ? followerCount
+                    : `${followerCount} followers`}
                 </span>
                 <span className="w-1 h-1 rounded-full bg-white/50" />
                 <span className="text-[10px] font-semibold text-white/90">
-                  5.2% engagement
+                  {creator.metrics?.onTimeSubmissionRate !== undefined
+                    ? `${creator.metrics.onTimeSubmissionRate}% engagement`
+                    : "5.2% engagement"}
                 </span>
               </div>
 
@@ -180,18 +226,20 @@ export default function CampaignCreatorDrawer({
                       <label className="text-[10px] font-bold text-[#5a5a7a]">
                         Reply to creator
                       </label>
-                      <div className="relative">
-                        <textarea
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
                           value={replyText}
                           onChange={(e) => setReplyText(e.target.value)}
-                          placeholder="Ask a question or request a quick tweak..."
-                          className="w-full min-h-[70px] p-3 pr-10 text-xs border border-[#e8e6f0] rounded-2xl focus:outline-none focus:border-brand-pink bg-white resize-none"
+                          placeholder="Write a response..."
+                          className="flex-1 h-9 px-3 text-xs bg-white border border-[#e8e6f0] rounded-xl outline-none focus:border-brand-pink transition-colors"
                         />
                         <button
                           onClick={handleSend}
-                          className="absolute right-3.5 bottom-3.5 text-brand-pink hover:opacity-80 transition-opacity cursor-pointer"
+                          disabled={!replyText.trim()}
+                          className="h-9 px-3 bg-brand-pink text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 hover:opacity-90 disabled:opacity-50 transition-all cursor-pointer"
                         >
-                          <Send size={14} />
+                          <Send size={12} /> Send
                         </button>
                       </div>
                     </div>
@@ -199,103 +247,55 @@ export default function CampaignCreatorDrawer({
                 </div>
               </div>
             ) : (
-              <>
-                <div className="flex justify-between items-center gap-2">
-                  <span className="text-xs font-bold text-[#1a1a2e]">
-                    Instagram
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-[#fff7ed] text-[#ea580c] border border-[#ffedd5]">
-                    Revision requested
-                  </span>
-                </div>
-                <span className="text-[9px] text-[#9a99b0] font-semibold -mt-2.5">
-                  Submitted 2 hours ago
-                </span>
-
-                <div className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 flex flex-col gap-2 bg-[#ffffff]">
+              /* Non-social / Standard overview */
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
                   <span className="text-[9px] font-bold text-[#9a99b0] uppercase tracking-wider">
-                    Content Link
+                    Overview
                   </span>
-                  <a
-                    href="https://instagram.com/p/example1"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs font-bold text-brand-pink hover:underline flex items-center gap-1 w-fit"
-                  >
-                    https://instagram.com/p/example1 <ExternalLink size={11} />
-                  </a>
-                  <p className="text-xs text-[#5a5a7a] font-medium italic mt-0.5">
-                    “Shot at Lekki beach during golden hour. Used trending
-                    audio. Caption ideas included in the doc.”
-                  </p>
-
-                  <div className="bg-[#fff7ed]/50 border border-[#fde68a]/50 rounded-xl p-3 flex items-start gap-2 text-xs leading-relaxed text-[#92400e] font-medium mt-1">
-                    <Info
-                      size={13}
-                      className="shrink-0 mt-0.5 text-[#f59e0b]"
-                    />
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-[#b45309]">
-                        Revision Request
-                      </span>
-                      <span>
-                        Great take overall! Please add the Audiomack app UI
-                        briefly &mdash; it was missing from this submission.
-                        Also, the hashtag #AudiomackAfrobeats needs to be in the
-                        caption.
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="border border-[#dbeafe] bg-[#eff6ff]/20 rounded-xl p-3 flex flex-col gap-1.5 mt-2 text-xs leading-relaxed text-[#2563eb]">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#1d4ed8]">
-                      Revised Content
-                    </span>
-                    <a
-                      href="https://instagram.com/p/example1"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-bold flex items-center gap-1 w-fit"
-                    >
-                      https://instagram.com/p/example1{" "}
-                      <ExternalLink size={11} />
-                    </a>
-                    <p className="text-[#5a5a7a] font-medium italic mt-0.5">
-                      “Shot at Lekki beach during golden hour. Used trending
-                      audio. Caption ideas included in the doc.”
-                    </p>
+                  <div className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 text-xs text-[#5a5a7a] font-medium leading-relaxed">
+                    {creator.pitch || "No pitch details provided."}
                   </div>
                 </div>
-              </>
+
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[9px] font-bold text-[#9a99b0] uppercase tracking-wider">
+                    Role & Specialty
+                  </span>
+                  <div className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 text-xs text-[#1a1a2e] font-bold">
+                    {creator.role}
+                  </div>
+                </div>
+              </div>
             )}
-          </div>
 
-          {/* Sticky Bottom Actions */}
-          {isSocial && (
-            <div className="p-4 border-t border-[#e8e6f0]/40 bg-white flex gap-3 shrink-0">
-              {isSelected ? (
-                <div className="flex-1 h-10 bg-[#f0fdf4] border border-[#dcfce7]/60 text-xs font-bold text-[#16a34a] rounded-xl flex items-center justify-center gap-1 cursor-default select-none">
-                  <Check size={14} /> Selected
-                </div>
-              ) : (
-                <button
-                  onClick={() => onToggleSelect(creator.id)}
-                  className="flex-1 h-10 bg-[#f0fdf4] hover:bg-[#dcfce7] border border-[#dcfce7]/60 text-xs font-bold text-[#16a34a] rounded-xl flex items-center justify-center gap-1 transition-all cursor-pointer"
-                >
-                  <Check size={14} /> Accept
-                </button>
-              )}
+            {/* Action buttons footer */}
+            <div className="flex items-center gap-3 pt-4 border-t border-[#e8e6f0]/60 mt-auto">
               <button
-                onClick={() => {
-                  onReject(creator.id);
-                  onClose();
-                }}
-                className="flex-1 h-10 bg-[#fef2f2] hover:bg-[#fee2e2] border border-[#fee2e2]/60 text-xs font-bold text-[#dc2626] rounded-xl flex items-center justify-center gap-1 transition-all cursor-pointer"
+                onClick={() => onReject(creator.id)}
+                className="flex-1 h-10 rounded-xl border border-[#e8e6f0] bg-white hover:bg-[#fef2f2] hover:border-[#fecaca] text-[#dc2626] text-xs font-bold transition-all cursor-pointer"
               >
-                <X size={14} className="shrink-0" /> Reject
+                Reject
+              </button>
+
+              <button
+                onClick={() => onToggleSelect(creator.id)}
+                className={`flex-1 h-10 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  isSelected
+                    ? "bg-[#16a34a] text-white hover:bg-[#15803d]"
+                    : "bg-brand-pink text-white hover:opacity-90"
+                }`}
+              >
+                {isSelected ? (
+                  <>
+                    <Check size={14} /> Selected
+                  </>
+                ) : (
+                  "Select Creator"
+                )}
               </button>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </Portal>

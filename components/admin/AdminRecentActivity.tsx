@@ -103,7 +103,8 @@ export function AdminRecentActivity({ activities }: AdminRecentActivityProps) {
             ? `₦${(item.budget / 1_000_000).toFixed(1)}M`
             : item.budget >= 1_000
               ? `₦${(item.budget / 1_000).toFixed(0)}k`
-              : `₦${item.budget.toLocaleString()}`, 
+              : `₦${item.budget.toLocaleString()}`,
+        applications: item.applicationsCount ?? 0,
       }))
     : MOCK;
 
