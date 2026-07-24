@@ -17,20 +17,7 @@ export default function ProfileCompletionCard() {
   }, [summaryData]);
 
   const totalCreatorsCount = useMemo(() => {
-    if (!summaryData) return 1;
-    const obj = summaryData as unknown as Record<string, unknown>;
-    const dataObj = (obj.data || obj.result || obj) as Record<string, unknown>;
-    const summary = (summaryData.summary ||
-      dataObj.summary ||
-      obj) as unknown as Record<string, unknown>;
-    return (
-      summaryData.summary?.totalCreators ||
-      Number(summary?.totalCreators) ||
-      Number(summary?.total_creators) ||
-      Number(dataObj?.totalCreators) ||
-      Number(obj?.totalCreators) ||
-      1
-    );
+    return summaryData?.summary.totalCreators ?? 1;
   }, [summaryData]);
 
   const items: CompletionItem[] = useMemo(() => {
