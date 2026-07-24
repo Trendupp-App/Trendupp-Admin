@@ -246,7 +246,7 @@ export default function CreatorProfileDrawer({
         id: r.id,
         brand: r.brandName || "Brand Partner",
         date: formatDateOnly(r.createdAt),
-        rating: r.rating || 5,
+        rating: r.rating ?? 5,
         text: r.comment || "Great creator to collaborate with.",
       }));
     }
