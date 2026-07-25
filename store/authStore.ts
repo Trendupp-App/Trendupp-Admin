@@ -1,8 +1,9 @@
-import { OnboardingStepsCompleted } from "@/types/Onboarding";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+
 export type UserRole =
   "super_admin" | "owner" | "finance_admin" | "moderator" | "support_agent";
+
 export interface AuthUser {
   id: string;
   email: string;
@@ -10,23 +11,23 @@ export interface AuthUser {
   lastName: string;
   role: UserRole;
   isEmailVerified: boolean;
-  onboardingPercentage: number;
-  onboardingStepsCompleted: OnboardingStepsCompleted;
-  socialsConnected: {
+  onboardingPercentage?: number;
+  onboardingStepsCompleted?: Record<string, boolean>;
+  socialsConnected?: {
     instagram: boolean;
     tiktok: boolean;
     youtube: boolean;
     twitter: boolean;
   };
-  username: string | null;
-  niches: Array<{ id: string; name: string; order: number }>;
-  industries: Array<{ id: string; name: string }>;
-  assignedTier: string | null;
-  bio: string | null;
-  avatarUrl: string | null;
-  bankName: string | null;
-  bankAccountNumber: string | null;
-  bankAccountName: string | null;
+  username?: string | null;
+  niches?: Array<{ id: string; name: string; order: number }>;
+  industries?: Array<{ id: string; name: string }>;
+  assignedTier?: string | null;
+  bio?: string | null;
+  avatarUrl?: string | null;
+  bankName?: string | null;
+  bankAccountNumber?: string | null;
+  bankAccountName?: string | null;
   nationalityId?: string | null;
   countryId?: string | null;
   stateId?: string | null;
@@ -39,7 +40,7 @@ export interface AuthUser {
   youtubeFollowers?: number | null;
   twitterUsername?: string | null;
   twitterFollowers?: number | null;
-  brandRepresentative: {
+  brandRepresentative?: {
     firstName: string | null;
     lastName: string | null;
     email: string | null;
@@ -69,7 +70,7 @@ export const useAuthStore = create<AuthState>()(
       clearSession: () => {
         set({ accessToken: null, user: null });
         if (typeof window !== "undefined") {
-          window.location.href = "/signin";
+          window.location.href = "/admin/signin";
         }
       },
       updateUser: (patch) =>
