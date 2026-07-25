@@ -57,7 +57,7 @@ export function useAdDetails(id: string | null, enabled: boolean = true) {
   return useQuery({
     queryKey: ["admin-ad-details", id],
     queryFn: () => {
-      if (!id) return Promise.reject("No ad ID");
+      if (!id) throw new Error("No ad ID");
       return adminAdsApi.getAdById(id!).then((r) => r.data);
     },
     enabled: !!id && enabled,
