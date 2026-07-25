@@ -15,7 +15,9 @@ type Status =
   | "rejected"
   | "draft"
   | "paid"
-  | "unpaid";
+  | "unpaid"
+  | "suspended"
+  | "onboarded";
 
 const STATUS_MAP: Record<Status, { label: string; cls: string }> = {
   pending: {
@@ -29,6 +31,14 @@ const STATUS_MAP: Record<Status, { label: string; cls: string }> = {
   active: {
     label: "Active",
     cls: "bg-green-50   text-green-600   border-green-200",
+  },
+  onboarded: {
+    label: "Onboarded",
+    cls: "bg-green-50   text-green-600   border-green-200",
+  },
+  suspended: {
+    label: "Suspended",
+    cls: "bg-red-50     text-red-600     border-red-200",
   },
   live: {
     label: "Live",

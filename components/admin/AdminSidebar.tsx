@@ -107,6 +107,37 @@ export default function AdminSidebar({
   onNotificationClick,
 }: AdminSidebarProps) {
   const pathname = usePathname();
+  const { user } = useAuthStore();
+
+  const fullName = user
+    ? `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+      "Chisom Adeyemi"
+    : "Chisom Adeyemi";
+
+  const initials = user
+    ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase() ||
+      "CA"
+    : "CA";
+
+  const formatRole = (role?: string) => {
+    if (!role) return "Super Administrator";
+    switch (role) {
+      case "super_admin":
+        return "Super Administrator";
+      case "owner":
+        return "Owner / Administrator";
+      case "finance_admin":
+        return "Finance Administrator";
+      case "moderator":
+        return "Moderator";
+      case "support_agent":
+        return "Support Agent";
+      default:
+        return role.charAt(0).toUpperCase() + role.slice(1).replace(/_/g, " ");
+    }
+  };
+
+  const roleLabel = formatRole(user?.role);
 
   const handleLogout = () => {
     useAuthStore.setState({ accessToken: null, user: null });
@@ -131,14 +162,19 @@ export default function AdminSidebar({
 
         {/* User section */}
         <div className="flex items-center gap-3 px-3 mb-5">
-          <UserAvatar initials="CA" size={38} />
+          <UserAvatar
+            avatarUrl={user?.avatarUrl}
+            initials={initials}
+            size={38}
+          />
           <div className="flex flex-col min-w-0">
-            <span className="text-sm font-semibold text-[#1a1a2e] truncate">
-              Chisom Adeyemi
+            <span
+              className="text-sm font-semibold text-[#1a1a2e] truncate"
+              title={fullName}
+            >
+              {fullName}
             </span>
-            <span className="text-[11px] text-[#9a99b0]">
-              Super Administrator
-            </span>
+            <span className="text-[11px] text-[#9a99b0]">{roleLabel}</span>
           </div>
         </div>
 
