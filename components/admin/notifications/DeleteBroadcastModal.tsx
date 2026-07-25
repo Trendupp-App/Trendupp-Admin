@@ -63,7 +63,7 @@ export default function DeleteBroadcastModal({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-[#1a1a2e] uppercase tracking-wider">
+            <label className="text-[10px] font-bold text-[#1a1a2e] capitalize tracking-wider">
               Type &ldquo;{CONFIRM_PHRASE}&rdquo; to confirm
             </label>
             <input
