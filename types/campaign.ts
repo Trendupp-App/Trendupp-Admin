@@ -34,7 +34,13 @@ export type ContentType = (typeof CONTENT_TYPES)[number];
 //  Campaign
 
 export type CampaignStatus =
-  "draft" | "submitted" | "live" | "active" | "completed";
+  | "draft"
+  | "submitted"
+  | "live"
+  | "active"
+  | "completed"
+  | "paused"
+  | "cancelled";
 
 export interface ContentGuidelines {
   dos: string[];

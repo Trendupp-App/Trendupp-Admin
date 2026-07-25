@@ -25,7 +25,6 @@ import CampaignAuditLogTab from "@/components/admin/campaigns/CampaignAuditLogTa
 import CampaignCreatorDrawer, {
   type CreatorDrawerData,
 } from "@/components/admin/campaigns/CampaignCreatorDrawer";
-import AdminActionModal from "@/components/admin/campaigns/AdminActionModal";
 import { Portal } from "@/components/ui/portal";
 
 type TabType =
@@ -189,9 +188,6 @@ export default function CampaignDetailsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("Campaign Details");
   const [selectedCreatorForDrawer, setSelectedCreatorForDrawer] =
     useState<CreatorDrawerData | null>(null);
-  const [activeAdminAction, setActiveAdminAction] = useState<string | null>(
-    null,
-  );
 
   // Social Flow States
   const [creatorsList, setCreatorsList] = useState<CreatorDrawerData[]>(
@@ -203,11 +199,6 @@ export default function CampaignDetailsPage() {
   const [deliverableStatus, setDeliverableStatus] = useState<
     "Awaiting" | "Approved"
   >("Awaiting");
-
-  const handleConfirmAdminAction = (reason: string) => {
-    setActiveAdminAction(null);
-    alert(`Administrative action successfully recorded: "${reason}"`);
-  };
 
   const handleToggleSelectCreator = (creatorId: string) => {
     setSelectedCreatorIds((prev) =>
@@ -483,7 +474,10 @@ export default function CampaignDetailsPage() {
           <CampaignTimelineTab campaignId={id} />
         )}
         {(activeTab === "Admin Actions" || activeTab === "Admin Action") && (
-          <CampaignActionsTab onSelectAction={setActiveAdminAction} />
+          <CampaignActionsTab
+            campaignId={id}
+            campaignStatus={campaign?.status}
+          />
         )}
         {activeTab === "Audit Log" && <CampaignAuditLogTab />}
       </div>
@@ -502,13 +496,6 @@ export default function CampaignDetailsPage() {
             handleDrawerReply(selectedCreatorForDrawer.id, replyText);
           }
         }}
-      />
-
-      {/* Admin Action Confirmation Modal */}
-      <AdminActionModal
-        action={activeAdminAction}
-        onClose={() => setActiveAdminAction(null)}
-        onConfirm={handleConfirmAdminAction}
       />
 
       {/* Selections Confirmation Modal */}

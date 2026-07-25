@@ -1,9 +1,9 @@
 "use client";
 
 import { Info, X } from "lucide-react";
+import type { EscrowActionType } from "@/types/dispute";
 
-export type EscrowActionType =
-  "release_to_creator" | "refund_to_brand" | "split";
+export type { EscrowActionType };
 
 interface EscrowConfirmModalProps {
   isOpen: boolean;
@@ -38,6 +38,26 @@ export default function EscrowConfirmModal({
       "Are you sure you want to split funds 50/50 between Brand and Creator?";
     confirmBtnText = "Yes, split";
     confirmBtnBg = "bg-amber-500 hover:bg-amber-600";
+  } else if (actionType === "allow_content_submission") {
+    title = "Allow content submission";
+    promptText = "Allow the creator to submit their draft content again?";
+    confirmBtnText = "Yes, allow";
+    confirmBtnBg = "bg-blue-500 hover:bg-blue-600";
+  } else if (actionType === "allow_content_review") {
+    title = "Allow content review";
+    promptText = "Reopen this dispute's draft content for brand review?";
+    confirmBtnText = "Yes, allow";
+    confirmBtnBg = "bg-blue-500 hover:bg-blue-600";
+  } else if (actionType === "allow_revised_submission") {
+    title = "Allow revised submission";
+    promptText = "Allow the creator to submit a revised draft again?";
+    confirmBtnText = "Yes, allow";
+    confirmBtnBg = "bg-blue-500 hover:bg-blue-600";
+  } else if (actionType === "allow_revised_review") {
+    title = "Allow revised review";
+    promptText = "Reopen the revised draft content for brand review?";
+    confirmBtnText = "Yes, allow";
+    confirmBtnBg = "bg-blue-500 hover:bg-blue-600";
   }
 
   return (

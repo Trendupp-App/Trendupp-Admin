@@ -43,6 +43,10 @@ export interface AdminCampaignSummaryResponseDto {
   cancelled: number;
 }
 
+export interface AdminCampaignActionResponse {
+  message: string;
+}
+
 export interface CampaignListQueryParams {
   q?: string;
   tab?: "all" | "draft" | "live" | "active" | "completed" | "cancelled";

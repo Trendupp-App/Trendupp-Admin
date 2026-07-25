@@ -50,6 +50,7 @@ export interface UpdateAdminProfileDto {
 
 export const usersApi = {
   getAllUsers: () => apiClient.get<AdminUser[]>("/users"),
+  getUserById: (id: string) => apiClient.get<AdminUser>(`/users/${id}`),
   inviteAdmin: (data: AdminInviteDto) =>
     apiClient.post<AdminInviteResponse>("/admin/users/invite", data),
   getSubAdmins: (params?: GetSubAdminsParams) =>
