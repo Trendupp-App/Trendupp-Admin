@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Plus,
   Search,
@@ -14,96 +14,104 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Portal } from "@/components/ui/portal";
-import NewsDrawer, { NewsArticle } from "@/components/admin/content/NewsDrawer";
+import NewsDrawer from "@/components/admin/content/NewsDrawer";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  useAdminNews,
+  useCreateNews,
+  useUpdateNews,
+  useDeleteNews,
+} from "@/hooks/useAdminNews";
+import type { AdminNewsItem, CreateNewsDto } from "@/types/adminNews";
 
-const INITIAL_NEWS: NewsArticle[] = [
+const DEFAULT_SAMPLE_NEWS: AdminNewsItem[] = [
   {
-    id: 1,
+    id: "news-1",
     title: "TikTok Nigeria launches creator fund — ₦500M available for Q3",
     brand: "Trendupp Africa",
     publishedAt: "2h ago",
     readTime: "4 min read",
     category: "Industry",
     image: "/dashboard/tiktok_news_banner.png",
+    coverImage: "/dashboard/tiktok_news_banner.png",
     summary: "TikTok has officially announced a ₦500 million creator fund...",
     content:
-      "TikTok has officially announced a ₦500 million creator fund targeted exclusively at Nigerian content creators for the third quarter of 2026. The announcement, made at a press event in Lagos, marks the platform's most significant investment in the Nigerian creator economy to date.",
+      "TikTok has officially announced a ₦500 million creator fund targeted exclusively at Nigerian content creators for the third quarter of 2026.",
     tags: ["TikTok", "Creator Fund", "Nigeria", "Monetization"],
-    fullStoryUrl: "#",
-    status: "Published",
+    status: "published",
     views: 4200,
   },
   {
-    id: 2,
+    id: "news-2",
     title: "Instagram Collab posts now monetisable in Nigeria",
     brand: "Trendupp Africa",
     publishedAt: "5h ago",
     readTime: "3 min read",
     category: "Platform Update",
     image: "/dashboard/tiktok_news_banner.png",
+    coverImage: "/dashboard/tiktok_news_banner.png",
     summary:
       "Meta has expanded its Instagram Collab post monetization features...",
     content:
-      "Meta has expanded its Instagram Collab post monetization features to eligible creators based in Nigeria, allowing shared revenue from advertising and brand deals directly inside the app.",
+      "Meta has expanded its Instagram Collab post monetization features to eligible creators based in Nigeria.",
     tags: ["Instagram", "Meta", "Collab"],
-    fullStoryUrl: "#",
-    status: "Published",
+    status: "published",
     views: 2800,
   },
   {
-    id: 3,
+    id: "news-3",
     title: "Top 10 Nigerian brands increasing influencer budgets in 2026",
     brand: "Trendupp Africa",
     publishedAt: "1d ago",
     readTime: "6 min read",
     category: "Brands",
     image: "/dashboard/tiktok_news_banner.png",
+    coverImage: "/dashboard/tiktok_news_banner.png",
     summary:
       "A new Trendupp market report highlights the top FMCG and fintech companies...",
     content:
-      "A new Trendupp market report highlights the top fast-moving consumer goods (FMCG) and fintech companies in Nigeria that are pivoting more ad spend into creator partnerships.",
+      "A new Trendupp market report highlights the top fast-moving consumer goods (FMCG) and fintech companies in Nigeria.",
     tags: ["Brands", "Budgets", "Marketing"],
-    fullStoryUrl: "#",
-    status: "Published",
+    status: "published",
     views: 8100,
   },
   {
-    id: 4,
+    id: "news-4",
     title: "How Macro creators are 3x-ing their income",
     brand: "Trendupp Africa",
     publishedAt: "Never",
     readTime: "5 min read",
     category: "Tips",
     image: "/dashboard/tiktok_news_banner.png",
+    coverImage: "/dashboard/tiktok_news_banner.png",
     summary:
       "Re-purposing long-form content into vertical snippets is the highest-leverage strategy...",
     content:
-      "Re-purposing long-form content into vertical snippets is the highest-leverage strategy for content creators looking to maximize brand exposure and income streams.",
+      "Re-purposing long-form content into vertical snippets is the highest-leverage strategy for content creators.",
     tags: ["Tips", "Syndication", "Income"],
-    fullStoryUrl: "#",
-    status: "Draft",
+    status: "draft",
     views: 0,
   },
   {
-    id: 5,
+    id: "news-5",
     title: "Trendupp Platform Updates — June 2026",
     brand: "Trendupp Africa",
     publishedAt: "2d ago",
     readTime: "8 min read",
     category: "Announcements",
     image: "/dashboard/tiktok_news_banner.png",
+    coverImage: "/dashboard/tiktok_news_banner.png",
     summary:
       "Celebrate creative excellence across Nigeria's online creator community...",
     content:
-      "The annual Trendupp Awards celebrating creative excellence across Nigeria's online creator community is officially open for nominations across 15 distinct categories.",
+      "The annual Trendupp Awards celebrating creative excellence across Nigeria's online creator community is officially open.",
     tags: ["Awards", "Nominations", "Platform"],
-    fullStoryUrl: "#",
-    status: "Published",
+    status: "published",
     views: 12000,
   },
 ];
 
-const CATEGORY_COLORS: Record<NewsArticle["category"], string> = {
+const CATEGORY_COLORS: Record<string, string> = {
   Industry: "text-[#2563eb] bg-[#eff6ff]",
   "Platform Update": "text-[#2563eb] bg-[#eff6ff]",
   Brands: "text-[#7c3aed] bg-[#f5f3ff]",
@@ -112,7 +120,6 @@ const CATEGORY_COLORS: Record<NewsArticle["category"], string> = {
 };
 
 export default function TrenduppNewsPage() {
-  const [articles, setArticles] = useState<NewsArticle[]>(INITIAL_NEWS);
   const [activeTab, setActiveTab] = useState<
     "All" | "Published" | "Draft" | "Archived"
   >("All");
@@ -120,97 +127,110 @@ export default function TrenduppNewsPage() {
 
   // Drawer & Modal states
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [editingArticle, setEditingArticle] = useState<NewsArticle | null>(
+  const [editingArticle, setEditingArticle] = useState<AdminNewsItem | null>(
     null,
   );
-  const [deleteTarget, setDeleteTarget] = useState<NewsArticle | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminNewsItem | null>(null);
 
-  // Drag and drop sorting state
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  // React Query hooks
+  const { data: newsItems = [], isLoading } = useAdminNews();
+  const createMutation = useCreateNews();
+  const updateMutation = useUpdateNews();
+  const deleteMutation = useDeleteNews();
+
+  const articles = useMemo(() => {
+    return newsItems && newsItems.length > 0 ? newsItems : DEFAULT_SAMPLE_NEWS;
+  }, [newsItems]);
 
   // Calculate totals
   const totalArticles = articles.length;
   const publishedCount = articles.filter(
-    (a) => a.status === "Published",
+    (a) => (a.status || "").toLowerCase() === "published",
   ).length;
-  const draftCount = articles.filter((a) => a.status === "Draft").length;
-  const archivedCount = articles.filter((a) => a.status === "Archived").length;
+  const draftCount = articles.filter(
+    (a) => (a.status || "").toLowerCase() === "draft",
+  ).length;
+  const archivedCount = articles.filter(
+    (a) => (a.status || "").toLowerCase() === "archived",
+  ).length;
 
   // Filter list
   const filteredArticles = articles.filter((article) => {
-    // Tab filter
-    if (activeTab === "Published" && article.status !== "Published")
-      return false;
-    if (activeTab === "Draft" && article.status !== "Draft") return false;
-    if (activeTab === "Archived" && article.status !== "Archived") return false;
-    if (activeTab !== "Archived" && article.status === "Archived") return false; // Hide archived in All, Published, Draft
+    const statusLower = (article.status || "").toLowerCase();
 
-    // Search filter
+    if (activeTab === "Published" && statusLower !== "published") return false;
+    if (activeTab === "Draft" && statusLower !== "draft") return false;
+    if (activeTab === "Archived" && statusLower !== "archived") return false;
+    if (activeTab !== "Archived" && statusLower === "archived") return false;
+
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
       const matchTitle = article.title.toLowerCase().includes(q);
-      const matchCategory = article.category.toLowerCase().includes(q);
-      const matchTags = article.tags.some((t) => t.toLowerCase().includes(q));
+      const matchCategory = (article.category || "").toLowerCase().includes(q);
+      const matchTags = Array.isArray(article.tags)
+        ? article.tags.some((t) => t.toLowerCase().includes(q))
+        : false;
       return matchTitle || matchCategory || matchTags;
     }
 
     return true;
   });
 
-  const handleDragStart = (index: number) => {
-    setDraggedIndex(index);
-  };
+  const handleSaveArticle = (
+    savedData: CreateNewsDto,
+    customStatus?: "published" | "draft",
+  ) => {
+    const payload = {
+      ...savedData,
+      status: customStatus || savedData.status || "draft",
+    };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = (index: number) => {
-    if (draggedIndex === null) return;
-    const updated = [...articles];
-    const draggedItem = updated[draggedIndex];
-    updated.splice(draggedIndex, 1);
-    updated.splice(index, 0, draggedItem);
-    setDraggedIndex(null);
-    setArticles(updated);
-  };
-
-  const handleSaveArticle = (saved: NewsArticle) => {
     if (editingArticle) {
-      setArticles((prev) => prev.map((a) => (a.id === saved.id ? saved : a)));
-      setEditingArticle(null);
+      updateMutation.mutate(
+        { id: editingArticle.id, data: payload },
+        {
+          onSuccess: () => {
+            setIsDrawerOpen(false);
+            setEditingArticle(null);
+          },
+        },
+      );
     } else {
-      setArticles((prev) => [saved, ...prev]);
+      createMutation.mutate(payload, {
+        onSuccess: () => {
+          setIsDrawerOpen(false);
+          setEditingArticle(null);
+        },
+      });
     }
   };
 
-  const handleArchiveToggle = (id: number) => {
-    setArticles((prev) =>
-      prev.map((a) => {
-        if (a.id === id) {
-          return {
-            ...a,
-            status: a.status === "Archived" ? "Draft" : "Archived",
-          };
-        }
-        return a;
-      }),
-    );
+  const handleArchiveToggle = (article: AdminNewsItem) => {
+    const isArchived = (article.status || "").toLowerCase() === "archived";
+    const nextStatus = isArchived ? "draft" : "archived";
+    updateMutation.mutate({
+      id: article.id,
+      data: { status: nextStatus },
+    });
   };
 
   const handleDeleteConfirm = () => {
     if (!deleteTarget) return;
-    setArticles((prev) => prev.filter((a) => a.id !== deleteTarget.id));
-    setDeleteTarget(null);
+    deleteMutation.mutate(deleteTarget.id, {
+      onSuccess: () => {
+        setDeleteTarget(null);
+      },
+    });
   };
 
-  const formatNumber = (num: number) => {
+  const formatNumber = (num?: number) => {
+    if (!num) return "0";
     if (num >= 1000) return (num / 1000).toFixed(1).replace(".0", "") + "K";
     return num.toString();
   };
 
   return (
-    <div className="p-6 flex flex-col gap-6 select-none text-left">
+    <div className="p-6 flex flex-col gap-6 select-none text-left min-h-screen bg-[#fafafa]">
       {/* Header section */}
       <div className="flex justify-between items-center">
         <div className="flex flex-col gap-1">
@@ -336,7 +356,13 @@ export default function TrenduppNewsPage() {
 
       {/* Articles List */}
       <div className="flex flex-col gap-4">
-        {filteredArticles.length === 0 ? (
+        {isLoading ? (
+          <div className="flex flex-col gap-3">
+            <Skeleton className="h-20 w-full rounded-3xl" />
+            <Skeleton className="h-20 w-full rounded-3xl" />
+            <Skeleton className="h-20 w-full rounded-3xl" />
+          </div>
+        ) : filteredArticles.length === 0 ? (
           <div className="border border-dashed border-[#e8e6f0] rounded-[24px] bg-white p-12 flex flex-col items-center justify-center gap-3">
             <span className="text-xs font-bold text-[#7a7a9a]">
               No articles found
@@ -346,122 +372,122 @@ export default function TrenduppNewsPage() {
             </span>
           </div>
         ) : (
-          filteredArticles.map((article, idx) => (
-            <div
-              key={article.id}
-              draggable={activeTab === "All"}
-              onDragStart={() => handleDragStart(idx)}
-              onDragOver={handleDragOver}
-              onDrop={() => handleDrop(idx)}
-              className={cn(
-                "border border-[#e8e6f0]/60 rounded-3xl p-4 flex items-center gap-4 bg-white transition-all",
-                draggedIndex === idx
-                  ? "opacity-40 scale-[0.98] border-brand-pink/30"
-                  : "hover:border-brand-pink/20",
-              )}
-            >
-              {/* Drag handle */}
-              {activeTab === "All" && (
-                <div className="cursor-grab text-[#c4c2d4] hover:text-[#9a99b0] shrink-0 p-1">
-                  <GripVertical size={16} />
+          filteredArticles.map((article) => {
+            const statusLower = (article.status || "draft").toLowerCase();
+
+            return (
+              <div
+                key={article.id}
+                className="border border-[#e8e6f0]/60 rounded-3xl p-4 flex items-center gap-4 bg-white transition-all hover:border-brand-pink/20"
+              >
+                {/* Drag handle */}
+                {activeTab === "All" && (
+                  <div className="cursor-grab text-[#c4c2d4] hover:text-[#9a99b0] shrink-0 p-1">
+                    <GripVertical size={16} />
+                  </div>
+                )}
+
+                {/* Cover Thumbnail */}
+                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-zinc-100 shrink-0 relative flex items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={
+                      article.coverImage ||
+                      article.image ||
+                      "/dashboard/tiktok_news_banner.png"
+                    }
+                    alt={article.title}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-              )}
 
-              {/* Cover Thumbnail */}
-              <div className="w-14 h-14 rounded-2xl overflow-hidden bg-zinc-100 shrink-0 relative flex items-center justify-center">
-                <img
-                  src={article.image}
-                  alt={article.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              {/* Article details */}
-              <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={cn(
-                      "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0",
-                      CATEGORY_COLORS[article.category] ||
-                        "text-[#7a7a9a] bg-[#f4f3f6]",
-                    )}
-                  >
-                    {article.category}
-                  </span>
-                  <span
-                    className={cn(
-                      "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1",
-                      article.status === "Published"
-                        ? "text-[#16a34a] bg-[#f0fdf4]"
-                        : article.status === "Draft"
-                          ? "text-[#d97706] bg-[#fffbeb]"
-                          : "text-[#4b5563] bg-[#f3f4f6]",
-                    )}
-                  >
+                {/* Article details */}
+                <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+                  <div className="flex items-center gap-2">
                     <span
                       className={cn(
-                        "w-1 h-1 rounded-full",
-                        article.status === "Published"
-                          ? "bg-[#16a34a]"
-                          : article.status === "Draft"
-                            ? "bg-[#d97706]"
-                            : "bg-[#4b5563]",
+                        "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0",
+                        CATEGORY_COLORS[article.category] ||
+                          "text-[#7a7a9a] bg-[#f4f3f6]",
                       )}
-                    />
-                    {article.status}
-                  </span>
+                    >
+                      {article.category}
+                    </span>
+                    <span
+                      className={cn(
+                        "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1",
+                        statusLower === "published"
+                          ? "text-[#16a34a] bg-[#f0fdf4]"
+                          : statusLower === "draft"
+                            ? "text-[#d97706] bg-[#fffbeb]"
+                            : "text-[#4b5563] bg-[#f3f4f6]",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "w-1 h-1 rounded-full",
+                          statusLower === "published"
+                            ? "bg-[#16a34a]"
+                            : statusLower === "draft"
+                              ? "bg-[#d97706]"
+                              : "bg-[#4b5563]",
+                        )}
+                      />
+                      {article.status || "Draft"}
+                    </span>
+                  </div>
+
+                  <h3 className="text-xs font-bold text-[#1a1a2e] leading-snug line-clamp-1">
+                    {article.title}
+                  </h3>
+
+                  <div className="text-[10px] font-semibold text-[#9a99b0] flex items-center gap-1.5 flex-wrap">
+                    <span>{article.brand || "Trendupp Africa"}</span>
+                    <span>•</span>
+                    <span>{article.publishedAt || "Recently"}</span>
+                  </div>
                 </div>
 
-                <h3 className="text-xs font-bold text-[#1a1a2e] leading-snug line-clamp-1">
-                  {article.title}
-                </h3>
+                {/* Views stats */}
+                <div className="hidden sm:flex items-center gap-1 text-[#9a99b0] text-[10px] font-bold shrink-0 px-4">
+                  <Eye size={12} />
+                  <span>{formatNumber(article.views)}</span>
+                </div>
 
-                <div className="text-[10px] font-semibold text-[#9a99b0] flex items-center gap-1.5 flex-wrap">
-                  <span>{article.brand}</span>
-                  <span>•</span>
-                  <span>{article.publishedAt}</span>
+                {/* Actions */}
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={() => {
+                      setEditingArticle(article);
+                      setIsDrawerOpen(true);
+                    }}
+                    className="p-2 text-[#7a7a9a] hover:text-[#1a1a2e] hover:bg-[#f4f3f6] rounded-xl transition-colors cursor-pointer"
+                    title="Edit"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    onClick={() => handleArchiveToggle(article)}
+                    className="p-2 text-[#7a7a9a] hover:text-[#1a1a2e] hover:bg-[#f4f3f6] rounded-xl transition-colors cursor-pointer"
+                    title={statusLower === "archived" ? "Restore" : "Archive"}
+                  >
+                    {statusLower === "archived" ? (
+                      <RotateCcw size={14} />
+                    ) : (
+                      <Archive size={14} />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setDeleteTarget(article)}
+                    className="p-2 text-[#7a7a9a] hover:text-[#dc2626] hover:bg-[#fef2f2] rounded-xl transition-colors cursor-pointer"
+                    title="Delete"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               </div>
-
-              {/* Views stats */}
-              <div className="hidden sm:flex items-center gap-1 text-[#9a99b0] text-[10px] font-bold shrink-0 px-4">
-                <Eye size={12} />
-                <span>{formatNumber(article.views)}</span>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => {
-                    setEditingArticle(article);
-                    setIsDrawerOpen(true);
-                  }}
-                  className="p-2 text-[#7a7a9a] hover:text-[#1a1a2e] hover:bg-[#f4f3f6] rounded-xl transition-colors cursor-pointer"
-                  title="Edit"
-                >
-                  <Pencil size={14} />
-                </button>
-                <button
-                  onClick={() => handleArchiveToggle(article.id)}
-                  className="p-2 text-[#7a7a9a] hover:text-[#1a1a2e] hover:bg-[#f4f3f6] rounded-xl transition-colors cursor-pointer"
-                  title={article.status === "Archived" ? "Restore" : "Archive"}
-                >
-                  {article.status === "Archived" ? (
-                    <RotateCcw size={14} />
-                  ) : (
-                    <Archive size={14} />
-                  )}
-                </button>
-                <button
-                  onClick={() => setDeleteTarget(article)}
-                  className="p-2 text-[#7a7a9a] hover:text-[#dc2626] hover:bg-[#fef2f2] rounded-xl transition-colors cursor-pointer"
-                  title="Delete"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -493,15 +519,17 @@ export default function TrenduppNewsPage() {
               <div className="grid grid-cols-2 gap-3 w-full mt-2">
                 <button
                   onClick={() => setDeleteTarget(null)}
-                  className="h-10 rounded-xl border border-[#e8e6f0] text-xs font-bold text-[#5a5a7a] hover:bg-[#faf9fc] cursor-pointer"
+                  disabled={deleteMutation.isPending}
+                  className="h-10 rounded-xl border border-[#e8e6f0] text-xs font-bold text-[#5a5a7a] hover:bg-[#faf9fc] cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDeleteConfirm}
-                  className="h-10 rounded-xl bg-[#dc2626] text-white text-xs font-bold hover:bg-[#b91c1c] cursor-pointer"
+                  disabled={deleteMutation.isPending}
+                  className="h-10 rounded-xl bg-[#dc2626] text-white text-xs font-bold hover:bg-[#b91c1c] cursor-pointer disabled:opacity-50"
                 >
-                  Delete
+                  {deleteMutation.isPending ? "Deleting..." : "Delete"}
                 </button>
               </div>
             </div>
@@ -515,6 +543,7 @@ export default function TrenduppNewsPage() {
         onClose={() => setIsDrawerOpen(false)}
         onSave={handleSaveArticle}
         article={editingArticle}
+        isSaving={createMutation.isPending || updateMutation.isPending}
       />
     </div>
   );
