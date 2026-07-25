@@ -3,6 +3,7 @@
 import { Search, Bell, ChevronDown } from "lucide-react";
 import UserAvatar from "@/shared/UserAvatar";
 import { useAuthStore } from "@/store/authStore";
+import { useUnreadCount } from "@/hooks/useAdminInbox";
 
 interface AdminHeaderProps {
   title?: string;
@@ -14,6 +15,7 @@ export default function AdminHeader({
   onNotificationClick,
 }: AdminHeaderProps) {
   const { user } = useAuthStore();
+  const { data: unreadCount = 0 } = useUnreadCount();
   const displayName = user?.firstName || "Admin";
   const initials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase() ||
@@ -44,7 +46,11 @@ export default function AdminHeader({
           aria-label="Notifications"
         >
           <Bell size={18} className="text-[#5a5a7a]" />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-brand-pink rounded-full" />
+          {unreadCount > 0 && (
+            <span className="absolute top-0.5 right-0.5 min-w-[14px] h-[14px] px-0.5 bg-brand-pink text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
         </button>
 
         {/* Avatar + Admin label */}

@@ -39,8 +39,8 @@ export default function BroadcastDetailDrawer({
   const channelLabel =
     broadcast.channel === "email"
       ? "Email Notification"
-      : broadcast.channel === "push"
-        ? "Mobile Push"
+      : broadcast.channel === "both"
+        ? "In-App + Email"
         : "In-App Banner";
 
   const statusLabel = broadcast.status.toUpperCase();

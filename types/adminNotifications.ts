@@ -1,6 +1,6 @@
 export type BroadcastAudience = "all" | "creators" | "brands";
-export type BroadcastChannel = "in_app" | "email" | "push";
-export type BroadcastStatus = "draft" | "scheduled" | "sent";
+export type BroadcastChannel = "in_app" | "email" | "both";
+export type BroadcastStatus = "draft" | "scheduled" | "sent" | "failed";
 
 export interface AdminBroadcastItem {
   id: string;

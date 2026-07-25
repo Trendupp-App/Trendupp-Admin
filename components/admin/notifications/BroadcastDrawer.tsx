@@ -90,8 +90,7 @@ export default function BroadcastDrawer({
                       : "Create New Broadcast"}
                   </h2>
                   <p className="text-[11px] text-[#9a99b0] font-medium">
-                    Send system notifications across in-app, email, and push
-                    channels
+                    Send system notifications across in-app and email channels
                   </p>
                 </div>
               </div>
@@ -172,9 +171,9 @@ export default function BroadcastDrawer({
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { key: "in_app", label: "In-App Banner" },
-                    { key: "email", label: "Email Notice" },
-                    { key: "push", label: "Mobile Push" },
+                    { key: "in_app", label: "In-App" },
+                    { key: "email", label: "Email" },
+                    { key: "both", label: "In-App + Email" },
                   ].map((ch) => (
                     <button
                       type="button"
