@@ -59,7 +59,6 @@ export function useAdDetails(id: string | null, enabled: boolean = true) {
     queryFn: () => {
       if (!id) throw new Error("No ad ID");
       return adminAdsApi.getAdById(id!).then((r) => r.data);
-    }
     },
     enabled: !!id && enabled,
     staleTime: 1000 * 60 * 2,
