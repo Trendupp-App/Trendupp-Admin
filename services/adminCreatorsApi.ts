@@ -110,4 +110,24 @@ export const adminCreatorsApi = {
   // 17. Delete Note
   deleteCreatorNote: (id: string, noteId: string) =>
     apiClient.delete(`/admin/creators/${id}/notes/${noteId}`),
+
+  // 18. Suspend Account
+  suspendCreatorAccount: (id: string, payload: { reason: string }) =>
+    apiClient.patch(`/admin/creators/${id}/suspend`, payload),
+
+  // 19. Suspend Campaign Access
+  suspendCreatorCampaignAccess: (id: string, payload: { reason: string }) =>
+    apiClient.patch(`/admin/creators/${id}/suspend-campaign`, payload),
+
+  // 20. Reactivate Account
+  reactivateCreatorAccount: (id: string, payload: { reason: string }) =>
+    apiClient.patch(`/admin/creators/${id}/reactivate`, payload),
+
+  // 21. Change Creator Tier
+  changeCreatorTier: (id: string, payload: { tier: string }) =>
+    apiClient.patch(`/admin/creators/${id}/tier`, payload),
+
+  // 22. Delete Creator Account
+  deleteCreatorAccount: (id: string, payload?: { reason?: string }) =>
+    apiClient.delete(`/admin/creators/${id}`, { data: payload }),
 };
