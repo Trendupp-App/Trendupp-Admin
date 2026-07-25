@@ -105,10 +105,8 @@ export default function NewsCategoriesView() {
   const deleteMutation = useDeleteNewsCategory();
 
   const displayCategories = useMemo(() => {
-    if (process.env.NODE_ENV === "development" && categories.length === 0) {
-      return DEFAULT_SAMPLE_CATEGORIES;
-    }
-    return categories;
+    if (categories && categories.length > 0) return categories;
+    return process.env.NODE_ENV === "development" ? DEFAULT_SAMPLE_CATEGORIES : [];
   }, [categories]);
 
   const filteredCategories = useMemo(() => {

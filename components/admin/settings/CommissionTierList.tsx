@@ -43,9 +43,11 @@ export default function CommissionTierList({
   onDeleteTier,
 }: CommissionTierListProps) {
   const displayTiers =
-    process.env.NODE_ENV === "development" && tiers.length === 0
-      ? DEFAULT_FALLBACK_TIERS
-      : tiers;
+    tiers && tiers.length > 0
+      ? tiers
+      : process.env.NODE_ENV === "development"
+        ? DEFAULT_FALLBACK_TIERS
+        : [];
 
   return (
     <div className="flex flex-col gap-6">
