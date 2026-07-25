@@ -14,54 +14,6 @@ interface ActivityRow {
   applications: number;
 }
 
-const MOCK: ActivityRow[] = [
-  {
-    id: "1",
-    campaignId: "T-10-1001",
-    campaign: "Summer Style Collect",
-    brand: "7ère Africa",
-    status: "live",
-    budget: "₦3.0M",
-    applications: 47,
-  },
-  {
-    id: "2",
-    campaignId: "T-10-1002",
-    campaign: "SPARK 20 Launch",
-    brand: "Tecno Mobile",
-    status: "submitted",
-    budget: "₦2.5M",
-    applications: 0,
-  },
-  {
-    id: "3",
-    campaignId: "T-10-1003",
-    campaign: "Back to School 2026",
-    brand: "Stronite Nigeria",
-    status: "submitted",
-    budget: "₦1.0M",
-    applications: 0,
-  },
-  {
-    id: "4",
-    campaignId: "T-10-1004",
-    campaign: "Ramadan Special",
-    brand: "Dangote Sugar",
-    status: "completed",
-    budget: "₦1.2M",
-    applications: 89,
-  },
-  {
-    id: "5",
-    campaignId: "T-10-1005",
-    campaign: "Tech Unboxing Series",
-    brand: "Samsung Nigeria",
-    status: "active",
-    budget: "₦4.5M",
-    applications: 134,
-  },
-];
-
 const COLS: AdminColumn<ActivityRow>[] = [
   {
     header: "ID",
@@ -106,7 +58,7 @@ export function AdminRecentActivity({ activities }: AdminRecentActivityProps) {
               : `₦${item.budget.toLocaleString()}`,
         applications: item.applicationsCount ?? 0,
       }))
-    : MOCK;
+    : [];
 
   return (
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6">

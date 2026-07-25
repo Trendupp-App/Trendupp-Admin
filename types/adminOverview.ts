@@ -3,12 +3,16 @@ export interface TopMetricsDto {
   totalBrands: number;
   totalCampaigns: number;
   openDisputes: number;
+  newBrandsThisWeek: number;
+  newCampaignsThisWeek: number;
+  newDisputesThisWeek: number;
 }
 
 export interface ActionsRequiredDto {
   unresolvedDisputes: number;
   resolvedDisputes: number;
   creatorsAwaitingPayment: number;
+  failedPayouts: number;
 }
 
 export interface CampaignOverviewDto {

@@ -11,8 +11,9 @@ interface AdminActionsRequiredProps {
 export function AdminActionsRequired({
   actionsRequired,
 }: AdminActionsRequiredProps) {
-  const unresolved = actionsRequired?.unresolvedDisputes ?? 4;
-  const awaitingPayout = actionsRequired?.creatorsAwaitingPayment ?? 11;
+  const unresolved = actionsRequired?.unresolvedDisputes ?? 0;
+  const awaitingPayout = actionsRequired?.creatorsAwaitingPayment ?? 0;
+  const failedPayouts = actionsRequired?.failedPayouts ?? 0;
 
   return (
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-4 shadow-sm">
@@ -36,7 +37,8 @@ export function AdminActionsRequired({
           <div className="flex items-center gap-2 text-xs font-semibold text-rose-900 min-w-0">
             <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
             <span className="truncate">
-              7 payout failed and needs attention
+              {failedPayouts} failed payout{failedPayouts === 1 ? "" : "s"} need
+              {failedPayouts === 1 ? "s" : ""} attention
             </span>
           </div>
           <Link
@@ -68,7 +70,7 @@ export function AdminActionsRequired({
           <div className="flex items-center gap-2 text-xs font-semibold text-rose-900 min-w-0">
             <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
             <span className="truncate">
-              {unresolved} disputes unresolved — 2 escalated
+              {unresolved} dispute{unresolved === 1 ? "" : "s"} unresolved
             </span>
           </div>
           <Link
