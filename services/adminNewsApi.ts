@@ -10,12 +10,20 @@ import type {
 function buildNewsFormData(data: CreateNewsDto | UpdateNewsDto): FormData {
   const formData = new FormData();
 
-  if (data.title !== undefined) formData.append("title", data.title);
-  if (data.summary !== undefined) formData.append("summary", data.summary);
-  if (data.content !== undefined) formData.append("content", data.content);
-  if (data.category !== undefined) formData.append("category", data.category);
+  if (data.title !== undefined && data.title !== "") {
+    formData.append("title", data.title);
+  }
+  if (data.summary !== undefined && data.summary !== "") {
+    formData.append("summary", data.summary);
+  }
+  if (data.content !== undefined && data.content !== "") {
+    formData.append("content", data.content);
+  }
+  if (data.category !== undefined && data.category !== "") {
+    formData.append("category", data.category);
+  }
 
-  if (data.status !== undefined) {
+  if (data.status !== undefined && data.status !== "") {
     formData.append("status", data.status.toLowerCase());
   }
 
@@ -27,31 +35,34 @@ function buildNewsFormData(data: CreateNewsDto | UpdateNewsDto): FormData {
     formData.append("isTopNews", String(data.isTopNews));
   }
 
-  if (data.industryId) {
+  if (data.industryId !== undefined && data.industryId !== "") {
     formData.append("industryId", data.industryId);
   }
 
-  if (data.coverImage instanceof File) {
-    formData.append("coverImage", data.coverImage);
-  } else if (typeof data.coverImage === "string") {
-    formData.append("coverImage", data.coverImage);
+  if (data.coverImage !== undefined) {
+    if (data.coverImage instanceof File) {
+      formData.append("coverImage", data.coverImage);
+    } else if (typeof data.coverImage === "string") {
+      formData.append("coverImage", data.coverImage);
+    } else {
+      formData.append("coverImage", "");
+    }
   }
 
   return formData;
 }
 
 export const adminNewsApi = {
-  // 1. Get News List
+  // 1. Get News List (GET /news)
   getNews: (params?: NewsQueryParams) =>
-    apiClient.get<AdminNewsItem[] | PaginatedNewsResponse>("/admin/news", {
+    apiClient.get<AdminNewsItem[] | PaginatedNewsResponse>("/news", {
       params,
     }),
 
-  // 2. Get Single Article Details
-  getNewsById: (id: string) =>
-    apiClient.get<AdminNewsItem>(`/admin/news/${id}`),
+  // 2. Get Single Article Details (GET /news/:id)
+  getNewsById: (id: string) => apiClient.get<AdminNewsItem>(`/news/${id}`),
 
-  // 3. Create News Article (multipart/form-data)
+  // 3. Create News Article (multipart/form-data: POST /admin/news)
   createNews: (data: CreateNewsDto) => {
     const formData = buildNewsFormData(data);
     return apiClient.post<AdminNewsItem>("/admin/news", formData, {
@@ -61,7 +72,7 @@ export const adminNewsApi = {
     });
   },
 
-  // 4. Update News Article (multipart/form-data)
+  // 4. Update News Article (multipart/form-data: PATCH /admin/news/:id)
   updateNews: (id: string, data: UpdateNewsDto) => {
     const formData = buildNewsFormData(data);
     return apiClient.patch<AdminNewsItem>(`/admin/news/${id}`, formData, {
@@ -71,7 +82,7 @@ export const adminNewsApi = {
     });
   },
 
-  // 5. Delete News Article
+  // 5. Delete News Article (DELETE /admin/news/:id)
   deleteNews: (id: string) =>
     apiClient.delete<{ message?: string }>(`/admin/news/${id}`),
 };

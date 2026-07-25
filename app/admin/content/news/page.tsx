@@ -6,9 +6,7 @@ import {
   Search,
   GripVertical,
   Pencil,
-  Archive,
   Trash2,
-  RotateCcw,
   Eye,
   AlertTriangle,
 } from "lucide-react";
@@ -24,93 +22,6 @@ import {
 } from "@/hooks/useAdminNews";
 import type { AdminNewsItem, CreateNewsDto } from "@/types/adminNews";
 
-const DEFAULT_SAMPLE_NEWS: AdminNewsItem[] = [
-  {
-    id: "news-1",
-    title: "TikTok Nigeria launches creator fund — ₦500M available for Q3",
-    brand: "Trendupp Africa",
-    publishedAt: "2h ago",
-    readTime: "4 min read",
-    category: "Industry",
-    image: "/dashboard/tiktok_news_banner.png",
-    coverImage: "/dashboard/tiktok_news_banner.png",
-    summary: "TikTok has officially announced a ₦500 million creator fund...",
-    content:
-      "TikTok has officially announced a ₦500 million creator fund targeted exclusively at Nigerian content creators for the third quarter of 2026.",
-    tags: ["TikTok", "Creator Fund", "Nigeria", "Monetization"],
-    status: "published",
-    views: 4200,
-  },
-  {
-    id: "news-2",
-    title: "Instagram Collab posts now monetisable in Nigeria",
-    brand: "Trendupp Africa",
-    publishedAt: "5h ago",
-    readTime: "3 min read",
-    category: "Platform Update",
-    image: "/dashboard/tiktok_news_banner.png",
-    coverImage: "/dashboard/tiktok_news_banner.png",
-    summary:
-      "Meta has expanded its Instagram Collab post monetization features...",
-    content:
-      "Meta has expanded its Instagram Collab post monetization features to eligible creators based in Nigeria.",
-    tags: ["Instagram", "Meta", "Collab"],
-    status: "published",
-    views: 2800,
-  },
-  {
-    id: "news-3",
-    title: "Top 10 Nigerian brands increasing influencer budgets in 2026",
-    brand: "Trendupp Africa",
-    publishedAt: "1d ago",
-    readTime: "6 min read",
-    category: "Brands",
-    image: "/dashboard/tiktok_news_banner.png",
-    coverImage: "/dashboard/tiktok_news_banner.png",
-    summary:
-      "A new Trendupp market report highlights the top FMCG and fintech companies...",
-    content:
-      "A new Trendupp market report highlights the top fast-moving consumer goods (FMCG) and fintech companies in Nigeria.",
-    tags: ["Brands", "Budgets", "Marketing"],
-    status: "published",
-    views: 8100,
-  },
-  {
-    id: "news-4",
-    title: "How Macro creators are 3x-ing their income",
-    brand: "Trendupp Africa",
-    publishedAt: "Never",
-    readTime: "5 min read",
-    category: "Tips",
-    image: "/dashboard/tiktok_news_banner.png",
-    coverImage: "/dashboard/tiktok_news_banner.png",
-    summary:
-      "Re-purposing long-form content into vertical snippets is the highest-leverage strategy...",
-    content:
-      "Re-purposing long-form content into vertical snippets is the highest-leverage strategy for content creators.",
-    tags: ["Tips", "Syndication", "Income"],
-    status: "draft",
-    views: 0,
-  },
-  {
-    id: "news-5",
-    title: "Trendupp Platform Updates — June 2026",
-    brand: "Trendupp Africa",
-    publishedAt: "2d ago",
-    readTime: "8 min read",
-    category: "Announcements",
-    image: "/dashboard/tiktok_news_banner.png",
-    coverImage: "/dashboard/tiktok_news_banner.png",
-    summary:
-      "Celebrate creative excellence across Nigeria's online creator community...",
-    content:
-      "The annual Trendupp Awards celebrating creative excellence across Nigeria's online creator community is officially open.",
-    tags: ["Awards", "Nominations", "Platform"],
-    status: "published",
-    views: 12000,
-  },
-];
-
 const CATEGORY_COLORS: Record<string, string> = {
   Industry: "text-[#2563eb] bg-[#eff6ff]",
   "Platform Update": "text-[#2563eb] bg-[#eff6ff]",
@@ -120,9 +31,9 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function TrenduppNewsPage() {
-  const [activeTab, setActiveTab] = useState<
-    "All" | "Published" | "Draft" | "Archived"
-  >("All");
+  const [activeTab, setActiveTab] = useState<"All" | "Published" | "Draft">(
+    "All",
+  );
   const [searchQuery, setSearchQuery] = useState("");
 
   // Drawer & Modal states
@@ -139,7 +50,7 @@ export default function TrenduppNewsPage() {
   const deleteMutation = useDeleteNews();
 
   const articles = useMemo(() => {
-    return newsItems && newsItems.length > 0 ? newsItems : DEFAULT_SAMPLE_NEWS;
+    return Array.isArray(newsItems) ? newsItems : [];
   }, [newsItems]);
 
   // Calculate totals
@@ -150,9 +61,6 @@ export default function TrenduppNewsPage() {
   const draftCount = articles.filter(
     (a) => (a.status || "").toLowerCase() === "draft",
   ).length;
-  const archivedCount = articles.filter(
-    (a) => (a.status || "").toLowerCase() === "archived",
-  ).length;
 
   // Filter list
   const filteredArticles = articles.filter((article) => {
@@ -160,12 +68,10 @@ export default function TrenduppNewsPage() {
 
     if (activeTab === "Published" && statusLower !== "published") return false;
     if (activeTab === "Draft" && statusLower !== "draft") return false;
-    if (activeTab === "Archived" && statusLower !== "archived") return false;
-    if (activeTab !== "Archived" && statusLower === "archived") return false;
 
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
-      const matchTitle = article.title.toLowerCase().includes(q);
+      const matchTitle = (article.title || "").toLowerCase().includes(q);
       const matchCategory = (article.category || "").toLowerCase().includes(q);
       const matchTags = Array.isArray(article.tags)
         ? article.tags.some((t) => t.toLowerCase().includes(q))
@@ -203,15 +109,6 @@ export default function TrenduppNewsPage() {
         },
       });
     }
-  };
-
-  const handleArchiveToggle = (article: AdminNewsItem) => {
-    const isArchived = (article.status || "").toLowerCase() === "archived";
-    const nextStatus = isArchived ? "draft" : "archived";
-    updateMutation.mutate({
-      id: article.id,
-      data: { status: nextStatus },
-    });
   };
 
   const handleDeleteConfirm = () => {
@@ -316,27 +213,6 @@ export default function TrenduppNewsPage() {
             {draftCount}
           </span>
         </button>
-        <button
-          onClick={() => setActiveTab("Archived")}
-          className={cn(
-            "h-8 px-4 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
-            activeTab === "Archived"
-              ? "bg-brand-pink text-white"
-              : "bg-white border border-[#e8e6f0] text-[#7a7a9a] hover:bg-[#faf9fc]",
-          )}
-        >
-          Archived{" "}
-          <span
-            className={cn(
-              "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
-              activeTab === "Archived"
-                ? "bg-white/20 text-white"
-                : "bg-[#f4f3f6] text-[#7a7a9a]",
-            )}
-          >
-            {archivedCount}
-          </span>
-        </button>
       </div>
 
       {/* Search Input bar */}
@@ -368,7 +244,8 @@ export default function TrenduppNewsPage() {
               No articles found
             </span>
             <span className="text-[10px] font-medium text-[#9a99b0]">
-              Try adjusting your search query or filters.
+              Click &quot;Publish New Article&quot; to create your first news
+              article.
             </span>
           </div>
         ) : (
@@ -396,7 +273,7 @@ export default function TrenduppNewsPage() {
                       article.image ||
                       "/dashboard/tiktok_news_banner.png"
                     }
-                    alt={article.title}
+                    alt={article.title || "News Image"}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -411,16 +288,14 @@ export default function TrenduppNewsPage() {
                           "text-[#7a7a9a] bg-[#f4f3f6]",
                       )}
                     >
-                      {article.category}
+                      {article.category || "General"}
                     </span>
                     <span
                       className={cn(
                         "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1",
                         statusLower === "published"
                           ? "text-[#16a34a] bg-[#f0fdf4]"
-                          : statusLower === "draft"
-                            ? "text-[#d97706] bg-[#fffbeb]"
-                            : "text-[#4b5563] bg-[#f3f4f6]",
+                          : "text-[#d97706] bg-[#fffbeb]",
                       )}
                     >
                       <span
@@ -428,9 +303,7 @@ export default function TrenduppNewsPage() {
                           "w-1 h-1 rounded-full",
                           statusLower === "published"
                             ? "bg-[#16a34a]"
-                            : statusLower === "draft"
-                              ? "bg-[#d97706]"
-                              : "bg-[#4b5563]",
+                            : "bg-[#d97706]",
                         )}
                       />
                       {article.status || "Draft"}
@@ -465,17 +338,6 @@ export default function TrenduppNewsPage() {
                     title="Edit"
                   >
                     <Pencil size={14} />
-                  </button>
-                  <button
-                    onClick={() => handleArchiveToggle(article)}
-                    className="p-2 text-[#7a7a9a] hover:text-[#1a1a2e] hover:bg-[#f4f3f6] rounded-xl transition-colors cursor-pointer"
-                    title={statusLower === "archived" ? "Restore" : "Archive"}
-                  >
-                    {statusLower === "archived" ? (
-                      <RotateCcw size={14} />
-                    ) : (
-                      <Archive size={14} />
-                    )}
                   </button>
                   <button
                     onClick={() => setDeleteTarget(article)}
