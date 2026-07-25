@@ -40,7 +40,7 @@ export function AdminActionsRequired({
             </span>
           </div>
           <Link
-            href="/admin/escrow"
+            href="/admin/finance/escrow"
             className="h-7 px-3 bg-rose-500 hover:bg-rose-600 text-white text-[11px] font-bold rounded-xl flex items-center justify-center shrink-0 transition-colors shadow-xs"
           >
             View →
@@ -88,7 +88,7 @@ export function AdminActionsRequired({
             </span>
           </div>
           <Link
-            href="/admin/escrow"
+            href="/admin/finance/escrow"
             className="h-7 px-3 bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold rounded-xl flex items-center justify-center shrink-0 transition-colors shadow-xs"
           >
             Process →
