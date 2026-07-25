@@ -16,7 +16,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("commission");
 
   return (
-    <div className="flex flex-col gap-6 p-[#6b6b80]/5 p-6 min-h-screen bg-[#fafafa]">
+    <div className="flex flex-col gap-6 p-6 min-h-screen bg-[#fafafa]">
       {/* Top Header */}
       <div>
         <h1 className="text-2xl font-bold text-[#1a1a2e]">Settings</h1>
