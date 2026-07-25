@@ -1,7 +1,7 @@
 "use client";
 
-import ComingSoonPage from "@/components/admin/ComingSoonPage";
+import BannerAdsView from "@/components/admin/ads/BannerAdsView";
 
 export default function BannerAdsPage() {
-  return <ComingSoonPage title="Banner Ads" />;
+  return <BannerAdsView />;
 }

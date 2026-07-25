@@ -25,9 +25,11 @@ export default function TopCreators() {
             : `@${c.handle}`
           : "@creator",
         earnings:
-          (c.totalEarnings ?? 0) >= 1000000
-            ? `₦${((c.totalEarnings ?? 0) / 1000000).toFixed(1)}M`
-            : `₦${((c.totalEarnings ?? 0) / 1000).toFixed(0)}K`,
+          (c.totalEarnings ?? 0) >= 1_000_000
+            ? `₦${((c.totalEarnings ?? 0) / 1_000_000).toFixed(1)}M`
+            : (c.totalEarnings ?? 0) >= 1_000
+              ? `₦${((c.totalEarnings ?? 0) / 1_000).toFixed(0)}K`
+              : `₦${(c.totalEarnings ?? 0).toLocaleString()}`,
         campaigns: c.completedCampaigns ?? 0,
         initials: (c.name || "Creator")
           .split(" ")

@@ -13,39 +13,11 @@ export default function ProfileCompletionCard() {
   const { data: summaryData, isLoading } = useCreatorSummary();
 
   const rawList = useMemo(() => {
-    if (!summaryData) return undefined;
-    const obj = summaryData as unknown as Record<string, unknown>;
-    const dataObj = (obj.data || obj.result || obj) as Record<string, unknown>;
-    const list =
-      summaryData.profileCompletionDistribution ||
-      (dataObj.profileCompletionDistribution as unknown[]) ||
-      (dataObj.profile_completion_distribution as unknown[]) ||
-      (obj.profile_completion_distribution as unknown[]) ||
-      (obj.profileCompletion as unknown[]) ||
-      (obj.profile_completion as unknown[]) ||
-      (obj.completionDistribution as unknown[]) ||
-      (obj.completion_distribution as unknown[]) ||
-      (obj.distribution as unknown[]);
-
-    if (Array.isArray(list) && list.length > 0) return list;
-    return undefined;
+    return summaryData?.profileCompletionDistribution;
   }, [summaryData]);
 
   const totalCreatorsCount = useMemo(() => {
-    if (!summaryData) return 1;
-    const obj = summaryData as unknown as Record<string, unknown>;
-    const dataObj = (obj.data || obj.result || obj) as Record<string, unknown>;
-    const summary = (summaryData.summary ||
-      dataObj.summary ||
-      obj) as unknown as Record<string, unknown>;
-    return (
-      summaryData.summary?.totalCreators ||
-      Number(summary?.totalCreators) ||
-      Number(summary?.total_creators) ||
-      Number(dataObj?.totalCreators) ||
-      Number(obj?.totalCreators) ||
-      1
-    );
+    return summaryData?.summary.totalCreators ?? 1;
   }, [summaryData]);
 
   const items: CompletionItem[] = useMemo(() => {

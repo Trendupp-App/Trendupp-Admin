@@ -22,4 +22,7 @@ export const disputeApi = {
 
   resolveDispute: (id: string, payload: ResolveDisputePayload) =>
     apiClient.post<Dispute>(`/disputes/${id}/resolve`, payload),
+
+  updateDisputeNotes: (id: string, notes: string) =>
+    apiClient.patch<Dispute>(`/disputes/${id}`, { notes }),
 };

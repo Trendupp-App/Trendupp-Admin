@@ -109,3 +109,24 @@ export function useResolveDispute(onSuccess?: () => void) {
     },
   });
 }
+
+export function useUpdateDisputeNotes(onSuccess?: () => void) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, notes }: { id: string; notes: string }) =>
+      disputeApi.updateDisputeNotes(id, notes),
+    onSuccess: (_, variables) => {
+      toast.success("Admin note saved successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["dispute-details", variables.id],
+      });
+      if (onSuccess) onSuccess();
+    },
+    onError: (err: AxiosError<{ message?: string }>) => {
+      toast.error(
+        err?.response?.data?.message ??
+          "Could not save admin note, please try again",
+      );
+    },
+  });
+}

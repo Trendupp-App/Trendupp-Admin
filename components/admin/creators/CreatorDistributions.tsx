@@ -136,7 +136,7 @@ export default function CreatorDistributions() {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <DistributionCard
         title="Niche"
-        sub="5 Country"
+        sub="5 Total Niches"
         items={nichesList}
         badgeBg="bg-[#fdf2f6]"
         badgeText="text-brand-pink"
