@@ -1,7 +1,6 @@
 import apiClient from "@/lib/apiClient";
 import type { AuthUser } from "@/store/authStore";
 import { MessageResponse } from "@/types/auth";
-import { RawUserProfile } from "@/types/profile";
 
 export interface SignupResponse {
   message: string;
@@ -58,7 +57,7 @@ export const authApi = {
     apiClient.post<MessageResponse>("/admin/auth/reset-password", data),
 
   getUserProfile: (userId: string) =>
-    apiClient.get<RawUserProfile>(`/users/${userId}`),
+    apiClient.get<AuthUser>(`/users/${userId}`),
 
   checkUsername: (username: string) =>
     apiClient.get<UsernameCheckResponse>("/auth/username/check", {

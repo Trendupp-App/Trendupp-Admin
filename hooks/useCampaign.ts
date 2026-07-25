@@ -1,42 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { AxiosError } from "axios";
+import { useQuery } from "@tanstack/react-query";
 import { campaignApi } from "@/services/campaignApi";
-import type { CreateCampaignPayload } from "@/types/campaign";
-import type { VetDraftPayload } from "@/types/submissions";
-import type { CreateDisputePayload } from "@/types/dispute";
-
-export function useCampaignPlatforms() {
-  return useQuery({
-    queryKey: ["campaign-platforms"],
-    queryFn: () => campaignApi.getPlatforms().then((r) => r.data),
-    staleTime: 1000 * 60 * 60,
-  });
-}
-
-export function useCreatorCategories() {
-  return useQuery({
-    queryKey: ["creator-categories"],
-    queryFn: () => campaignApi.getCreatorCategories().then((r) => r.data),
-    staleTime: 1000 * 60 * 60,
-  });
-}
-
-export function useCreateCampaign(onSuccess: (campaignId: string) => void) {
-  return useMutation({
-    mutationFn: (payload: CreateCampaignPayload) =>
-      campaignApi.createCampaign(payload),
-    onSuccess: ({ data }) => {
-      toast.success(data.message ?? "Campaign draft created", {
-        duration: 1200,
-      });
-      onSuccess(data.campaign.id);
-    },
-    onError: (err: AxiosError<{ message?: string }>) => {
-      toast.error(err?.response?.data?.message ?? "Could not create campaign");
-    },
-  });
-}
 
 export function useCampaign(id: string | null) {
   return useQuery({

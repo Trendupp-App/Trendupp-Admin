@@ -140,7 +140,7 @@ export default function AdminSidebar() {
 
   return (
     <aside className="w-[264px] h-screen bg-[#fef2f6] border-r border-[#fae2ec] flex flex-col justify-between py-6 px-4 shrink-0 overflow-y-auto">
-      <div className="flex flex-col gap-0">
+      <div className="flex flex-col gap-0 text-left">
         {/* Logo */}
         <div className="px-3 mb-5">
           <Link href="/admin/dashboard">
