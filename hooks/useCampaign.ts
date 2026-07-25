@@ -47,6 +47,19 @@ export function useCampaign(id: string | null) {
   });
 }
 
+export function useActivityTimeline(
+  campaignId: string | null,
+  enabled: boolean = true,
+) {
+  return useQuery({
+    queryKey: ["campaign-activity-timeline", campaignId],
+    queryFn: () =>
+      campaignApi.getActivityTimeline(campaignId!).then((r) => r.data),
+    enabled: !!campaignId && enabled,
+    staleTime: 1000 * 30,
+  });
+}
+
 export function useApplication(id: string | null) {
   return useQuery({
     queryKey: ["application", id],

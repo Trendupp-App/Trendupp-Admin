@@ -8,51 +8,142 @@ import {
   ArrowRight,
   Check,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import UserAvatar from "@/shared/UserAvatar";
+import {
+  useSubmissions,
+  useVetDraft,
+  useApproveLivePost,
+} from "@/hooks/useCampaign";
+import type { CampaignSubmission } from "@/types/submissions";
+import type { CreatorDrawerData } from "./CampaignCreatorDrawer";
+import AdminActionModal from "./AdminActionModal";
 
 interface CampaignDeliverablesTabProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onViewDetails: (c: any) => void;
+  onViewDetails: (c: CreatorDrawerData) => void;
   isSocial?: boolean;
+  campaignId?: string;
   deliverableStatus?: "Awaiting" | "Approved";
   onApprove?: () => void;
   onRequestRevision?: () => void;
 }
 
+type FilterOption = "all" | "pending" | "revision" | "approved";
+
+const FILTER_STATUS_MAP: Record<Exclude<FilterOption, "all">, string[]> = {
+  pending: ["pending_approval"],
+  revision: ["revision_requested", "revision-sent"],
+  approved: ["approved", "livelink_available", "done", "live"],
+};
+
+const STATUS_BADGE: Record<string, { label: string; className: string }> = {
+  pending_approval: {
+    label: "Pending review",
+    className: "bg-[#f3f4f6] text-[#5a5a7a] border-[#e5e7eb]",
+  },
+  revision_requested: {
+    label: "Revision requested",
+    className: "bg-[#fff7ed] text-[#ea580c] border-[#ffedd5]",
+  },
+  "revision-sent": {
+    label: "Revised — awaiting review",
+    className: "bg-[#eff6ff] text-[#2563eb] border-[#dbeafe]",
+  },
+  approved: {
+    label: "Approved",
+    className: "bg-[#f0fdf4] text-[#16a34a] border-[#dcfce7]",
+  },
+  livelink_available: {
+    label: "Live link submitted",
+    className: "bg-[#eff6ff] text-[#2563eb] border-[#dbeafe]",
+  },
+  done: {
+    label: "Approved",
+    className: "bg-[#f0fdf4] text-[#16a34a] border-[#dcfce7]",
+  },
+  live: {
+    label: "Live",
+    className: "bg-[#f0fdf4] text-[#16a34a] border-[#dcfce7]",
+  },
+};
+
+const getStatusBadge = (status: string) =>
+  STATUS_BADGE[status] ?? {
+    label: status,
+    className: "bg-[#f4f3f6] text-[#5a5a7a] border-[#e8e6f0]",
+  };
+
+const formatRelativeTime = (dateStr: string) => {
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "";
+  const diffMs = Date.now() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "Submitted just now";
+  if (diffMins < 60)
+    return `Submitted ${diffMins} minute${diffMins === 1 ? "" : "s"} ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24)
+    return `Submitted ${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 30)
+    return `Submitted ${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
+  return `Submitted on ${date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })}`;
+};
+
+const getInitials = (firstName?: string, lastName?: string) => {
+  const initials =
+    `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase();
+  return initials || "?";
+};
+
+const getContentLink = (sub: CampaignSubmission) => {
+  if (sub.liveLink) {
+    const urls = Object.values(sub.liveLink)
+      .map((entry) => (typeof entry === "string" ? entry : entry?.url))
+      .filter((url): url is string => Boolean(url));
+    if (urls.length) return urls[0];
+  }
+  return sub.draftLink ?? "";
+};
+
 export default function CampaignDeliverablesTab({
   onViewDetails,
   isSocial = false,
+  campaignId,
   deliverableStatus = "Awaiting",
   onApprove = () => {},
   onRequestRevision = () => {},
 }: CampaignDeliverablesTabProps) {
-  const [filter, setFilter] = useState("Revision");
+  const [filter, setFilter] = useState<FilterOption>("all");
+  const [revisionTargetId, setRevisionTargetId] = useState<string | null>(null);
 
-  const subs = [
-    {
-      name: "Adaeze Obi",
-      time: "Submitted 2 hours ago",
-      initials: "AO",
-      link: "https://instagram.com/p/example1",
-      desc: "“Shot at Lekki beach during golden hour. Used trending audio. Caption ideas included in the doc.”",
-      revision:
-        "Great take overall! Please add the Audiomack app UI briefly — it was missing from this submission. Also, the hashtag #AudiomackAfrobeats needs to be in the caption.",
-      revised: null,
-    },
-    {
-      name: "Emeka Chukwu",
-      time: "Submitted 2 hours ago",
-      initials: "EC",
-      link: "https://instagram.com/p/example1",
-      desc: "“Shot at Lekki beach during golden hour. Used trending audio. Caption ideas included in the doc.”",
-      revision:
-        "Great take overall! Please add the Audiomack app UI briefly — it was missing from this submission. Also, the hashtag #AudiomackAfrobeats needs to be in the caption.",
-      revised: {
-        link: "https://instagram.com/p/example1",
-        desc: "“Shot at Lekki beach during golden hour. Used trending audio. Caption ideas included in the doc.”",
-      },
-    },
-  ];
+  const { data: submissions, isLoading } = useSubmissions(
+    !isSocial && campaignId ? campaignId : null,
+  );
+  const vetDraft = useVetDraft(campaignId ?? "");
+  const approveLivePost = useApproveLivePost(campaignId ?? "");
+
+  const allSubmissions = submissions ?? [];
+  const filteredSubmissions =
+    filter === "all"
+      ? allSubmissions
+      : allSubmissions.filter((s) =>
+          FILTER_STATUS_MAP[filter].includes(s.status),
+        );
+
+  const handleConfirmRevision = (reason: string) => {
+    if (!revisionTargetId) return;
+    vetDraft.mutate({
+      submissionId: revisionTargetId,
+      decision: "request_revision",
+      brandFeedback: reason,
+    });
+    setRevisionTargetId(null);
+  };
 
   if (isSocial) {
     return (
@@ -209,12 +300,13 @@ export default function CampaignDeliverablesTab({
       <div className="relative w-fit">
         <select
           value={filter}
-          onChange={(e) => setFilter(e.target.value)}
+          onChange={(e) => setFilter(e.target.value as FilterOption)}
           className="h-8 pl-3.5 pr-8 rounded-lg bg-[#f4f3f6] text-[10px] font-bold text-[#5a5a7a] appearance-none cursor-pointer border border-[#e8e6f0]/60 focus:outline-none"
         >
-          <option value="Revision">Revision</option>
-          <option value="Pending Review">Pending Review</option>
-          <option value="Approved">Approved</option>
+          <option value="all">All Submissions</option>
+          <option value="pending">Pending Review</option>
+          <option value="revision">Revision</option>
+          <option value="approved">Approved</option>
         </select>
         <ChevronDown
           size={12}
@@ -222,98 +314,193 @@ export default function CampaignDeliverablesTab({
         />
       </div>
 
-      <div className="flex flex-col gap-4">
-        {subs.map((sub, i) => (
-          <div
-            key={i}
-            className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5.5 flex flex-col gap-4 text-left"
-          >
-            <div className="flex justify-between items-center gap-3">
+      {isLoading ? (
+        <div className="flex flex-col gap-4">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div
+              key={i}
+              className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5.5 flex flex-col gap-4 animate-pulse"
+            >
               <div className="flex items-center gap-3">
-                <UserAvatar initials={sub.initials} size={36} />
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-[#1a1a2e]">
-                    {sub.name}
-                  </span>
-                  <span className="text-[10px] text-[#9a99b0] font-medium">
-                    {sub.time}
-                  </span>
+                <div className="w-9 h-9 rounded-full bg-[#e8e6f0]/60 shrink-0" />
+                <div className="flex flex-col gap-1.5">
+                  <div className="w-24 h-3 bg-[#e8e6f0]/60 rounded-md" />
+                  <div className="w-32 h-2.5 bg-[#e8e6f0]/40 rounded-md" />
                 </div>
               </div>
-              <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-[#fff7ed] text-[#ea580c] border border-[#ffedd5]">
-                Revision requested
-              </span>
+              <div className="w-full h-16 bg-[#e8e6f0]/30 rounded-2xl" />
             </div>
+          ))}
+        </div>
+      ) : allSubmissions.length === 0 ? (
+        <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl py-10 flex flex-col items-center justify-center gap-1 text-center">
+          <p className="text-xs font-bold text-[#1a1a2e]">No submissions yet</p>
+          <p className="text-[11px] text-[#9a99b0]">
+            Creators haven&apos;t submitted any content for this campaign.
+          </p>
+        </div>
+      ) : filteredSubmissions.length === 0 ? (
+        <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl py-10 flex flex-col items-center justify-center gap-1 text-center">
+          <p className="text-xs font-bold text-[#1a1a2e]">
+            No submissions in this status
+          </p>
+          <p className="text-[11px] text-[#9a99b0]">
+            Try selecting a different filter above.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {filteredSubmissions.map((sub) => {
+            const badge = getStatusBadge(sub.status);
+            const link = getContentLink(sub);
+            const isActionable = ["pending_approval", "revision-sent"].includes(
+              sub.status,
+            );
+            const isLiveLinkPending = sub.status === "livelink_available";
 
-            <div className="border border-[#e8e6f0] rounded-2xl p-4 flex flex-col gap-2">
-              <span className="text-[9px] font-bold text-[#9a99b0] uppercase tracking-wider">
-                Content Link
-              </span>
-              <a
-                href={sub.link}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs font-bold text-brand-pink hover:underline flex items-center gap-1 w-fit"
+            return (
+              <div
+                key={sub.id}
+                className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5.5 flex flex-col gap-4 text-left"
               >
-                {sub.link} <ExternalLink size={11} />
-              </a>
-              <p className="text-xs text-[#5a5a7a] font-medium italic mt-0.5">
-                {sub.desc}
-              </p>
-
-              <div className="bg-[#fff7ed]/50 border border-[#fde68a]/50 rounded-xl p-3.5 flex items-start gap-2.5 mt-2 text-xs leading-relaxed text-[#92400e] font-medium">
-                <Info size={14} className="shrink-0 mt-0.5 text-[#f59e0b]" />
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#b45309]">
-                    Revision Request
-                  </span>
-                  <span>{sub.revision}</span>
-                </div>
-              </div>
-
-              {sub.revised && (
-                <div className="border border-[#dbeafe] bg-[#eff6ff]/20 rounded-xl p-3.5 flex flex-col gap-2 mt-3 text-xs leading-relaxed text-[#2563eb]">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#1d4ed8]">
-                    Revised Content
-                  </span>
-                  <a
-                    href={sub.revised.link}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-bold flex items-center gap-1 w-fit"
+                <div className="flex justify-between items-center gap-3">
+                  <div className="flex items-center gap-3">
+                    <UserAvatar
+                      initials={getInitials(
+                        sub.creator.firstName,
+                        sub.creator.lastName,
+                      )}
+                      size={36}
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-[#1a1a2e]">
+                        {sub.creator.firstName} {sub.creator.lastName}
+                      </span>
+                      <span className="text-[10px] text-[#9a99b0] font-medium">
+                        {formatRelativeTime(sub.createdAt)}
+                      </span>
+                    </div>
+                  </div>
+                  <span
+                    className={cn(
+                      "px-2.5 py-0.5 rounded-full text-[9px] font-bold border shrink-0",
+                      badge.className,
+                    )}
                   >
-                    {sub.revised.link} <ExternalLink size={11} />
-                  </a>
-                  <p className="text-[#5a5a7a] font-medium italic mt-0.5">
-                    {sub.revised.desc}
-                  </p>
+                    {badge.label}
+                  </span>
                 </div>
-              )}
-            </div>
 
-            <div className="flex justify-end">
-              <button
-                onClick={() =>
-                  onViewDetails({
-                    name: sub.name,
-                    handle:
-                      sub.name === "Adaeze Obi"
-                        ? "@adaeze_eats"
-                        : "@chef_emeka",
-                    rating: "4.9",
-                    location: "Lagos, Nigeria",
-                    status: "Impact Advocate",
-                    initials: sub.initials,
-                  })
-                }
-                className="h-9 px-4 text-xs font-bold text-[#5a5a7a] bg-[#f4f3f6] hover:bg-[#e8e6f0] rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-              >
-                View details <ArrowRight size={13} />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+                <div className="border border-[#e8e6f0] rounded-2xl p-4 flex flex-col gap-2">
+                  <span className="text-[9px] font-bold text-[#9a99b0] uppercase tracking-wider">
+                    Content Link
+                  </span>
+                  {link ? (
+                    <a
+                      href={link}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs font-bold text-brand-pink hover:underline flex items-center gap-1 w-fit"
+                    >
+                      {link} <ExternalLink size={11} />
+                    </a>
+                  ) : (
+                    <span className="text-xs text-[#9a99b0]">
+                      No link submitted yet.
+                    </span>
+                  )}
+                  {sub.application?.contentIdea && (
+                    <p className="text-xs text-[#5a5a7a] font-medium italic mt-0.5">
+                      &ldquo;{sub.application.contentIdea}&rdquo;
+                    </p>
+                  )}
+
+                  {sub.brandFeedback && (
+                    <div className="bg-[#fff7ed]/50 border border-[#fde68a]/50 rounded-xl p-3.5 flex items-start gap-2.5 mt-2 text-xs leading-relaxed text-[#92400e] font-medium">
+                      <Info
+                        size={14}
+                        className="shrink-0 mt-0.5 text-[#f59e0b]"
+                      />
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#b45309]">
+                          Revision Request
+                        </span>
+                        <span>{sub.brandFeedback}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  {isActionable && (
+                    <>
+                      <button
+                        onClick={() =>
+                          vetDraft.mutate({
+                            submissionId: sub.id,
+                            decision: "approved",
+                          })
+                        }
+                        disabled={vetDraft.isPending}
+                        className="h-9 px-4 bg-[#f0fdf4] hover:bg-[#dcfce7] border border-[#dcfce7]/60 text-xs font-bold text-[#16a34a] rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Check size={14} /> Approve content
+                      </button>
+                      <button
+                        onClick={() => setRevisionTargetId(sub.id)}
+                        disabled={vetDraft.isPending}
+                        className="h-9 px-4 bg-[#fff7ed] hover:bg-[#ffedd5] border border-[#ffedd5]/60 text-xs font-bold text-[#ea580c] rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Request revision
+                      </button>
+                    </>
+                  )}
+                  {isLiveLinkPending && (
+                    <button
+                      onClick={() => approveLivePost.mutate(sub.id)}
+                      disabled={approveLivePost.isPending}
+                      className="h-9 px-4 bg-[#f0fdf4] hover:bg-[#dcfce7] border border-[#dcfce7]/60 text-xs font-bold text-[#16a34a] rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Check size={14} /> Approve live link
+                    </button>
+                  )}
+                  <button
+                    onClick={() =>
+                      onViewDetails({
+                        id: sub.creator.id,
+                        name: `${sub.creator.firstName} ${sub.creator.lastName}`,
+                        handle: sub.creator.username
+                          ? `@${sub.creator.username}`
+                          : "—",
+                        rating: "—",
+                        location: "—",
+                        role: "Creator",
+                        initials: getInitials(
+                          sub.creator.firstName,
+                          sub.creator.lastName,
+                        ),
+                        pitch: sub.application?.contentIdea ?? "",
+                        contentIdea: sub.application?.contentIdea ?? "",
+                        platforms: "—",
+                        questionComment: sub.application?.comments ?? "—",
+                      })
+                    }
+                    className="h-9 px-4 text-xs font-bold text-[#5a5a7a] bg-[#f4f3f6] hover:bg-[#e8e6f0] rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    View details <ArrowRight size={13} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <AdminActionModal
+        action={revisionTargetId ? "Request Revision" : null}
+        onClose={() => setRevisionTargetId(null)}
+        onConfirm={handleConfirmRevision}
+      />
     </div>
   );
 }

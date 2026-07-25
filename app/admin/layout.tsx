@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import QueryProvider from "@/lib/providers/QueryProvider";
 import StreamChatProvider from "@/lib/providers/StreamChatProvider";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminHeader from "@/components/admin/AdminHeader";
 import AdminNotificationDrawer from "@/components/admin/AdminNotificationDrawer";
+import { useAuthStore } from "@/store/authStore";
 
 const PUBLIC_ADMIN_PATHS = ["/admin/signin"];
 
@@ -30,16 +31,34 @@ const PAGE_TITLES: Record<string, string> = {
 
 function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const isPublic = PUBLIC_ADMIN_PATHS.some((p) => pathname.startsWith(p));
 
+  const { accessToken, hasHydrated } = useAuthStore();
+  const isAuthenticated = hasHydrated && !!accessToken;
+
+  useEffect(() => {
+    if (!isPublic && hasHydrated && !accessToken) {
+      router.replace(`/admin/signin?redirect=${encodeURIComponent(pathname)}`);
+    }
+  }, [isPublic, hasHydrated, accessToken, pathname, router]);
+
   if (isPublic) return <>{children}</>;
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#faf9fc]">
+        <div className="w-8 h-8 border-2 border-brand-pink/30 border-t-brand-pink rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   const title = PAGE_TITLES[pathname] ?? "Admin Portal";
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#faf9fc]">
-      <AdminSidebar onNotificationClick={() => setIsNotificationOpen(true)} />
+      <AdminSidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <AdminHeader
           title={title}
