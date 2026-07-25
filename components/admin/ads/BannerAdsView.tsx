@@ -96,7 +96,10 @@ export default function BannerAdsView() {
   const deleteMutation = useDeleteAd();
 
   const displayAds = useMemo(() => {
-    return ads && ads.length > 0 ? ads : DEFAULT_SAMPLE_ADS;
+    if (process.env.NODE_ENV === "development" && ads.length === 0) {
+      return DEFAULT_SAMPLE_ADS;
+    }
+    return ads;
   }, [ads]);
 
   const handleOpenAddSheet = () => {
