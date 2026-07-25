@@ -1,9 +1,22 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { X, ArrowRight, Send, Check } from "lucide-react";
+import { X, Send, Check, ExternalLink } from "lucide-react";
 import UserAvatar from "@/shared/UserAvatar";
 import { Portal } from "@/components/ui/portal";
+import { cn } from "@/lib/utils";
+
+const STATUS_BADGE: Record<string, string> = {
+  pending: "bg-white/15 text-white border-white/20",
+  accepted: "bg-[#dcfce7] text-[#16a34a] border-[#bbf7d0]",
+  rejected: "bg-[#fee2e2] text-[#dc2626] border-[#fecaca]",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: "Pending",
+  accepted: "Accepted",
+  rejected: "Rejected",
+};
 
 export interface CreatorDrawerData {
   id: string;
@@ -22,6 +35,9 @@ export interface CreatorDrawerData {
   followers?: string | number;
   totalFollowers?: string | number;
   tier?: string;
+  pastWorkLink?: string;
+  feeRequested?: string;
+  applicationStatus?: string;
   metrics?: {
     totalFollowers?: number | string;
     "total followers"?: number | string;
@@ -129,40 +145,54 @@ export default function CampaignCreatorDrawer({
                   <span className="text-[15px] font-bold leading-tight">
                     {creator.name}
                   </span>
-                  <span className="text-[11px] font-bold text-[#f59e0b]">
-                    ★ {creator.rating}
-                  </span>
+                  {creator.rating && creator.rating !== "—" && (
+                    <span className="text-[11px] font-bold text-[#f59e0b]">
+                      ★ {creator.rating}
+                    </span>
+                  )}
                 </div>
                 <span className="text-xs text-[#9a99b0] mt-0.5">
                   {creator.handle}
                 </span>
-                <span className="text-[10px] text-[#9a99b0] font-semibold mt-1">
-                  {creator.location}
-                </span>
+                {creator.location && creator.location !== "—" && (
+                  <span className="text-[10px] text-[#9a99b0] font-semibold mt-1">
+                    {creator.location}
+                  </span>
+                )}
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-4 mt-2">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-semibold text-white/90">
-                  {followerCount.includes("follower")
-                    ? followerCount
-                    : `${followerCount} followers`}
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              {creator.tier && (
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white/15 text-white">
+                  {creator.tier}
                 </span>
-                <span className="w-1 h-1 rounded-full bg-white/50" />
-                <span className="text-[10px] font-semibold text-white/90">
-                  {creator.metrics?.onTimeSubmissionRate !== undefined
-                    ? `${creator.metrics.onTimeSubmissionRate}% engagement`
-                    : "5.2% engagement"}
+              )}
+              <span className="text-[10px] font-semibold text-white/90">
+                {followerCount.includes("follower")
+                  ? followerCount
+                  : `${followerCount} followers`}
+              </span>
+              {creator.metrics?.onTimeSubmissionRate !== undefined && (
+                <>
+                  <span className="w-1 h-1 rounded-full bg-white/50" />
+                  <span className="text-[10px] font-semibold text-white/90">
+                    {creator.metrics.onTimeSubmissionRate}% engagement
+                  </span>
+                </>
+              )}
+              {creator.applicationStatus && (
+                <span
+                  className={cn(
+                    "px-2 py-0.5 rounded-full text-[9px] font-bold border ml-auto",
+                    STATUS_BADGE[creator.applicationStatus] ??
+                      "bg-white/15 text-white border-white/20",
+                  )}
+                >
+                  {STATUS_LABEL[creator.applicationStatus] ??
+                    creator.applicationStatus}
                 </span>
-              </div>
-
-              <a
-                href="/admin/users/creators"
-                className="text-[10px] font-bold text-white/90 hover:text-white flex items-center gap-1 shrink-0"
-              >
-                View profile <ArrowRight size={11} />
-              </a>
+              )}
             </div>
           </div>
 
@@ -247,54 +277,107 @@ export default function CampaignCreatorDrawer({
                 </div>
               </div>
             ) : (
-              /* Non-social / Standard overview */
+              /* Non-social / Standard application details */
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
                   <span className="text-[9px] font-bold text-[#9a99b0] uppercase tracking-wider">
-                    Overview
+                    Content Idea
                   </span>
                   <div className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 text-xs text-[#5a5a7a] font-medium leading-relaxed">
-                    {creator.pitch || "No pitch details provided."}
+                    {creator.contentIdea ||
+                      creator.pitch ||
+                      "No content idea provided."}
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[9px] font-bold text-[#9a99b0] uppercase tracking-wider">
-                    Role & Specialty
-                  </span>
-                  <div className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 text-xs text-[#1a1a2e] font-bold">
-                    {creator.role}
+                {creator.platforms && creator.platforms !== "—" && (
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[9px] font-bold text-[#9a99b0] uppercase tracking-wider">
+                      Platforms
+                    </span>
+                    <div className="text-xs text-[#1a1a2e] font-bold">
+                      {creator.platforms}
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {creator.feeRequested && (
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[9px] font-bold text-[#9a99b0] uppercase tracking-wider">
+                      Fee Requested
+                    </span>
+                    <div className="text-xs text-brand-pink font-bold">
+                      {creator.feeRequested}
+                    </div>
+                  </div>
+                )}
+
+                {creator.pastWorkLink && (
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[9px] font-bold text-[#9a99b0] uppercase tracking-wider">
+                      Past Work
+                    </span>
+                    <a
+                      href={creator.pastWorkLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs font-bold text-brand-pink hover:underline flex items-center gap-1 w-fit break-all"
+                    >
+                      {creator.pastWorkLink} <ExternalLink size={11} />
+                    </a>
+                  </div>
+                )}
+
+                {creator.questionComment && creator.questionComment !== "—" && (
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[9px] font-bold text-[#9a99b0] uppercase tracking-wider">
+                      Additional Comments
+                    </span>
+                    <div className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-4 text-xs text-[#5a5a7a] font-medium leading-relaxed">
+                      {creator.questionComment}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
             {/* Action buttons footer */}
-            <div className="flex items-center gap-3 pt-4 border-t border-[#e8e6f0]/60 mt-auto">
-              <button
-                onClick={() => onReject(creator.id)}
-                className="flex-1 h-10 rounded-xl border border-[#e8e6f0] bg-white hover:bg-[#fef2f2] hover:border-[#fecaca] text-[#dc2626] text-xs font-bold transition-all cursor-pointer"
-              >
-                Reject
-              </button>
+            {isSocial ? (
+              <div className="flex items-center gap-3 pt-4 border-t border-[#e8e6f0]/60 mt-auto">
+                <button
+                  onClick={() => onReject(creator.id)}
+                  className="flex-1 h-10 rounded-xl border border-[#e8e6f0] bg-white hover:bg-[#fef2f2] hover:border-[#fecaca] text-[#dc2626] text-xs font-bold transition-all cursor-pointer"
+                >
+                  Reject
+                </button>
 
-              <button
-                onClick={() => onToggleSelect(creator.id)}
-                className={`flex-1 h-10 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  isSelected
-                    ? "bg-[#16a34a] text-white hover:bg-[#15803d]"
-                    : "bg-brand-pink text-white hover:opacity-90"
-                }`}
-              >
-                {isSelected ? (
-                  <>
-                    <Check size={14} /> Selected
-                  </>
-                ) : (
-                  "Select Creator"
-                )}
-              </button>
-            </div>
+                <button
+                  onClick={() => onToggleSelect(creator.id)}
+                  className={`flex-1 h-10 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    isSelected
+                      ? "bg-[#16a34a] text-white hover:bg-[#15803d]"
+                      : "bg-brand-pink text-white hover:opacity-90"
+                  }`}
+                >
+                  {isSelected ? (
+                    <>
+                      <Check size={14} /> Selected
+                    </>
+                  ) : (
+                    "Select Creator"
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="pt-4 border-t border-[#e8e6f0]/60 mt-auto">
+                <button
+                  onClick={onClose}
+                  className="w-full h-10 rounded-xl border border-[#e8e6f0] bg-white hover:bg-[#faf9fc] text-[#5a5a7a] text-xs font-bold transition-all cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

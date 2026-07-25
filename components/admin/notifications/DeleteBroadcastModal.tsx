@@ -1,24 +1,27 @@
 "use client";
 
-import { AlertTriangle } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, X } from "lucide-react";
 import { Portal } from "@/components/ui/portal";
 
 interface DeleteBroadcastModalProps {
-  isOpen: boolean;
+  broadcastTitle?: string;
+  isDeleting?: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  title?: string;
-  isDeleting?: boolean;
 }
 
+const CONFIRM_PHRASE = "i want to delete";
+
 export default function DeleteBroadcastModal({
-  isOpen,
+  broadcastTitle,
+  isDeleting = false,
   onClose,
   onConfirm,
-  title = "this broadcast",
-  isDeleting = false,
 }: DeleteBroadcastModalProps) {
-  if (!isOpen) return null;
+  const [confirmText, setConfirmText] = useState("");
+
+  const isMatch = confirmText.trim().toLowerCase() === CONFIRM_PHRASE;
 
   return (
     <Portal>
@@ -27,35 +30,65 @@ export default function DeleteBroadcastModal({
           className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
           onClick={onClose}
         />
-        <div className="relative z-10 w-full max-w-[400px] bg-white rounded-3xl p-6 shadow-2xl flex flex-col items-center gap-4 text-center">
-          <div className="w-12 h-12 rounded-full bg-[#fef2f2] text-[#dc2626] flex items-center justify-center">
-            <AlertTriangle size={24} />
+        <div className="relative z-10 w-full max-w-[420px] bg-white rounded-3xl shadow-2xl p-6 flex flex-col gap-4 text-left">
+          <div className="flex items-start justify-between">
+            <div className="w-11 h-11 rounded-full bg-[#fef2f2] text-[#dc2626] flex items-center justify-center border border-[#fecaca] shrink-0">
+              <AlertTriangle size={20} />
+            </div>
+            <button
+              onClick={onClose}
+              className="p-1 rounded-full hover:bg-[#f4f3f6] text-[#7a7a9a] transition-colors cursor-pointer"
+            >
+              <X size={16} />
+            </button>
           </div>
 
           <div className="flex flex-col gap-1">
             <h3 className="text-sm font-bold text-[#1a1a2e]">
-              Delete Broadcast Announcement?
+              Delete broadcast
             </h3>
             <p className="text-xs text-[#7a7a9a] leading-relaxed">
-              Are you sure you want to delete &quot;{title}&quot;? This action
-              cannot be undone.
+              {broadcastTitle ? (
+                <>
+                  This will permanently delete{" "}
+                  <strong className="text-[#1a1a2e]">
+                    &ldquo;{broadcastTitle}&rdquo;
+                  </strong>
+                  . This action cannot be undone.
+                </>
+              ) : (
+                "This action cannot be undone."
+              )}
             </p>
           </div>
 
-          <div className="flex gap-3 w-full mt-2">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-bold text-[#1a1a2e] capitalize tracking-wider">
+              Type &ldquo;{CONFIRM_PHRASE}&rdquo; to confirm
+            </label>
+            <input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder={CONFIRM_PHRASE}
+              autoComplete="off"
+              className="w-full h-10 rounded-xl border border-[#e8e6f0] px-3.5 text-xs text-[#1a1a2e] placeholder-[#9a99b0] focus:outline-none focus:ring-1 focus:ring-[#dc2626]/30 font-medium"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2.5 mt-1">
             <button
               onClick={onClose}
-              disabled={isDeleting}
-              className="flex-1 h-11 bg-[#f4f3f6] hover:bg-[#e8e6f0] text-xs font-bold text-[#5a5a7a] rounded-xl transition-all cursor-pointer disabled:opacity-50"
+              className="px-4.5 py-2 border border-[#e8e6f0] text-xs font-bold text-[#5a5a7a] rounded-xl hover:bg-[#faf9fc] transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
+              disabled={!isMatch || isDeleting}
               onClick={onConfirm}
-              disabled={isDeleting}
-              className="flex-1 h-11 bg-[#dc2626] hover:bg-[#b91c1c] text-white text-xs font-bold rounded-xl transition-all cursor-pointer disabled:opacity-50"
+              className="px-4.5 py-2 bg-[#dc2626] text-white text-xs font-bold rounded-xl hover:opacity-90 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {isDeleting ? "Deleting..." : "Delete Broadcast"}
+              {isDeleting ? "Deleting..." : "Delete broadcast"}
             </button>
           </div>
         </div>

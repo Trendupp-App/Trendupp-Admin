@@ -190,7 +190,6 @@ export default function AdminSidebar() {
                         (pathname.startsWith(href + "/") &&
                           !pathname.startsWith("/admin/reports/audit"))
                       : pathname === href || pathname.startsWith(href + "/");
-
                 return (
                   <Link
                     key={href}
