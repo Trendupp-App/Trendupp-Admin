@@ -141,10 +141,7 @@ export default function BrandSelectionList({
                     type="checkbox"
                     checked={isSelected}
                     onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      toggleBrand(brand.id);
-                    }}
+                    onChange={() => toggleBrand(brand.id)}
                     className="w-4 h-4 rounded text-brand-pink focus:ring-brand-pink border-gray-300 cursor-pointer accent-brand-pink shrink-0"
                   />
 
