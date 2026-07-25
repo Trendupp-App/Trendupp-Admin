@@ -13,8 +13,6 @@ import {
 import { useCreatorActiveUsers } from "@/hooks/useAdminCreators";
 import { cn } from "@/lib/utils";
 
-const WEEKS = ["Week 1", "Week 2", "Week 3", "Week 4"];
-
 export default function ActiveUsersChart() {
   const [period, setPeriod] = useState<"daily" | "weekly" | "monthly">(
     "monthly",
@@ -53,11 +51,7 @@ export default function ActiveUsersChart() {
         count: d.count,
       }));
     }
-    // Fallback data matching design mockup week distribution
-    return WEEKS.map((w, idx) => ({
-      label: w,
-      count: idx === 0 ? 500 : [500, 1500, 1100, 1900][idx],
-    }));
+    return [];
   }, [apiData]);
 
   if (isLoading) {

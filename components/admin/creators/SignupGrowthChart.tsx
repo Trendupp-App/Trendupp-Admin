@@ -13,21 +13,6 @@ import {
 import { useCreatorSignupGrowth } from "@/hooks/useAdminCreators";
 import { cn } from "@/lib/utils";
 
-const MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
 export default function SignupGrowthChart() {
   const [period, setPeriod] = useState<"daily" | "weekly" | "monthly">(
     "monthly",
@@ -66,17 +51,7 @@ export default function SignupGrowthChart() {
         count: d.count,
       }));
     }
-    // Fallback data matching design mockup bar distribution
-    return MONTHS.map((m, idx) => ({
-      label: m,
-      count:
-        idx === 5
-          ? 2400
-          : [
-              1200, 1400, 1100, 2200, 1800, 2400, 1500, 1300, 1700, 1400, 1600,
-              1900,
-            ][idx],
-    }));
+    return [];
   }, [apiData]);
 
   if (isLoading) {

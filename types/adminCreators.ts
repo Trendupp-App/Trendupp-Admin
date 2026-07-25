@@ -10,8 +10,17 @@ export interface CompletionDistributionItemDto {
   count: number;
 }
 
+export interface ConnectedSocialsCountsDto {
+  instagram: number;
+  tiktok: number;
+  youtube: number;
+  twitter: number;
+  facebook: number;
+}
+
 export interface AdminCreatorSummaryResponseDto {
   summary: CreatorSummaryDto;
+  connectedSocials: ConnectedSocialsCountsDto;
   profileCompletionDistribution: CompletionDistributionItemDto[];
 }
 
