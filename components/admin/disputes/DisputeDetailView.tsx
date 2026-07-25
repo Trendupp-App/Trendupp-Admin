@@ -380,15 +380,18 @@ export default function DisputeDetailView({
 
                     if (isAdmin) {
                       return (
-                        <div key={msg.id} className="flex gap-2 items-start">
-                          <div className="w-7 h-7 rounded-full bg-purple-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
-                            TA
-                          </div>
-                          <div className="bg-purple-50 text-[#1a1a2e] rounded-2xl p-3 text-xs max-w-md flex flex-col gap-1">
+                        <div
+                          key={msg.id}
+                          className="flex gap-2 items-start justify-end"
+                        >
+                          <div className="bg-purple-50 text-[#1a1a2e] rounded-2xl p-3 text-xs max-w-md flex flex-col gap-1 text-right">
                             <p>{msg.text}</p>
                             <span className="text-[9px] text-[#9a99b0]">
                               {userName} · Admin
                             </span>
+                          </div>
+                          <div className="w-7 h-7 rounded-full bg-purple-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
+                            TA
                           </div>
                         </div>
                       );
@@ -396,11 +399,11 @@ export default function DisputeDetailView({
 
                     if (isBrand) {
                       return (
-                        <div
-                          key={msg.id}
-                          className="flex gap-2 items-start justify-end"
-                        >
-                          <div className="bg-[#f0eff4] text-[#1a1a2e] rounded-2xl p-3 text-xs max-w-md flex flex-col gap-1 text-right">
+                        <div key={msg.id} className="flex gap-2 items-start">
+                          <div className="w-7 h-7 rounded-full bg-brand-pink text-white font-bold text-[10px] flex items-center justify-center shrink-0">
+                            {userName.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div className="bg-[#f0eff4] text-[#1a1a2e] rounded-2xl p-3 text-xs max-w-md flex flex-col gap-1">
                             <p>{msg.text}</p>
                             <span className="text-[9px] text-[#9a99b0]">
                               {userName} · Brand
