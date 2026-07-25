@@ -50,7 +50,8 @@ export default function CreatorNichesView() {
   const deleteMutation = useDeleteNiche();
 
   const displayNiches = useMemo(() => {
-    return niches && niches.length > 0 ? niches : DEFAULT_SAMPLE_NICHES;
+    if (niches && niches.length > 0) return niches;
+    return process.env.NODE_ENV === "development" ? DEFAULT_SAMPLE_NICHES : [];
   }, [niches]);
 
   const filteredNiches = useMemo(() => {
