@@ -169,6 +169,10 @@ export default function BroadcastDrawer({
                 <label className="text-[11px] font-bold text-[#1a1a2e] uppercase tracking-wider">
                   Delivery Channel
                 </label>
+                <p className="text-[11px] text-gray-500">
+                  In-App always includes a push notification to the user&apos;s
+                  devices.
+                </p>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { key: "in_app", label: "In-App" },
