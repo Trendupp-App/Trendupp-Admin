@@ -2,6 +2,7 @@
 
 import { Search, Bell, ChevronDown } from "lucide-react";
 import UserAvatar from "@/shared/UserAvatar";
+import { useAuthStore } from "@/store/authStore";
 
 interface AdminHeaderProps {
   title?: string;
@@ -12,6 +13,13 @@ export default function AdminHeader({
   title = "Dashboard",
   onNotificationClick,
 }: AdminHeaderProps) {
+  const { user } = useAuthStore();
+  const displayName = user?.firstName || "Admin";
+  const initials = user
+    ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase() ||
+      "AD"
+    : "AD";
+
   return (
     <header className="h-[60px] bg-white border-b border-[#e8e6f0]/60 flex items-center justify-between px-6 shrink-0 select-none">
       {/* Page title */}
@@ -41,9 +49,13 @@ export default function AdminHeader({
 
         {/* Avatar + Admin label */}
         <div className="flex items-center gap-2 cursor-pointer p-1.5 hover:bg-[#f4f3f6]/60 rounded-xl transition-all">
-          <UserAvatar initials="SA" size={32} />
+          <UserAvatar
+            avatarUrl={user?.avatarUrl}
+            initials={initials}
+            size={32}
+          />
           <span className="text-xs font-medium text-[#1a1a2e] hidden sm:inline">
-            Admin
+            {displayName}
           </span>
           <ChevronDown size={13} className="text-[#9a99b0]" />
         </div>
