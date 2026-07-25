@@ -234,7 +234,7 @@ export default function AdminDisputesPage() {
       <DisputeStats
         activeChatsCount={activeChats.length}
         pendingRequestsCount={pendingRequests.length}
-        resolvedTodayCount={closedDisputes.length}
+        resolvedCount={closedDisputes.length}
       />
 
       {/* Toolbar & Filter Tabs */}
