@@ -39,7 +39,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#faf9fc]">
-      <AdminSidebar onNotificationClick={() => setIsNotificationOpen(true)} />
+      <AdminSidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <AdminHeader
           title={title}
