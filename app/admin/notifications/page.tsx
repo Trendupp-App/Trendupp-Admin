@@ -169,7 +169,7 @@ export default function NotificationsPage() {
     const maps: Record<string, string> = {
       in_app: "In-App Banner",
       email: "Email Notice",
-      push: "Mobile Push",
+      both: "In-App + Email",
     };
     return (
       <span className="text-xs text-[#5a5a7a] font-semibold capitalize">
@@ -187,8 +187,8 @@ export default function NotificationsPage() {
             Notifications &amp; Broadcasts
           </h1>
           <p className="text-xs text-[#9a99b0] font-medium mt-0.5">
-            Create, schedule, and manage system announcements across email,
-            in-app, and push channels.
+            Create, schedule, and manage system announcements across email and
+            in-app channels.
           </p>
         </div>
 
