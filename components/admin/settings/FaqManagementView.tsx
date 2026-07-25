@@ -102,7 +102,10 @@ export default function FaqManagementView() {
   const deleteMutation = useDeleteFaq();
 
   const displayFaqs = useMemo(() => {
-    return faqs && faqs.length > 0 ? faqs : DEFAULT_SAMPLE_FAQS;
+    if (process.env.NODE_ENV === "development" && faqs.length === 0) {
+      return DEFAULT_SAMPLE_FAQS;
+    }
+    return faqs;
   }, [faqs]);
 
   // Extract all categories dynamically from displayFaqs + core default categories
