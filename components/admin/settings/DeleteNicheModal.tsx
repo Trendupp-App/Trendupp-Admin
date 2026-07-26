@@ -17,6 +17,10 @@ interface DeleteNicheModalProps {
   onClose: () => void;
   onConfirm: (nicheId: string) => void;
   isDeleting?: boolean;
+  /** Noun used in all copy — "Niche" (default), "Industry", "Category", ... */
+  entityLabel?: string;
+  /** Consequence sentence after "Are you sure...?" */
+  warning?: string;
 }
 
 export default function DeleteNicheModal({
@@ -25,6 +29,8 @@ export default function DeleteNicheModal({
   onClose,
   onConfirm,
   isDeleting = false,
+  entityLabel = "Niche",
+  warning = "This action will remove it from creator onboarding options.",
 }: DeleteNicheModalProps) {
   if (!niche) return null;
 
@@ -33,12 +39,13 @@ export default function DeleteNicheModal({
       <DialogContent className="max-w-md bg-white rounded-2xl p-6 border-0 shadow-xl">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold text-[#1a1a2e]">
-            Delete Niche
+            Delete {entityLabel}
           </DialogTitle>
           <DialogDescription className="text-xs text-[#7a7a9a] mt-1.5 leading-relaxed">
-            Are you sure you want to delete the niche &ldquo;
+            Are you sure you want to delete the {entityLabel.toLowerCase()}{" "}
+            &ldquo;
             <span className="font-semibold text-[#1a1a2e]">{niche.name}</span>
-            &rdquo;? This action will remove it from creator onboarding options.
+            &rdquo;? {warning}
           </DialogDescription>
         </DialogHeader>
 
@@ -56,7 +63,7 @@ export default function DeleteNicheModal({
             disabled={isDeleting}
             className="rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-5 py-2.5"
           >
-            {isDeleting ? "Deleting..." : "Delete Niche"}
+            {isDeleting ? "Deleting..." : `Delete ${entityLabel}`}
           </Button>
         </DialogFooter>
       </DialogContent>
