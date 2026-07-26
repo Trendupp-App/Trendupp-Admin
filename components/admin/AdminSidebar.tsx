@@ -12,7 +12,7 @@ import {
   TrendingUp,
   Megaphone,
   MessageSquare,
-  Headphones,
+  // Headphones,
   Wallet,
   BarChart2,
   ClipboardList,
@@ -71,7 +71,7 @@ const NAV: NavGroup[] = [
         href: "/admin/disputes",
         icon: MessageSquare,
       },
-      { label: "Support Tickets", href: "/admin/support", icon: Headphones },
+      // { label: "Support Tickets", href: "/admin/support", icon: Headphones },
     ],
   },
   {
