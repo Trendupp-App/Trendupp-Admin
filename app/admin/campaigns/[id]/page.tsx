@@ -469,7 +469,7 @@ export default function CampaignDetailsPage() {
             ))}
           </div>
         )}
-        {activeTab === "Analytics" && <CampaignAnalyticsTab />}
+        {activeTab === "Analytics" && <CampaignAnalyticsTab campaignId={id} />}
         {activeTab === "Activity Timeline" && (
           <CampaignTimelineTab campaignId={id} />
         )}
@@ -479,7 +479,7 @@ export default function CampaignDetailsPage() {
             campaignStatus={campaign?.status}
           />
         )}
-        {activeTab === "Audit Log" && <CampaignAuditLogTab />}
+        {activeTab === "Audit Log" && <CampaignAuditLogTab campaignId={id} />}
       </div>
 
       {/* Creator Details Drawer */}
