@@ -17,7 +17,16 @@ type Status =
   | "paid"
   | "unpaid"
   | "suspended"
-  | "onboarded";
+  | "onboarded"
+  // Escrow-specific statuses
+  | "funded"
+  | "released"
+  | "held"
+  | "processing"
+  | "failed"
+  | "refunded"
+  | "successful"
+  | "cancelled";
 
 const STATUS_MAP: Record<Status, { label: string; cls: string }> = {
   pending: {
@@ -79,6 +88,39 @@ const STATUS_MAP: Record<Status, { label: string; cls: string }> = {
   unpaid: {
     label: "Unpaid",
     cls: "bg-red-50     text-red-600     border-red-200",
+  },
+  // Escrow statuses
+  funded: {
+    label: "Funded",
+    cls: "bg-blue-50    text-blue-600    border-blue-200",
+  },
+  released: {
+    label: "Released",
+    cls: "bg-green-50   text-green-600   border-green-200",
+  },
+  held: {
+    label: "Held",
+    cls: "bg-amber-50   text-amber-600   border-amber-200",
+  },
+  processing: {
+    label: "Processing",
+    cls: "bg-blue-50    text-blue-600    border-blue-200",
+  },
+  failed: {
+    label: "Failed",
+    cls: "bg-red-50     text-red-600     border-red-200",
+  },
+  refunded: {
+    label: "Refunded",
+    cls: "bg-purple-50  text-purple-600  border-purple-200",
+  },
+  successful: {
+    label: "Successful",
+    cls: "bg-green-50   text-green-600   border-green-200",
+  },
+  cancelled: {
+    label: "Cancelled",
+    cls: "bg-[#f4f3f6]  text-[#7a7a9a]   border-[#e8e6f0]",
   },
 };
 
