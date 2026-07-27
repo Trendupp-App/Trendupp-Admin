@@ -153,12 +153,11 @@ const isMac = platform.toUpperCase().includes("MAC");
       navigator.mediaDevices.getDisplayMedia
     ) {
       try {
-        navigator.mediaDevices.getDisplayMedia = async function () {
-          setIsBlurred(true);
-          throw new Error(
-            "Screen recording disabled for privacy and security.",
-          );
-        };
+navigator.mediaDevices.getDisplayMedia = async function () {
+  setIsBlurred(true);
+  setTimeout(() => setIsBlurred(false), 3500);
+  throw new Error("Screen recording disabled for privacy and security.");
+};
       } catch {
         // Ignored if read-only property in certain browsers
       }
