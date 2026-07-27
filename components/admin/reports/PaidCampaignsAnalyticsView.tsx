@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown, Calendar } from "lucide-react";
+import { useState, useMemo } from "react";
+import { ChevronDown } from "lucide-react";
 import {
   useAdminCampaignSummary,
   useCampaignParticipationByTier,
@@ -14,20 +14,82 @@ import {
 } from "@/hooks/useAdminCampaigns";
 import { Skeleton } from "@/components/ui/skeleton";
 
+const PROJECT_START_YEAR = 2026;
+
+function formatBudgetAmount(amount: number): string {
+  if (!amount || isNaN(amount)) return "₦0";
+  if (amount >= 1_000_000) {
+    return `₦${(amount / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  }
+  if (amount >= 1_000) {
+    return `₦${(amount / 1_000).toFixed(1).replace(/\.0$/, "")}K`;
+  }
+  return `₦${amount.toLocaleString()}`;
+}
+
+/** Build dynamic quarter/period filter options relative to today */
+function buildRangeOptions(): { value: string; label: string }[] {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth(); // 0-indexed
+  const opts: { value: string; label: string }[] = [
+    { value: "all", label: "All Time" },
+  ];
+
+  // Q3: Jul–Sep (months 6-8)
+  if (m >= 6) opts.push({ value: "q3", label: `Q3 ${y} (Jul – Sep)` });
+  // Q2: Apr–Jun (months 3-5)
+  if (m >= 3) opts.push({ value: "q2", label: `Q2 ${y} (Apr – Jun)` });
+  // Q1: Jan–Mar (months 0-2)
+  if (m >= 0) opts.push({ value: "q1", label: `Q1 ${y} (Jan – Mar)` });
+  // Last 30 days always available
+  opts.push({ value: "last30", label: "Last 30 Days" });
+  // Last 90 days always available
+  opts.push({ value: "last90", label: "Last 90 Days" });
+
+  return opts;
+}
+
 export default function PaidCampaignsAnalyticsView() {
-  const [volumeYear, setVolumeYear] = useState("2026");
+  const now = useMemo(() => new Date(), []);
+  const currentYear = now.getFullYear();
+  const currentQuarter = Math.floor(now.getMonth() / 3) + 1;
+  const defaultRange =
+    currentQuarter >= 3 ? "q3" : currentQuarter >= 2 ? "q2" : "q1";
+
+  // Dynamic year options: project launch year → current year
+  const yearOptions = useMemo(() => {
+    const years: number[] = [];
+    for (let y = PROJECT_START_YEAR; y <= currentYear; y++) years.push(y);
+    return years;
+  }, [currentYear]);
+
+  // Dynamic range options: only periods that have already started
+  const rangeOptions = useMemo(() => buildRangeOptions(), []);
+
+  // Controlled Filter States for the 4 Cards
+  const [tierPeriod, setTierPeriod] = useState("custom");
+  const [tierRange, setTierRange] = useState(defaultRange);
+
+  const [typePeriod, setTypePeriod] = useState("custom");
+  const [typeRange, setTypeRange] = useState(defaultRange);
+
+  const [volumeYear, setVolumeYear] = useState(String(currentYear));
+
+  const [budgetPeriod, setBudgetPeriod] = useState("custom");
+  const [budgetRange, setBudgetRange] = useState(defaultRange);
 
   const { data: summaryRes, isLoading: isLoadingSummary } =
     useAdminCampaignSummary();
   const { data: participationByTier = [], isLoading: isLoadingTier } =
-    useCampaignParticipationByTier();
+    useCampaignParticipationByTier({ period: tierPeriod, range: tierRange });
   const { data: campaignTypes = [], isLoading: isLoadingTypes } =
-    useCampaignTypes();
+    useCampaignTypes({ period: typePeriod, range: typeRange });
   const { data: volume = [], isLoading: isLoadingVolume } = useCampaignVolume({
     year: parseInt(volumeYear),
   });
   const { data: budgetByIndustry = [], isLoading: isLoadingBudget } =
-    useBudgetByIndustry();
+    useBudgetByIndustry({ period: budgetPeriod, range: budgetRange });
   const { data: slaBreachTrend = [], isLoading: isLoadingSla } =
     useSlaBreachTrend();
   const { data: revisionRateTrend = [], isLoading: isLoadingRevision } =
@@ -37,128 +99,19 @@ export default function PaidCampaignsAnalyticsView() {
 
   const summary = summaryRes?.summary;
 
-  const totalCampaigns = summary?.totalCampaigns ?? 1284;
-  const avgApplicants = summary?.avgApplicantsPerCampaign ?? 18.4;
-  const creatorsSelectedRate = summary?.creatorsSelectedRate ?? 62;
-  const totalCompleted = summary?.totalCompleted ?? 946;
-  const campaignCompletionRate = summary?.campaignCompletionRate ?? 73.7;
+  const totalCampaigns = summary?.totalCampaigns ?? 0;
+  const avgApplicants = summary?.avgApplicantsPerCampaign ?? 0;
+  const creatorsSelectedRate = summary?.creatorsSelectedRate ?? 0;
+  const totalCompleted = summary?.totalCompleted ?? 0;
+  const campaignCompletionRate = summary?.campaignCompletionRate ?? 0;
 
-  // Tier participation display mapping
-  const displayTiers =
-    participationByTier.length > 0
-      ? participationByTier
-      : [
-          {
-            tier: "Nano (1K-10K)",
-            count: 3642,
-            percentage: 76,
-            color: "bg-[#10b981]",
-          },
-          {
-            tier: "Micro (10K-200K)",
-            count: 3420,
-            percentage: 60,
-            color: "bg-[#6366f1]",
-          },
-          {
-            tier: "Macro (200K-1M)",
-            count: 2387,
-            percentage: 37,
-            color: "bg-[#3b82f6]",
-          },
-          {
-            tier: "Mega (1M+)",
-            count: 880,
-            percentage: 12,
-            color: "bg-[#f59e0b]",
-          },
-        ];
-
-  // Campaign types display mapping
-  const displayTypes =
-    campaignTypes.length > 0
-      ? campaignTypes
-      : [
-          {
-            type: "Content Creation",
-            count: 5248,
-            percentage: 68,
-            color: "bg-[#d92662]",
-          },
-          {
-            type: "Amplification",
-            count: 2987,
-            percentage: 40,
-            color: "bg-[#3b82f6]",
-          },
-        ];
-
-  // Campaign volume monthly grouped bar display mapping
-  const displayVolume =
-    volume.length > 0
-      ? volume
-      : [
-          { label: "Jan", draft: 80, live: 45, completed: 35 },
-          { label: "Feb", draft: 95, live: 55, completed: 42 },
-          { label: "Mar", draft: 70, live: 40, completed: 30 },
-          { label: "Apr", draft: 110, live: 65, completed: 50 },
-          { label: "May", draft: 85, live: 50, completed: 38 },
-          { label: "Jun", draft: 125, live: 75, completed: 60 },
-        ];
-
-  // Industry budget display mapping
-  const displayBudget =
-    budgetByIndustry.length > 0
-      ? budgetByIndustry
-      : [
-          { industry: "Beauty", budget: 273200, percentage: 90 },
-          { industry: "Tech", budget: 223200, percentage: 70 },
-          { industry: "Food Beverage", budget: 193200, percentage: 65 },
-          { industry: "Fashion", budget: 183200, percentage: 60 },
-          { industry: "Travel", budget: 143200, percentage: 45 },
-          { industry: "Education", budget: 113200, percentage: 35 },
-          { industry: "Entertainment", budget: 63200, percentage: 20 },
-          { industry: "Automotive", budget: 43200, percentage: 15 },
-        ];
-
-  // SLA breach trend (0-20 scale)
-  const displaySla =
-    slaBreachTrend.length > 0
-      ? slaBreachTrend
-      : [
-          { label: "Jan", rate: 12 },
-          { label: "Feb", rate: 15 },
-          { label: "Mar", rate: 10 },
-          { label: "Apr", rate: 17 },
-          { label: "May", rate: 8 },
-          { label: "Jun", rate: 14 },
-        ];
-
-  // Revision rate trend (0-25 scale)
-  const displayRevision =
-    revisionRateTrend.length > 0
-      ? revisionRateTrend
-      : [
-          { label: "Jan", rate: 19 },
-          { label: "Feb", rate: 14 },
-          { label: "Mar", rate: 21 },
-          { label: "Apr", rate: 18 },
-          { label: "May", rate: 11 },
-          { label: "Jun", rate: 16 },
-        ];
-
-  // Completion rate trend (0-100 scale)
-  const displayCompletion =
-    completionRateTrend.length > 0
-      ? completionRateTrend
-      : [
-          { label: "Jan", rate: 76 },
-          { label: "Feb", rate: 79 },
-          { label: "Mar", rate: 77 },
-          { label: "Apr", rate: 81 },
-          { label: "May", rate: 84 },
-          { label: "Jun", rate: 80 },
-        ];
+  const displayTiers = participationByTier;
+  const displayTypes = campaignTypes;
+  const displayVolume = volume;
+  const displayBudget = budgetByIndustry;
+  const displaySla = slaBreachTrend;
+  const displayRevision = revisionRateTrend;
+  const displayCompletion = completionRateTrend;
 
   return (
     <div className="flex flex-col gap-6 text-left animate-fade-in-up">
@@ -254,7 +207,11 @@ export default function PaidCampaignsAnalyticsView() {
 
             <div className="flex items-center gap-2">
               <div className="relative">
-                <select className="h-8 px-3 pr-7 bg-white border border-[#e8e6f0] rounded-xl text-xs font-semibold text-[#5a5a7a] appearance-none cursor-pointer">
+                <select
+                  value={tierPeriod}
+                  onChange={(e) => setTierPeriod(e.target.value)}
+                  className="h-8 px-3 pr-7 bg-white border border-[#e8e6f0] rounded-xl text-xs font-semibold text-[#5a5a7a] appearance-none cursor-pointer"
+                >
                   <option value="custom">Custom</option>
                   <option value="monthly">Monthly</option>
                 </select>
@@ -264,10 +221,22 @@ export default function PaidCampaignsAnalyticsView() {
                 />
               </div>
 
-              <div className="flex items-center gap-1.5 h-8 px-3 bg-white border border-[#e8e6f0] rounded-xl text-xs font-semibold text-[#5a5a7a]">
-                <Calendar size={12} className="text-[#9a99b0]" />
-                <span>1 Jan, 2026 - 30 Jun, 2026</span>
-                <ChevronDown size={12} className="text-[#9a99b0]" />
+              <div className="relative">
+                <select
+                  value={tierRange}
+                  onChange={(e) => setTierRange(e.target.value)}
+                  className="h-8 px-3 pr-7 bg-white border border-[#e8e6f0] rounded-xl text-xs font-semibold text-[#5a5a7a] appearance-none cursor-pointer"
+                >
+                  {rangeOptions.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={12}
+                  className="absolute right-2.5 top-2.5 text-[#9a99b0] pointer-events-none"
+                />
               </div>
             </div>
           </div>
@@ -315,8 +284,13 @@ export default function PaidCampaignsAnalyticsView() {
 
             <div className="flex items-center gap-2">
               <div className="relative">
-                <select className="h-8 px-3 pr-7 bg-white border border-[#e8e6f0] rounded-xl text-xs font-semibold text-[#5a5a7a] appearance-none cursor-pointer">
+                <select
+                  value={typePeriod}
+                  onChange={(e) => setTypePeriod(e.target.value)}
+                  className="h-8 px-3 pr-7 bg-white border border-[#e8e6f0] rounded-xl text-xs font-semibold text-[#5a5a7a] appearance-none cursor-pointer"
+                >
                   <option value="custom">Custom</option>
+                  <option value="monthly">Monthly</option>
                 </select>
                 <ChevronDown
                   size={12}
@@ -324,10 +298,22 @@ export default function PaidCampaignsAnalyticsView() {
                 />
               </div>
 
-              <div className="flex items-center gap-1.5 h-8 px-3 bg-white border border-[#e8e6f0] rounded-xl text-xs font-semibold text-[#5a5a7a]">
-                <Calendar size={12} className="text-[#9a99b0]" />
-                <span>1 Jan, 2026 - 30 Jun, 2026</span>
-                <ChevronDown size={12} className="text-[#9a99b0]" />
+              <div className="relative">
+                <select
+                  value={typeRange}
+                  onChange={(e) => setTypeRange(e.target.value)}
+                  className="h-8 px-3 pr-7 bg-white border border-[#e8e6f0] rounded-xl text-xs font-semibold text-[#5a5a7a] appearance-none cursor-pointer"
+                >
+                  {rangeOptions.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={12}
+                  className="absolute right-2.5 top-2.5 text-[#9a99b0] pointer-events-none"
+                />
               </div>
             </div>
           </div>
@@ -394,8 +380,11 @@ export default function PaidCampaignsAnalyticsView() {
                 onChange={(e) => setVolumeYear(e.target.value)}
                 className="h-8 px-3 pr-7 bg-white border border-[#e8e6f0] rounded-xl text-xs font-semibold text-[#5a5a7a] appearance-none cursor-pointer"
               >
-                <option value="2026">2026</option>
-                <option value="2025">2025</option>
+                {yearOptions.map((y) => (
+                  <option key={y} value={String(y)}>
+                    {y}
+                  </option>
+                ))}
               </select>
               <ChevronDown
                 size={12}
@@ -410,42 +399,62 @@ export default function PaidCampaignsAnalyticsView() {
               ? Array.from({ length: 6 }).map((_, i) => (
                   <Skeleton key={i} className="flex-1 h-36 rounded-t-sm" />
                 ))
-              : displayVolume.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="flex-1 flex flex-col items-center gap-2 h-full justify-end"
-                  >
-                    <div className="w-full flex items-end justify-center gap-1 h-full">
-                      {/* Draft Bar */}
+              : (() => {
+                  const maxVal = Math.max(
+                    ...displayVolume.map((item) =>
+                      Math.max(item.draft, item.live, item.completed),
+                    ),
+                    1,
+                  );
+                  return displayVolume.map((item, idx) => {
+                    const draftPct =
+                      item.draft > 0
+                        ? Math.max(8, Math.round((item.draft / maxVal) * 100))
+                        : 0;
+                    const livePct =
+                      item.live > 0
+                        ? Math.max(8, Math.round((item.live / maxVal) * 100))
+                        : 0;
+                    const completedPct =
+                      item.completed > 0
+                        ? Math.max(
+                            8,
+                            Math.round((item.completed / maxVal) * 100),
+                          )
+                        : 0;
+
+                    return (
                       <div
-                        className="w-3 rounded-t-sm bg-[#d92662]"
-                        style={{
-                          height: `${Math.min(100, Math.max(15, (item.draft / 130) * 100))}%`,
-                        }}
-                        title={`Draft: ${item.draft}`}
-                      />
-                      {/* Live Bar */}
-                      <div
-                        className="w-3 rounded-t-sm bg-[#10b981]"
-                        style={{
-                          height: `${Math.min(100, Math.max(15, (item.live / 130) * 100))}%`,
-                        }}
-                        title={`Live: ${item.live}`}
-                      />
-                      {/* Completed Bar */}
-                      <div
-                        className="w-3 rounded-t-sm bg-[#475569]"
-                        style={{
-                          height: `${Math.min(100, Math.max(15, (item.completed / 130) * 100))}%`,
-                        }}
-                        title={`Completed: ${item.completed}`}
-                      />
-                    </div>
-                    <span className="text-[10px] font-bold text-[#9a99b0]">
-                      {item.label}
-                    </span>
-                  </div>
-                ))}
+                        key={idx}
+                        className="flex-1 flex flex-col items-center gap-2 h-full justify-end"
+                      >
+                        <div className="w-full flex items-end justify-center gap-1 h-full">
+                          {/* Draft Bar */}
+                          <div
+                            className="w-3 rounded-t-sm bg-[#d92662]"
+                            style={{ height: `${draftPct}%` }}
+                            title={`Draft: ${item.draft}`}
+                          />
+                          {/* Live Bar */}
+                          <div
+                            className="w-3 rounded-t-sm bg-[#10b981]"
+                            style={{ height: `${livePct}%` }}
+                            title={`Live: ${item.live}`}
+                          />
+                          {/* Completed Bar */}
+                          <div
+                            className="w-3 rounded-t-sm bg-[#475569]"
+                            style={{ height: `${completedPct}%` }}
+                            title={`Completed: ${item.completed}`}
+                          />
+                        </div>
+                        <span className="text-[10px] font-bold text-[#9a99b0]">
+                          {item.label}
+                        </span>
+                      </div>
+                    );
+                  });
+                })()}
           </div>
         </div>
 
@@ -458,8 +467,13 @@ export default function PaidCampaignsAnalyticsView() {
 
             <div className="flex items-center gap-2">
               <div className="relative">
-                <select className="h-8 px-3 pr-7 bg-white border border-[#e8e6f0] rounded-xl text-xs font-semibold text-[#5a5a7a] appearance-none cursor-pointer">
+                <select
+                  value={budgetPeriod}
+                  onChange={(e) => setBudgetPeriod(e.target.value)}
+                  className="h-8 px-3 pr-7 bg-white border border-[#e8e6f0] rounded-xl text-xs font-semibold text-[#5a5a7a] appearance-none cursor-pointer"
+                >
                   <option value="custom">Custom</option>
+                  <option value="monthly">Monthly</option>
                 </select>
                 <ChevronDown
                   size={12}
@@ -467,35 +481,56 @@ export default function PaidCampaignsAnalyticsView() {
                 />
               </div>
 
-              <div className="flex items-center gap-1.5 h-8 px-3 bg-white border border-[#e8e6f0] rounded-xl text-xs font-semibold text-[#5a5a7a]">
-                <Calendar size={12} className="text-[#9a99b0]" />
-                <span>1 Jan, 2026 - 30 Jun, 2026</span>
-                <ChevronDown size={12} className="text-[#9a99b0]" />
+              <div className="relative">
+                <select
+                  value={budgetRange}
+                  onChange={(e) => setBudgetRange(e.target.value)}
+                  className="h-8 px-3 pr-7 bg-white border border-[#e8e6f0] rounded-xl text-xs font-semibold text-[#5a5a7a] appearance-none cursor-pointer"
+                >
+                  {rangeOptions.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={12}
+                  className="absolute right-2.5 top-2.5 text-[#9a99b0] pointer-events-none"
+                />
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col gap-2.5">
-            {isLoadingBudget
-              ? Array.from({ length: 6 }).map((_, i) => (
-                  <Skeleton key={i} className="h-5 w-full rounded-md" />
-                ))
-              : displayBudget.map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-3 text-xs">
-                    <span className="w-24 font-semibold text-[#5a5a7a] shrink-0 text-right">
-                      {item.industry}
-                    </span>
-                    <div className="flex-1 h-2 bg-[#f4f3f6] rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-[#2563eb]"
-                        style={{ width: `${item.percentage}%` }}
-                      />
-                    </div>
-                    <span className="w-16 text-right font-bold text-[#5a5a7a] shrink-0">
-                      ₦{(item.budget / 1000).toFixed(1)}K
-                    </span>
+          <div className="max-h-64 overflow-y-auto pr-2 flex flex-col gap-3 scrollbar-thin scrollbar-thumb-[#e8e6f0] scrollbar-track-transparent">
+            {isLoadingBudget ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-5 w-full rounded-md" />
+              ))
+            ) : displayBudget.length === 0 ? (
+              <div className="py-8 text-center text-xs text-[#9a99b0] font-medium">
+                No industry budget data available for this date range
+              </div>
+            ) : (
+              displayBudget.map((item, idx) => (
+                <div key={idx} className="flex items-center gap-3 text-xs">
+                  <span
+                    className="w-28 font-semibold text-[#5a5a7a] shrink-0 text-right truncate"
+                    title={item.industry}
+                  >
+                    {item.industry}
+                  </span>
+                  <div className="flex-1 h-2 bg-[#f4f3f6] rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-[#2563eb]"
+                      style={{ width: `${item.percentage}%` }}
+                    />
                   </div>
-                ))}
+                  <span className="w-20 text-right font-bold text-[#5a5a7a] shrink-0">
+                    {formatBudgetAmount(item.budget)}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -560,9 +595,6 @@ export default function PaidCampaignsAnalyticsView() {
   );
 }
 
-/**
- * Reusable SVG Line Trend Chart matching exact design with dashed gridlines and dots
- */
 function TrendLineChart({
   data,
   strokeColor,

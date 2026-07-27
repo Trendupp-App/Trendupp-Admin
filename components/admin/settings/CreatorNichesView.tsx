@@ -26,13 +26,11 @@ export default function CreatorNichesView() {
   const updateMutation = useUpdateNiche();
   const deleteMutation = useDeleteNiche();
 
-  const displayNiches = niches ?? [];
-
   const filteredNiches = useMemo(() => {
-    if (!searchTerm.trim()) return displayNiches;
+    if (!searchTerm.trim()) return niches;
     const term = searchTerm.toLowerCase();
-    return displayNiches.filter((n) => n.name.toLowerCase().includes(term));
-  }, [displayNiches, searchTerm]);
+    return niches.filter((n) => n.name.toLowerCase().includes(term));
+  }, [niches, searchTerm]);
 
   const handleOpenAddModal = () => {
     setEditingNiche(null);
@@ -92,7 +90,7 @@ export default function CreatorNichesView() {
           <p className="text-xs text-[#7a7a9a] mt-1">
             These are the niche options shown to creators during onboarding.{" "}
             <strong className="text-[#1a1a2e] font-semibold">
-              {displayNiches.length} niches total.
+              {niches.length} niches total.
             </strong>
           </p>
         </div>

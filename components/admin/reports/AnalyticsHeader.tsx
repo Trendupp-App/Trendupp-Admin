@@ -15,6 +15,7 @@ interface AnalyticsHeaderProps {
   onModeChange: (mode: ModeType) => void;
   dateRange: string;
   onDateRangeChange: (range: string) => void;
+  onExport?: () => void;
 }
 
 export default function AnalyticsHeader({
@@ -24,6 +25,7 @@ export default function AnalyticsHeader({
   onModeChange,
   dateRange,
   onDateRangeChange,
+  onExport,
 }: AnalyticsHeaderProps) {
   const [isDateOpen, setIsDateOpen] = useState(false);
 
@@ -31,11 +33,6 @@ export default function AnalyticsHeader({
     { key: "creator", label: "Creator Analytics" },
     { key: "advertiser", label: "Advertiser Analytics" },
     { key: "paid_campaigns", label: "Paid Campaigns" },
-    {
-      key: "social_campaigns",
-      label: "Social Impact Campaigns",
-      disabled: true,
-    },
     { key: "finance", label: "Financial Analytics", disabled: true },
   ];
 
@@ -96,6 +93,7 @@ export default function AnalyticsHeader({
           {/* Export Button */}
           <button
             type="button"
+            onClick={onExport}
             className="h-9.5 px-4 bg-white border border-[#e8e6f0] rounded-xl text-xs font-bold text-[#1a1a2e] flex items-center gap-2 hover:bg-[#faf9fc] transition-colors cursor-pointer shadow-xs"
           >
             <Download size={14} className="text-[#5a5a7a]" />
@@ -124,7 +122,7 @@ export default function AnalyticsHeader({
               : "text-[#5a5a7a] hover:text-[#1a1a2e]"
           }`}
         >
-          External Analytics
+          External Report
         </button>
       </div>
 

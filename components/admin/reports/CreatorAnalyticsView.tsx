@@ -42,19 +42,23 @@ const MONTH_MAP: Record<string, number> = {
 };
 
 export default function CreatorAnalyticsView() {
+  // Always default to today's year/month — never hardcoded
+  const NOW_YEAR = String(new Date().getFullYear());
+  const NOW_MONTH = new Date().toLocaleString("default", { month: "long" });
+
   // Signup Growth Filters State
   const [signupPeriod, setSignupPeriod] = useState<
     "Daily" | "Weekly" | "Monthly"
   >("Monthly");
-  const [signupYear, setSignupYear] = useState("2026");
-  const [signupMonth, setSignupMonth] = useState("July");
+  const [signupYear, setSignupYear] = useState(NOW_YEAR);
+  const [signupMonth, setSignupMonth] = useState(NOW_MONTH);
 
   // Active Users Filters State
   const [activePeriod, setActivePeriod] = useState<
     "Daily" | "Weekly" | "Monthly"
   >("Monthly");
-  const [activeYear, setActiveYear] = useState("2026");
-  const [activeMonth, setActiveMonth] = useState("July");
+  const [activeYear, setActiveYear] = useState(NOW_YEAR);
+  const [activeMonth, setActiveMonth] = useState(NOW_MONTH);
 
   const { data: overviewRes, isLoading: isLoadingOverview } =
     useAdminOverview();
@@ -88,11 +92,26 @@ export default function CreatorAnalyticsView() {
   const summary = summaryRes?.summary;
   const topMetrics = overviewRes?.topMetrics;
 
-  const totalCreators = topMetrics?.totalCreators ?? summary?.totalCreators;
-  const activeCreators = summary?.profileCompleted;
-  const suspendedCreators = summary?.suspendedCreators;
-  const pendingCreators = summary?.pendingProfileCompletion;
-  const retentionRate = 68;
+  const totalCreators =
+    topMetrics?.totalCreators ?? summary?.totalCreators ?? 0;
+  const activeCreators = summary?.profileCompleted ?? 0;
+  const suspendedCreators = summary?.suspendedCreators ?? 0;
+  const pendingCreators = summary?.pendingProfileCompletion ?? 0;
+
+  // Retention Rate: active creators as % of total (live, not dummy)
+  // Falls back to (active / total) if no dedicated field
+  const retentionRate =
+    (summary as { retentionRate?: number })?.retentionRate ??
+    (totalCreators > 0
+      ? Math.round((activeCreators / totalCreators) * 100)
+      : null);
+
+  // Month-over-month label: use prev month name dynamically
+  const prevMonthLabel = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth() - 1,
+    1,
+  ).toLocaleString("default", { month: "long" });
 
   // Profile completion stages
   const dist = summaryRes?.profileCompletionDistribution;
@@ -316,11 +335,21 @@ export default function CreatorAnalyticsView() {
             </span>
             <div className="flex items-baseline gap-3">
               <span className="text-3xl font-extrabold text-[#1a1a2e]">
-                {retentionRate}%
+                {isLoadingStats ? (
+                  <Skeleton className="h-9 w-20" />
+                ) : retentionRate !== null && retentionRate !== undefined ? (
+                  `${retentionRate}%`
+                ) : (
+                  <span className="text-sm text-[#9a99b0] font-semibold">
+                    No data yet
+                  </span>
+                )}
               </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#f0fdf4] text-[#16a34a] border border-[#dcfce7] flex items-center gap-1">
-                <ArrowUpRight size={12} /> +12% vs last month
-              </span>
+              {retentionRate !== null && retentionRate !== undefined && (
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#f0fdf4] text-[#16a34a] border border-[#dcfce7] flex items-center gap-1">
+                  <ArrowUpRight size={12} /> vs {prevMonthLabel}
+                </span>
+              )}
             </div>
           </div>
           <div className="w-11 h-11 rounded-2xl bg-brand-pink-light text-brand-pink flex items-center justify-center">
