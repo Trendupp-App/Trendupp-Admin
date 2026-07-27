@@ -8,12 +8,6 @@ import {
 } from "@/hooks/useAdminSettingsExtra";
 import type { ContactInfo } from "@/types/adminSettings";
 
-const DEFAULT_CONTACT_INFO: ContactInfo = {
-  businessAddress: "12 Marina Way, Lagos Island, Lagos, Nigeria",
-  supportEmail: "support@trendupp.com",
-  supportPhone: "+234 800 TRENDUPP",
-};
-
 function ContactInfoFormInner({
   initialData,
 }: {
@@ -22,13 +16,13 @@ function ContactInfoFormInner({
   const updateMutation = useUpdateContactInfo();
 
   const [businessAddress, setBusinessAddress] = useState(
-    initialData?.businessAddress || DEFAULT_CONTACT_INFO.businessAddress,
+    initialData?.businessAddress || "",
   );
   const [supportEmail, setSupportEmail] = useState(
-    initialData?.supportEmail || DEFAULT_CONTACT_INFO.supportEmail,
+    initialData?.supportEmail || "",
   );
   const [supportPhone, setSupportPhone] = useState(
-    initialData?.supportPhone || DEFAULT_CONTACT_INFO.supportPhone,
+    initialData?.supportPhone || "",
   );
 
   const handleSubmit = (e: React.FormEvent) => {

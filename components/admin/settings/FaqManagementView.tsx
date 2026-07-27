@@ -29,61 +29,11 @@ const CORE_CATEGORIES = [
   "Social Impact",
 ];
 
-const DEFAULT_SAMPLE_FAQS: FaqItem[] = [
-  {
-    id: "bfc98cfd-cfcb-492c-a06e-be36e0bb0f32",
-    question: "How does escrow work on Trendupp?",
-    answer:
-      "Escrow on Trendupp means that campaign funds are held securely by the platform until the creator completes the agreed deliverables. Once both parties confirm completion, funds are released automatically.",
-    category: "Payments",
-    status: "published",
-    sortOrder: 1,
-  },
-  {
-    id: "faq-2",
-    question: "How do I apply for a campaign?",
-    answer:
-      "Creators can browse active commercial and social impact campaigns on the platform and submit applications directly with their portfolio and pitch proposal.",
-    category: "Campaigns",
-    status: "published",
-    sortOrder: 2,
-  },
-  {
-    id: "faq-3",
-    question: "When will I receive my payment?",
-    answer:
-      "Payments are processed immediately upon milestone approval by the advertiser or brand manager and released directly to your registered bank account.",
-    category: "Payments",
-    status: "published",
-    sortOrder: 3,
-  },
-  {
-    id: "faq-4",
-    question: "What is a Social Impact campaign?",
-    answer:
-      "Social Impact campaigns are community-driven initiatives supported by Trendupp to promote social causes, civic awareness, and community empowerment.",
-    category: "Social Impact",
-    status: "published",
-    sortOrder: 4,
-  },
-  {
-    id: "faq-5",
-    question: "How is my creator tier determined?",
-    answer:
-      "Creator tiers are calculated dynamically based on engagement rate, verified reach, total completed campaigns, and overall advertiser review ratings.",
-    category: "Creators",
-    status: "draft",
-    sortOrder: 5,
-  },
-];
-
 export default function FaqManagementView() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedId, setExpandedId] = useState<string | null>(
-    "bfc98cfd-cfcb-492c-a06e-be36e0bb0f32",
-  );
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingFaq, setEditingFaq] = useState<FaqItem | null>(null);
   const [deletingFaq, setDeletingFaq] = useState<FaqItem | null>(null);
@@ -102,8 +52,7 @@ export default function FaqManagementView() {
   const deleteMutation = useDeleteFaq();
 
   const displayFaqs = useMemo(() => {
-    if (faqs && faqs.length > 0) return faqs;
-    return process.env.NODE_ENV === "development" ? DEFAULT_SAMPLE_FAQS : [];
+    return Array.isArray(faqs) ? faqs : [];
   }, [faqs]);
 
   // Extract all categories dynamically from displayFaqs + core default categories

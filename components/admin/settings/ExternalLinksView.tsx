@@ -8,14 +8,6 @@ import {
 } from "@/hooks/useAdminSettingsExtra";
 import type { ExternalLinks } from "@/types/adminSettings";
 
-const DEFAULT_LINKS: ExternalLinks = {
-  websiteUrl: "https://trendupp.com",
-  instagram: "@trendupp",
-  twitter: "@trendupp_ng",
-  linkedin: "trendupp",
-  youtube: "TrenduppAfrica",
-};
-
 function ExternalLinksFormInner({
   initialData,
 }: {
@@ -23,21 +15,11 @@ function ExternalLinksFormInner({
 }) {
   const updateMutation = useUpdateExternalLinks();
 
-  const [websiteUrl, setWebsiteUrl] = useState(
-    initialData?.websiteUrl || DEFAULT_LINKS.websiteUrl,
-  );
-  const [instagram, setInstagram] = useState(
-    initialData?.instagram || DEFAULT_LINKS.instagram,
-  );
-  const [twitter, setTwitter] = useState(
-    initialData?.twitter || DEFAULT_LINKS.twitter,
-  );
-  const [linkedin, setLinkedin] = useState(
-    initialData?.linkedin || DEFAULT_LINKS.linkedin,
-  );
-  const [youtube, setYoutube] = useState(
-    initialData?.youtube || DEFAULT_LINKS.youtube,
-  );
+  const [websiteUrl, setWebsiteUrl] = useState(initialData?.websiteUrl || "");
+  const [instagram, setInstagram] = useState(initialData?.instagram || "");
+  const [twitter, setTwitter] = useState(initialData?.twitter || "");
+  const [linkedin, setLinkedin] = useState(initialData?.linkedin || "");
+  const [youtube, setYoutube] = useState(initialData?.youtube || "");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

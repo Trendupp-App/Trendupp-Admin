@@ -231,7 +231,7 @@ nextjs-portal,
   to   { width: 100%; }
 }
 
-/* Data Protection & Copy Prevention */
+/* Data Protection & Copy Prevention (Disabled)
 body, body * {
   -webkit-user-select: none !important;
   -moz-user-select: none !important;
@@ -247,10 +247,10 @@ input, textarea, [contenteditable="true"] {
   user-select: text !important;
 }
 
-/* Prevent Print / PDF export screen captures */
 @media print {
   html, body {
     display: none !important;
     visibility: hidden !important;
   }
 }
+*/
