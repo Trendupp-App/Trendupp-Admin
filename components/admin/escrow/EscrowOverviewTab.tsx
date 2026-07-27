@@ -60,7 +60,7 @@ function MiniBarChart({
   onYearChange,
   color = PINK,
 }: MiniChartProps) {
-  const years = [2026, 2025, 2024];
+const years = Array.from({ length: 3 }, (_, i) => selectedYear - i);
 
   return (
     <div className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-5 flex flex-col gap-3 shadow-xs">
