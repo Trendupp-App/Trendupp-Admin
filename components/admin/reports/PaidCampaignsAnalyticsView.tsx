@@ -36,12 +36,14 @@ function buildRangeOptions(): { value: string; label: string }[] {
     { value: "all", label: "All Time" },
   ];
 
+  // Q4: Oct–Dec (months 9-11)
+  if (m >= 9) opts.push({ value: "q4", label: `Q4 ${y} (Oct – Dec)` });
   // Q3: Jul–Sep (months 6-8)
   if (m >= 6) opts.push({ value: "q3", label: `Q3 ${y} (Jul – Sep)` });
   // Q2: Apr–Jun (months 3-5)
   if (m >= 3) opts.push({ value: "q2", label: `Q2 ${y} (Apr – Jun)` });
   // Q1: Jan–Mar (months 0-2)
-  if (m >= 0) opts.push({ value: "q1", label: `Q1 ${y} (Jan – Mar)` });
+  opts.push({ value: "q1", label: `Q1 ${y} (Jan – Mar)` });
   // Last 30 days always available
   opts.push({ value: "last30", label: "Last 30 Days" });
   // Last 90 days always available
