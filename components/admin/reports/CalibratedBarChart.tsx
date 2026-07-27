@@ -289,9 +289,14 @@ export default function CalibratedBarChart({
               onChange={(e) => handleYearSelect(e.target.value)}
               className="h-8 px-3 pr-7 bg-white border border-[#e8e6f0] rounded-xl text-xs font-semibold text-[#5a5a7a] appearance-none focus:outline-none cursor-pointer"
             >
-              <option value="2026">2026</option>
-              <option value="2025">2025</option>
-              <option value="2024">2024</option>
+              {Array.from({ length: 3 }).map((_, i) => {
+                const y = String(new Date().getFullYear() - i);
+                return (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                );
+              })}
             </select>
             <ChevronDown
               size={12}
