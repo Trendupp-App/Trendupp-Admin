@@ -115,7 +115,7 @@ export interface EscrowBalanceItem {
   totalFunded?: number;
   escrowAmount?: number;
   amount?: number;
-  status?: EscrowStatus | string;
+status?: EscrowStatus | (string & {});
   fundingStatus?: string;
   campaignStatus?: string;
   dueDate?: string;
