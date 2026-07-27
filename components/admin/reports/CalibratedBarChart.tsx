@@ -213,7 +213,7 @@ export default function CalibratedBarChart({
       const daysCount = DAYS_IN_MONTH[month] || 30;
       displayData = Array.from({ length: daysCount }).map((_, i) => ({
         label: `Day ${i + 1}`,
-        count: i === 5 ? 45 : 0,
+        count: 0,
       }));
     } else if (period === "Weekly") {
       displayData = [
