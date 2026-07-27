@@ -16,11 +16,39 @@ export function useAdminOverview(enabled: boolean = true) {
           disputeApi.getDisputes(),
         ]);
 
-      const overview =
-        overviewRes.status === "fulfilled"
-          ? overviewRes.value.data
-          : ({} as AdminOverviewResponseDto);
+const baseOverview: AdminOverviewResponseDto = {
+  topMetrics: {
+    totalCreators: 0,
+    totalBrands: 0,
+    totalCampaigns: 0,
+    openDisputes: 0,
+  },
+  actionsRequired: {
+    unresolvedDisputes: 0,
+    resolvedDisputes: 0,
+    creatorsAwaitingPayment: 0,
+    failedPayouts: 0,
+  },
+  campaignOverview: {
+    total: 0,
+    draft: 0,
+    live: 0,
+    active: 0,
+    postPending: 0,
+    completed: 0,
+  },
+  creatorTiers: {
+    totalRegistered: 0,
+    pendingVerification: 0,
+    newThisWeek: 0,
+    tiers: [],
+  },
+  recentCampaignActivity: [],
+  topCreators: [],
+};
 
+const overview =
+  overviewRes.status === "fulfilled" ? overviewRes.value.data : baseOverview;
       const payouts =
         payoutsRes.status === "fulfilled"
           ? (payoutsRes.value.data?.data ?? [])
