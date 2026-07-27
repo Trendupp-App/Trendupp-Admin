@@ -199,7 +199,7 @@ export interface AdvertiserRefundItem {
   };
   campaignTitle?: string;
   amount: number;
-  status: RefundStatus | string;
+status: RefundStatus | (string & {});
   reason?: string;
   refundedAt?: string;
   createdAt?: string;
