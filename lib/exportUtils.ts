@@ -9,7 +9,8 @@ export function downloadCsv(
 ) {
   const escapeCsv = (val: string | number | boolean | null | undefined) => {
     if (val === null || val === undefined) return '""';
-    const str = String(val).replace(/"/g, '""');
+    let str = String(val).replace(/"/g, '""');
+    if (/^[=+\-@]/.test(str)) str = "'" + str;
     return `"${str}"`;
   };
 
