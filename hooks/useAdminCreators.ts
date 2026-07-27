@@ -1,6 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminCreatorsApi } from "@/services/adminCreatorsApi";
-import type { CreatorListQueryParams } from "@/types/adminCreators";
+import type {
+  CreatorListQueryParams,
+  SignupGrowthItemDto,
+  ActiveUsersItemDto,
+} from "@/types/adminCreators";
 import { toast } from "sonner";
 import type { AxiosError } from "axios";
 
@@ -30,10 +34,24 @@ export function useCreatorSignupGrowth(
 ) {
   return useQuery({
     queryKey: ["admin-creator-signup-growth", period, year, month],
-    queryFn: () =>
-      adminCreatorsApi
-        .getSignupGrowth({ period, year, month })
-        .then((r) => r.data),
+    queryFn: async () => {
+      const res = await adminCreatorsApi.getSignupGrowth({
+        period,
+        year,
+        month,
+      });
+      const data = res.data;
+      if (Array.isArray(data)) return data;
+      if (
+        data &&
+        typeof data === "object" &&
+        "data" in data &&
+        Array.isArray((data as { data: SignupGrowthItemDto[] }).data)
+      ) {
+        return (data as { data: SignupGrowthItemDto[] }).data;
+      }
+      return [];
+    },
     staleTime: 1000 * 60 * 5,
     enabled,
   });
@@ -47,10 +65,24 @@ export function useCreatorActiveUsers(
 ) {
   return useQuery({
     queryKey: ["admin-creator-active-users", period, year, month],
-    queryFn: () =>
-      adminCreatorsApi
-        .getActiveUsers({ period, year, month })
-        .then((r) => r.data),
+    queryFn: async () => {
+      const res = await adminCreatorsApi.getActiveUsers({
+        period,
+        year,
+        month,
+      });
+      const data = res.data;
+      if (Array.isArray(data)) return data;
+      if (
+        data &&
+        typeof data === "object" &&
+        "data" in data &&
+        Array.isArray((data as { data: ActiveUsersItemDto[] }).data)
+      ) {
+        return (data as { data: ActiveUsersItemDto[] }).data;
+      }
+      return [];
+    },
     staleTime: 1000 * 60 * 5,
     enabled,
   });

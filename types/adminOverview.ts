@@ -3,9 +3,9 @@ export interface TopMetricsDto {
   totalBrands: number;
   totalCampaigns: number;
   openDisputes: number;
-  newBrandsThisWeek: number;
-  newCampaignsThisWeek: number;
-  newDisputesThisWeek: number;
+  newBrandsThisWeek?: number;
+  newCampaignsThisWeek?: number;
+  newDisputesThisWeek?: number;
 }
 
 export interface ActionsRequiredDto {
