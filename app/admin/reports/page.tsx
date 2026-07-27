@@ -10,6 +10,8 @@ import AdvertiserAnalyticsView from "@/components/admin/reports/AdvertiserAnalyt
 import PaidCampaignsAnalyticsView from "@/components/admin/reports/PaidCampaignsAnalyticsView";
 import ExternalReportView from "@/components/admin/reports/ExternalReportView";
 
+import EscrowOverviewTab from "@/components/admin/escrow/EscrowOverviewTab";
+
 import { downloadCsv } from "@/lib/exportUtils";
 import { toast } from "sonner";
 
@@ -80,6 +82,7 @@ export default function AnalyticsPage() {
           {activeTab === "creator" && <CreatorAnalyticsView />}
           {activeTab === "advertiser" && <AdvertiserAnalyticsView />}
           {activeTab === "paid_campaigns" && <PaidCampaignsAnalyticsView />}
+          {activeTab === "finance" && <EscrowOverviewTab />}
         </>
       )}
     </div>

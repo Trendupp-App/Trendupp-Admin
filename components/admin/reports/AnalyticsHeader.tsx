@@ -32,8 +32,8 @@ export default function AnalyticsHeader({
   const tabs: { key: ReportTab; label: string; disabled?: boolean }[] = [
     { key: "creator", label: "Creator Analytics" },
     { key: "advertiser", label: "Advertiser Analytics" },
-    { key: "paid_campaigns", label: "Paid Campaigns" },
-    { key: "finance", label: "Financial Analytics", disabled: true },
+    { key: "paid_campaigns", label: "Paid campaigns" },
+    { key: "finance", label: "Financial Analytics" },
   ];
 
   const dateOptions = [
