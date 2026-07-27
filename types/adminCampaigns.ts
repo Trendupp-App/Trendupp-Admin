@@ -5,7 +5,11 @@ export interface AdminCampaignBrandDto {
 }
 
 export type AdminCampaignStatus =
-  "DRAFT" | "LIVE" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+  | "DRAFT"
+  | "LIVE"
+  | "ACTIVE"
+  | "COMPLETED"
+  | "CANCELLED";
 
 export interface AdminCampaignListItemDto {
   id: string;
@@ -57,4 +61,53 @@ export interface CampaignListQueryParams {
   endDate?: string;
   page?: number;
   limit?: number;
+}
+
+export interface AdminCampaignSummaryDto {
+  totalCampaigns: number;
+  avgApplicantsPerCampaign: number;
+  creatorsSelectedRate: number;
+  totalCompleted: number;
+  campaignCompletionRate: number;
+}
+
+export interface CampaignTierParticipationDto {
+  tier: string;
+  count: number;
+  percentage: number;
+}
+
+export interface CampaignTypeDistributionDto {
+  type: string;
+  count: number;
+  percentage: number;
+}
+
+export interface CampaignVolumeDto {
+  label: string;
+  draft: number;
+  live: number;
+  completed: number;
+}
+
+export interface IndustryBudgetDto {
+  industry: string;
+  budget: number;
+  percentage: number;
+}
+
+export interface TrendItemDto {
+  label: string;
+  rate: number;
+}
+
+export interface AdminCampaignsSummaryResponseDto {
+  summary: AdminCampaignSummaryDto;
+  participationByTier?: CampaignTierParticipationDto[];
+  campaignTypes?: CampaignTypeDistributionDto[];
+  volume?: CampaignVolumeDto[];
+  budgetByIndustry?: IndustryBudgetDto[];
+  slaBreachTrend?: TrendItemDto[];
+  revisionRateTrend?: TrendItemDto[];
+  completionRateTrend?: TrendItemDto[];
 }
