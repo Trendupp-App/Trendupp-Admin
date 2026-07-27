@@ -99,7 +99,7 @@ export default function ExternalReportView() {
 
   // Filter campaigns list by search query and category
   const filteredCampaigns = useMemo(() => {
-    return campaignsList.filter((c) => {
+    const filtered = campaignsList.filter((c) => {
       const matchesSearch =
         c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.advertiser.toLowerCase().includes(searchQuery.toLowerCase());
@@ -107,7 +107,12 @@ export default function ExternalReportView() {
         filterCategory === "All" || c.category === filterCategory;
       return matchesSearch && matchesCat;
     });
-  }, [campaignsList, searchQuery, filterCategory]);
+
+    if (sortOption === "name") {
+      return [...filtered].sort((a, b) => a.title.localeCompare(b.title));
+    }
+    return filtered;
+  }, [campaignsList, searchQuery, filterCategory, sortOption]);
 
   // Selected Campaign details
   const selectedCampaign = useMemo(() => {
