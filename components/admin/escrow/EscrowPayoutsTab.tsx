@@ -313,6 +313,7 @@ function CreatorPayoutsView() {
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2">
                           {item.creator?.avatar || item.creatorAvatar ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
                             <img
                               src={item.creator?.avatar ?? item.creatorAvatar}
                               alt=""
