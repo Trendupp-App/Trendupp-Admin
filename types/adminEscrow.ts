@@ -161,7 +161,7 @@ export interface CreatorPayoutItem {
   };
   campaignTitle?: string;
   amount: number;
-  status: PayoutStatus | string;
+status: PayoutStatus | (string & {});
   account?: string;
   transactionTrigger?: string;
   triggeredBy?: string;
