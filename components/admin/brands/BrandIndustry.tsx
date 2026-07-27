@@ -1,31 +1,46 @@
 "use client";
 
-interface IndustryItem {
-  name: string;
-  count: number;
-  pct: number;
-}
-
-const INDUSTRIES: IndustryItem[] = [
-  { name: "Tech", count: 1842, pct: 48 },
-  { name: "Fashion", count: 1204, pct: 31 },
-  { name: "Beauty", count: 687, pct: 18 },
-  { name: "Food & Beverage", count: 114, pct: 3 },
-  { name: "Finance", count: 114, pct: 3 },
-];
+import { useBrandIndustryBreakdown } from "@/hooks/useAdminBrands";
 
 export default function BrandIndustry() {
+  const { data, isLoading } = useBrandIndustryBreakdown();
+
+  const industries = (data ?? []).map((i) => ({
+    name: i.industry,
+    count: i.count,
+    pct: Math.min(100, Math.round(i.percentage)),
+  }));
+
+  if (isLoading) {
+    return (
+      <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-4.5 h-full justify-center animate-pulse">
+        <div className="w-24 h-4 bg-[#e8e6f0]/60 rounded-md" />
+        <div className="flex flex-col gap-3.5">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="w-full h-6 bg-[#faf9fc] rounded-xl" />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-4.5 h-full justify-center">
       <div>
         <h2 className="text-sm font-semibold text-[#1a1a2e]">Industry</h2>
         <span className="text-[10px] text-[#9a99b0] font-medium">
-          5 Country
+          {industries.length} industr{industries.length === 1 ? "y" : "ies"}
         </span>
       </div>
 
+      {industries.length === 0 && (
+        <p className="text-xs text-[#9a99b0] text-center py-6">
+          No industry data yet.
+        </p>
+      )}
+
       <div className="flex flex-col gap-3.5">
-        {INDUSTRIES.map((ind) => (
+        {industries.map((ind) => (
           <div key={ind.name} className="flex flex-col gap-1.5">
             <div className="flex justify-between items-center text-xs">
               <span className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-[#fdf2f6] text-brand-pink">

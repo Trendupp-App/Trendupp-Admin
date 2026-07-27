@@ -21,10 +21,20 @@ export function useBrandSignupGrowth(
 ) {
   return useQuery({
     queryKey: ["admin-brand-signup-growth", period, year, month],
-    queryFn: () =>
-      adminBrandsApi
-        .getSignupGrowth({ period, year, month })
-        .then((r) => r.data),
+    queryFn: async () => {
+      const res = await adminBrandsApi.getSignupGrowth({ period, year, month });
+      const data = res.data;
+      if (Array.isArray(data)) return data;
+      if (
+        data &&
+        typeof data === "object" &&
+        "data" in data &&
+        Array.isArray((data as { data: typeof data }).data)
+      ) {
+        return (data as { data: typeof data }).data;
+      }
+      return [];
+    },
     staleTime: 1000 * 60 * 5,
     enabled,
   });
@@ -38,10 +48,20 @@ export function useBrandActiveUsers(
 ) {
   return useQuery({
     queryKey: ["admin-brand-active-users", period, year, month],
-    queryFn: () =>
-      adminBrandsApi
-        .getActiveUsers({ period, year, month })
-        .then((r) => r.data),
+    queryFn: async () => {
+      const res = await adminBrandsApi.getActiveUsers({ period, year, month });
+      const data = res.data;
+      if (Array.isArray(data)) return data;
+      if (
+        data &&
+        typeof data === "object" &&
+        "data" in data &&
+        Array.isArray((data as { data: typeof data }).data)
+      ) {
+        return (data as { data: typeof data }).data;
+      }
+      return [];
+    },
     staleTime: 1000 * 60 * 5,
     enabled,
   });

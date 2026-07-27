@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { authApi } from "@/services/authApi";
@@ -8,10 +8,12 @@ import { authApi } from "@/services/authApi";
 type ActivationState = "verifying" | "success" | "error";
 
 interface Props {
-  params: { otp: string };
+  // Next 16: route params are a Promise; client components unwrap with use().
+  params: Promise<{ otp: string }>;
 }
 
 export default function InviteActivationPage({ params }: Props) {
+  const { otp } = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
   const [state, setState] = useState<ActivationState>("verifying");
@@ -24,7 +26,6 @@ export default function InviteActivationPage({ params }: Props) {
 
     async function verify() {
       try {
-        const { otp } = params;
         const email = searchParams.get("email") ?? "";
 
         if (!otp || !email) {

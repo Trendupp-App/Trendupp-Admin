@@ -26,15 +26,15 @@ export function AdminCreatorTiers({ creatorTiers }: AdminCreatorTiersProps) {
         ),
       }))
     : [
-        { name: "Nano", count: 1642, bar: "bg-[#16a34a]", pct: 100 },
-        { name: "Micro", count: 1204, bar: "bg-brand-pink", pct: 73 },
-        { name: "Macro", count: 687, bar: "bg-[#2f63eb]", pct: 42 },
-        { name: "Mega", count: 114, bar: "bg-[#7c3aed]", pct: 7 },
+        { name: "Nano", count: 0, bar: "bg-[#16a34a]", pct: 0 },
+        { name: "Micro", count: 0, bar: "bg-brand-pink", pct: 0 },
+        { name: "Macro", count: 0, bar: "bg-[#2f63eb]", pct: 0 },
+        { name: "Mega", count: 0, bar: "bg-[#7c3aed]", pct: 0 },
       ];
 
-  const totalRegistered = creatorTiers?.totalRegistered ?? 3847;
-  const pendingVerification = creatorTiers?.pendingVerification ?? 23;
-  const newThisWeek = creatorTiers?.newThisWeek ?? 124;
+  const totalRegistered = creatorTiers?.totalRegistered ?? 0;
+  const pendingVerification = creatorTiers?.pendingVerification ?? 0;
+  const newThisWeek = creatorTiers?.newThisWeek ?? 0;
 
   return (
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5">

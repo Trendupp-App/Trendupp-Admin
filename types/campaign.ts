@@ -34,12 +34,29 @@ export type ContentType = (typeof CONTENT_TYPES)[number];
 //  Campaign
 
 export type CampaignStatus =
-  "draft" | "submitted" | "live" | "active" | "completed";
+  | "draft"
+  | "submitted"
+  | "live"
+  | "active"
+  | "completed"
+  | "paused"
+  | "cancelled";
 
 export interface ContentGuidelines {
   dos: string[];
   donts: string[];
 }
+
+export interface CampaignTimelineStage {
+  goal: string;
+  status: "completed" | "in_progress" | "pending" | string;
+  endedDate: string | null;
+  intendedFor: string | null;
+  startedDate: string | null;
+  extendedDays?: number;
+}
+
+export type CampaignTimeline = Record<string, CampaignTimelineStage>;
 
 export interface Campaign extends BaseEntity {
   title: string;
@@ -83,9 +100,10 @@ export interface Campaign extends BaseEntity {
     name: string;
   }[];
   creatorNicheId?: string;
-  timeline?: string;
+  timeline?: CampaignTimeline;
   approvedAt?: string | null;
   urlIsLive?: boolean | null;
+  currency?: string;
   creatorNiche?: {
     id?: string;
     createdAt?: string;
@@ -141,7 +159,7 @@ export interface CampaignApplicationDto {
   campaignId: string;
   creatorId: string;
   contentIdea: string;
-  pastWorkLink: string;
+  pastWorkLink: string | string[];
   primaryPlatformId: string;
   secondaryPlatformId: string;
   feeRequest: number;

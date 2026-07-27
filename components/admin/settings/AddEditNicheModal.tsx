@@ -16,6 +16,8 @@ interface AddEditNicheModalProps {
   onClose: () => void;
   onSubmit: (name: string) => void;
   isSubmitting?: boolean;
+  /** Noun used in all copy — "Niche" (default), "Industry", "Category", ... */
+  entityLabel?: string;
 }
 
 function NicheFormInner({
@@ -23,6 +25,7 @@ function NicheFormInner({
   onClose,
   onSubmit,
   isSubmitting = false,
+  entityLabel = "Niche",
 }: Omit<AddEditNicheModalProps, "isOpen">) {
   const [name, setName] = useState(niche?.name || "");
   const isEditing = !!niche;
@@ -36,7 +39,9 @@ function NicheFormInner({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2">
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-bold text-[#1a1a2e]">Niche Name *</label>
+        <label className="text-xs font-bold text-[#1a1a2e]">
+          {entityLabel} Name *
+        </label>
         <input
           type="text"
           value={name}
@@ -67,7 +72,7 @@ function NicheFormInner({
             ? "Saving..."
             : isEditing
               ? "Save Changes"
-              : "+ Add Niche"}
+              : `+ Add ${entityLabel}`}
         </Button>
       </div>
     </form>
@@ -80,6 +85,7 @@ export default function AddEditNicheModal({
   onClose,
   onSubmit,
   isSubmitting = false,
+  entityLabel = "Niche",
 }: AddEditNicheModalProps) {
   const isEditing = !!niche;
 
@@ -88,7 +94,7 @@ export default function AddEditNicheModal({
       <DialogContent className="max-w-md bg-white rounded-2xl p-6 border-0 shadow-xl">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold text-[#1a1a2e]">
-            {isEditing ? "Edit Niche" : "Add New Niche"}
+            {isEditing ? `Edit ${entityLabel}` : `Add New ${entityLabel}`}
           </DialogTitle>
         </DialogHeader>
 
@@ -99,6 +105,7 @@ export default function AddEditNicheModal({
             onClose={onClose}
             onSubmit={onSubmit}
             isSubmitting={isSubmitting}
+            entityLabel={entityLabel}
           />
         )}
       </DialogContent>

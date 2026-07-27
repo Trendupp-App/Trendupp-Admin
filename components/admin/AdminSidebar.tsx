@@ -8,11 +8,11 @@ import {
   Users,
   Building2,
   ShoppingBag,
-  Globe,
+  // Globe,
   TrendingUp,
   Megaphone,
   MessageSquare,
-  Headphones,
+  // Headphones,
   Wallet,
   BarChart2,
   ClipboardList,
@@ -53,7 +53,7 @@ const NAV: NavGroup[] = [
     section: "CAMPAIGNS",
     items: [
       { label: "Paid", href: "/admin/campaigns", icon: ShoppingBag },
-      { label: "Social Impact", href: "/admin/campaigns/social", icon: Globe },
+      // { label: "Social Impact", href: "/admin/campaigns/social", icon: Globe },
     ],
   },
   {
@@ -71,7 +71,7 @@ const NAV: NavGroup[] = [
         href: "/admin/disputes",
         icon: MessageSquare,
       },
-      { label: "Support Tickets", href: "/admin/support", icon: Headphones },
+      // { label: "Support Tickets", href: "/admin/support", icon: Headphones },
     ],
   },
   {
@@ -99,13 +99,7 @@ const NAV: NavGroup[] = [
   },
 ];
 
-interface AdminSidebarProps {
-  onNotificationClick?: () => void;
-}
-
-export default function AdminSidebar({
-  onNotificationClick,
-}: AdminSidebarProps) {
+export default function AdminSidebar() {
   const pathname = usePathname();
   const { user } = useAuthStore();
 
@@ -146,7 +140,7 @@ export default function AdminSidebar({
 
   return (
     <aside className="w-[264px] h-screen bg-[#fef2f6] border-r border-[#fae2ec] flex flex-col justify-between py-6 px-4 shrink-0 overflow-y-auto">
-      <div className="flex flex-col gap-0">
+      <div className="flex flex-col gap-0 text-left">
         {/* Logo */}
         <div className="px-3 mb-5">
           <Link href="/admin/dashboard">
@@ -196,20 +190,10 @@ export default function AdminSidebar({
                         (pathname.startsWith(href + "/") &&
                           !pathname.startsWith("/admin/reports/audit"))
                       : pathname === href || pathname.startsWith(href + "/");
-                const isNotifications = label === "Notifications";
-
-                const handleClick = (e: React.MouseEvent) => {
-                  if (isNotifications && onNotificationClick) {
-                    e.preventDefault();
-                    onNotificationClick();
-                  }
-                };
-
                 return (
                   <Link
                     key={href}
                     href={href}
-                    onClick={handleClick}
                     className={cn(
                       "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group",
                       active

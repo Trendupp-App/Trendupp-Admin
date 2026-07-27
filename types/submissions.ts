@@ -13,7 +13,7 @@ export interface LiveLinkEntry {
   checkedAt: string;
 }
 
-export type LiveLinkMap = Record<string, LiveLinkEntry>;
+export type LiveLinkMap = Record<string, string | LiveLinkEntry>;
 
 export interface CampaignSubmission {
   id: string;

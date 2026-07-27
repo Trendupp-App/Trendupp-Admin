@@ -11,6 +11,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCampaign } from "@/hooks/useCampaign";
 
 // Import refactored sub-components
 import CampaignDetailsTab from "@/components/admin/campaigns/CampaignDetailsTab";
@@ -21,13 +22,14 @@ import CampaignAnalyticsTab from "@/components/admin/campaigns/CampaignAnalytics
 import CampaignTimelineTab from "@/components/admin/campaigns/CampaignTimelineTab";
 import CampaignActionsTab from "@/components/admin/campaigns/CampaignActionsTab";
 import CampaignAuditLogTab from "@/components/admin/campaigns/CampaignAuditLogTab";
-import CampaignCreatorDrawer from "@/components/admin/campaigns/CampaignCreatorDrawer";
-import AdminActionModal from "@/components/admin/campaigns/AdminActionModal";
+import CampaignCreatorDrawer, {
+  type CreatorDrawerData,
+} from "@/components/admin/campaigns/CampaignCreatorDrawer";
 import { Portal } from "@/components/ui/portal";
 
 type TabType =
   | "Campaign Details"
-  | "Applications (47)"
+  | "Applications"
   | "Selected Creators"
   | "Deliverables"
   | "Published content"
@@ -36,22 +38,6 @@ type TabType =
   | "Admin Actions"
   | "Admin Action"
   | "Audit Log";
-
-interface CreatorDrawerData {
-  id: string;
-  name: string;
-  handle: string;
-  rating: string;
-  location: string;
-  role: string;
-  initials: string;
-  pitch: string;
-  contentIdea: string;
-  platforms: string;
-  questionComment: string;
-  responseMessage?: string;
-  isResponded?: boolean;
-}
 
 const MOCK_SOCIAL_CAMPAIGNS = [
   {
@@ -197,13 +183,11 @@ export default function CampaignDetailsPage() {
   const id = (params?.id as string) || "";
   const socialCampaign = getSocialCampaign(id);
   const isSocial = !!socialCampaign;
+  const { data: campaign } = useCampaign(!isSocial && id ? id : null);
 
   const [activeTab, setActiveTab] = useState<TabType>("Campaign Details");
   const [selectedCreatorForDrawer, setSelectedCreatorForDrawer] =
     useState<CreatorDrawerData | null>(null);
-  const [activeAdminAction, setActiveAdminAction] = useState<string | null>(
-    null,
-  );
 
   // Social Flow States
   const [creatorsList, setCreatorsList] = useState<CreatorDrawerData[]>(
@@ -215,11 +199,6 @@ export default function CampaignDetailsPage() {
   const [deliverableStatus, setDeliverableStatus] = useState<
     "Awaiting" | "Approved"
   >("Awaiting");
-
-  const handleConfirmAdminAction = (reason: string) => {
-    setActiveAdminAction(null);
-    alert(`Administrative action successfully recorded: "${reason}"`);
-  };
 
   const handleToggleSelectCreator = (creatorId: string) => {
     setSelectedCreatorIds((prev) =>
@@ -267,31 +246,79 @@ export default function CampaignDetailsPage() {
     }
   };
 
-  const tabs = isSocial
+  const applicationsCount = isSocial
+    ? 47
+    : (campaign?.applicationsCount?.total ??
+      campaign?.applications?.length ??
+      0);
+
+  const tabs: { key: TabType; label: string }[] = isSocial
     ? [
-        "Campaign Details",
-        "Applications (47)",
-        "Selected Creators",
-        "Deliverables",
-        "Published content",
-        "Analytics",
-        "Admin Action",
+        { key: "Campaign Details", label: "Campaign Details" },
+        {
+          key: "Applications",
+          label: `Applications (${applicationsCount})`,
+        },
+        { key: "Selected Creators", label: "Selected Creators" },
+        { key: "Deliverables", label: "Deliverables" },
+        { key: "Published content", label: "Published content" },
+        { key: "Analytics", label: "Analytics" },
+        { key: "Admin Action", label: "Admin Action" },
       ]
     : [
-        "Campaign Details",
-        "Applications (47)",
-        "Deliverables",
-        "Analytics",
-        "Activity Timeline",
-        "Admin Actions",
-        "Audit Log",
+        { key: "Campaign Details", label: "Campaign Details" },
+        {
+          key: "Applications",
+          label: `Applications (${applicationsCount})`,
+        },
+        { key: "Deliverables", label: "Deliverables" },
+        { key: "Analytics", label: "Analytics" },
+        { key: "Activity Timeline", label: "Activity Timeline" },
+        { key: "Admin Actions", label: "Admin Actions" },
+        { key: "Audit Log", label: "Audit Log" },
       ];
+
+  const STATUS_LABELS: Record<string, string> = {
+    draft: "Draft",
+    submitted: "Submitted",
+    live: "Live",
+    active: "Active",
+    completed: "Completed",
+  };
+  const brandName = campaign?.brand
+    ? `${campaign.brand.firstName ?? ""} ${campaign.brand.lastName ?? ""}`.trim()
+    : "";
+  const formatHeaderDate = (dateStr?: string | null) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
 
   const title = socialCampaign
     ? socialCampaign.title
-    : "Summer Style Collection 2025";
-  const status = socialCampaign ? socialCampaign.status : "Live";
-  const niche = socialCampaign ? socialCampaign.niche : "Zara Africa";
+    : (campaign?.title ?? "Campaign");
+  const status = socialCampaign
+    ? socialCampaign.status
+    : campaign
+      ? (STATUS_LABELS[campaign.status] ?? campaign.status)
+      : "Draft";
+  const niche = socialCampaign
+    ? socialCampaign.niche
+    : brandName || campaign?.creatorNiche?.name || "";
+  const subtitle = socialCampaign
+    ? `TRD-1001 • ${niche} • Created Jun 1, 2026`
+    : [
+        niche,
+        campaign?.createdAt &&
+          `Created ${formatHeaderDate(campaign.createdAt)}`,
+      ]
+        .filter(Boolean)
+        .join(" • ");
 
   // Get selected creator names for warning modal
   const selectedCreatorNames = creatorsList
@@ -354,7 +381,7 @@ export default function CampaignDetailsPage() {
               </span>
             </div>
             <span className="text-[10px] text-[#9a99b0] font-medium mt-0.5">
-              TRD-1001 &bull; {niche} &bull; Created Jun 1, 2026
+              {subtitle}
             </span>
           </div>
         </div>
@@ -371,18 +398,18 @@ export default function CampaignDetailsPage() {
 
       {/* Tabs */}
       <div className="flex border-b border-[#e8e6f0]/40 overflow-x-auto shrink-0 scrollbar-none">
-        {tabs.map((tab) => (
+        {tabs.map(({ key, label }) => (
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab as TabType)}
+            key={key}
+            onClick={() => setActiveTab(key)}
             className={cn(
               "px-4 py-3 text-xs font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap",
-              activeTab === tab
+              activeTab === key
                 ? "border-brand-pink text-brand-pink font-bold"
                 : "border-transparent text-[#9a99b0] hover:text-[#1a1a2e]",
             )}
           >
-            {tab}
+            {label}
           </button>
         ))}
       </div>
@@ -392,9 +419,11 @@ export default function CampaignDetailsPage() {
         {activeTab === "Campaign Details" && (
           <CampaignDetailsTab isSocial={isSocial} campaignId={id} />
         )}
-        {activeTab === "Applications (47)" && (
+        {activeTab === "Applications" && (
           <CampaignApplicationsTab
             isSocial={isSocial}
+            campaignId={id}
+            currency={campaign?.currency}
             creators={creatorsList}
             selectedIds={selectedCreatorIds}
             confirmedIds={confirmedCreatorIds}
@@ -402,6 +431,7 @@ export default function CampaignDetailsPage() {
             onReject={handleRejectCreator}
             onConfirm={() => setShowConfirmModal(true)}
             onViewDetails={handleOpenDrawer}
+            onViewApplicationDetails={setSelectedCreatorForDrawer}
           />
         )}
         {activeTab === "Selected Creators" && (
@@ -415,6 +445,7 @@ export default function CampaignDetailsPage() {
         {activeTab === "Deliverables" && (
           <CampaignDeliverablesTab
             isSocial={isSocial}
+            campaignId={id}
             deliverableStatus={deliverableStatus}
             onApprove={() => setDeliverableStatus("Approved")}
             onRequestRevision={() => setDeliverableStatus("Awaiting")}
@@ -438,12 +469,17 @@ export default function CampaignDetailsPage() {
             ))}
           </div>
         )}
-        {activeTab === "Analytics" && <CampaignAnalyticsTab />}
-        {activeTab === "Activity Timeline" && <CampaignTimelineTab />}
-        {(activeTab === "Admin Actions" || activeTab === "Admin Action") && (
-          <CampaignActionsTab onSelectAction={setActiveAdminAction} />
+        {activeTab === "Analytics" && <CampaignAnalyticsTab campaignId={id} />}
+        {activeTab === "Activity Timeline" && (
+          <CampaignTimelineTab campaignId={id} />
         )}
-        {activeTab === "Audit Log" && <CampaignAuditLogTab />}
+        {(activeTab === "Admin Actions" || activeTab === "Admin Action") && (
+          <CampaignActionsTab
+            campaignId={id}
+            campaignStatus={campaign?.status}
+          />
+        )}
+        {activeTab === "Audit Log" && <CampaignAuditLogTab campaignId={id} />}
       </div>
 
       {/* Creator Details Drawer */}
@@ -460,13 +496,6 @@ export default function CampaignDetailsPage() {
             handleDrawerReply(selectedCreatorForDrawer.id, replyText);
           }
         }}
-      />
-
-      {/* Admin Action Confirmation Modal */}
-      <AdminActionModal
-        action={activeAdminAction}
-        onClose={() => setActiveAdminAction(null)}
-        onConfirm={handleConfirmAdminAction}
       />
 
       {/* Selections Confirmation Modal */}

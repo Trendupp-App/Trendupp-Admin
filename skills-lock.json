@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "startup-metrics-framework": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/startup-business-analyst/skills/startup-metrics-framework/SKILL.md",
+      "computedHash": "fa8fdfe13cb69e6fc899ff924efa262610694dc27eafcc400f645b3ece7caa8f"
+    }
+  }
+}

@@ -206,7 +206,13 @@ export default function AdminSigninPage() {
 
       useAuthStore.getState().setSession(accessToken, user);
       toast.success(`Welcome back, ${user.firstName}!`);
-      router.push("/admin/dashboard");
+
+      const redirectTo = searchParams.get("redirect");
+      router.push(
+        redirectTo && redirectTo.startsWith("/admin")
+          ? redirectTo
+          : "/admin/dashboard",
+      );
     } catch (err) {
       mapApiErrors(err);
     } finally {

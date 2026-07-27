@@ -4,12 +4,13 @@ import { useState } from "react";
 import SettingsNav from "@/components/admin/settings/SettingsNav";
 import CommissionSettingsView from "@/components/admin/settings/CommissionSettingsView";
 import CreatorNichesView from "@/components/admin/settings/CreatorNichesView";
+import BrandIndustriesView from "@/components/admin/settings/BrandIndustriesView";
+import TicketCategoriesView from "@/components/admin/settings/TicketCategoriesView";
 import FaqManagementView from "@/components/admin/settings/FaqManagementView";
 import NewsCategoriesView from "@/components/admin/settings/NewsCategoriesView";
 import ContactInfoView from "@/components/admin/settings/ContactInfoView";
 import ExternalLinksView from "@/components/admin/settings/ExternalLinksView";
 import ChangeLoginView from "@/components/admin/settings/ChangeLoginView";
-import ComingSoonPage from "@/components/admin/ComingSoonPage";
 import type { SettingsTab } from "@/types/adminSettings";
 
 export default function SettingsPage() {
@@ -31,6 +32,10 @@ export default function SettingsPage() {
             <CommissionSettingsView />
           ) : activeTab === "creator-niches" ? (
             <CreatorNichesView />
+          ) : activeTab === "brand-industries" ? (
+            <BrandIndustriesView />
+          ) : activeTab === "ticket-categories" ? (
+            <TicketCategoriesView />
           ) : activeTab === "faq-management" ? (
             <FaqManagementView />
           ) : activeTab === "news-categories" ? (
@@ -39,12 +44,8 @@ export default function SettingsPage() {
             <ContactInfoView />
           ) : activeTab === "external-links" ? (
             <ExternalLinksView />
-          ) : activeTab === "change-login" ? (
-            <ChangeLoginView />
           ) : (
-            <ComingSoonPage
-              title={activeTab.replace(/-/g, " ").toUpperCase()}
-            />
+            <ChangeLoginView />
           )}
         </main>
       </div>

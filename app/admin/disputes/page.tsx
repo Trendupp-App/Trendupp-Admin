@@ -7,7 +7,7 @@ import {
   useActivateDispute,
   useResolveDispute,
 } from "@/hooks/useDisputes";
-import { useCampaign } from "@/hooks/useCampaign";
+import { useUserById } from "@/hooks/useUsers";
 import { useStreamChat } from "@/lib/providers/StreamChatProvider";
 import DisputeStats from "@/components/admin/disputes/DisputeStats";
 import DisputeToolbar, {
@@ -67,7 +67,12 @@ export default function AdminDisputesPage() {
   // Queries
   const { data: disputesList = [], isLoading: isListLoading } = useDisputes();
   const { data: disputeDetail } = useDisputeDetails(selectedDisputeId);
-  const { data: campaign } = useCampaign(disputeDetail?.campaignId ?? null);
+  const { data: activateBrandUser } = useUserById(
+    activateDisputeTarget?.brandId ?? null,
+  );
+  const { data: activateCreatorUser } = useUserById(
+    activateDisputeTarget?.creatorId ?? null,
+  );
 
   // Stream Chat integration
   const { client, isConnected } = useStreamChat();
@@ -82,33 +87,6 @@ export default function AdminDisputesPage() {
   const resolveMutation = useResolveDispute(() => {
     setSelectedDisputeId(null);
   });
-
-  const getCampaignTitle = (campaignId: string) => {
-    if (
-      campaign &&
-      (campaign.id === campaignId || campaignId === disputeDetail?.campaignId)
-    ) {
-      return campaign.title;
-    }
-    return "Summer Style Collection 2025";
-  };
-
-  const getBrandName = (campaignId: string) => {
-    if (
-      campaign &&
-      (campaign.id === campaignId ||
-        campaignId === disputeDetail?.campaignId) &&
-      campaign.brand
-    ) {
-      return `${campaign.brand.firstName} ${campaign.brand.lastName}`.trim();
-    }
-    return "Konga";
-  };
-
-  const getCreatorName = (creatorId?: string) => {
-    if (creatorId) return "Alex Okafor";
-    return "Alex Okafor";
-  };
 
   // Filtered lists
   const pendingRequests = disputesList.filter(
@@ -137,7 +115,9 @@ export default function AdminDisputesPage() {
       setIsChannelLoading(true);
     });
 
-    const channel = client.channel("messaging", `dispute_${disputeDetail.id}`);
+    const channelId =
+      disputeDetail.streamChannelId || `dispute_${disputeDetail.id}`;
+    const channel = client.channel("messaging", channelId);
 
     const watchChannel = async () => {
       try {
@@ -202,7 +182,7 @@ export default function AdminDisputesPage() {
     if (!activateDisputeTarget) return;
     activateMutation.mutate({
       id: activateDisputeTarget.id,
-      financeAdminId: user?.id || "b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22",
+      financeAdminId: user?.id,
     });
   };
 
@@ -214,13 +194,21 @@ export default function AdminDisputesPage() {
     });
   };
 
+  const activateBrandName = activateDisputeTarget
+    ? `${activateBrandUser?.firstName ?? ""} ${activateBrandUser?.lastName ?? ""}`.trim() ||
+      "Brand"
+    : "Brand";
+  const activateCreatorName = activateDisputeTarget
+    ? `${activateCreatorUser?.firstName ?? ""} ${activateCreatorUser?.lastName ?? ""}`.trim() ||
+      "Creator"
+    : "Creator";
+
   // If a dispute case detail view is selected, render full detail view
   if (selectedDisputeId && disputeDetail) {
     return (
       <div className="p-6 md:p-8 max-w-7xl mx-auto">
         <DisputeDetailView
           dispute={disputeDetail}
-          campaign={campaign || null}
           onClose={() => setSelectedDisputeId(null)}
           _activeChannel={activeChannel}
           messages={messages}
@@ -246,7 +234,7 @@ export default function AdminDisputesPage() {
       <DisputeStats
         activeChatsCount={activeChats.length}
         pendingRequestsCount={pendingRequests.length}
-        resolvedTodayCount={closedDisputes.length}
+        resolvedCount={closedDisputes.length}
       />
 
       {/* Toolbar & Filter Tabs */}
@@ -269,9 +257,6 @@ export default function AdminDisputesPage() {
           onDeclineClick={(dispute) =>
             toast.info(`Declining request ${dispute.id}`)
           }
-          getCampaignTitle={getCampaignTitle}
-          getBrandName={getBrandName}
-          getCreatorName={getCreatorName}
         />
       )}
 
@@ -279,24 +264,11 @@ export default function AdminDisputesPage() {
         <ActiveChatsGrid
           disputes={activeChats}
           onOpenCase={(disputeId) => setSelectedDisputeId(disputeId)}
-          getCampaignTitle={getCampaignTitle}
-          getBrandName={getBrandName}
-          getCreatorName={getCreatorName}
         />
       )}
 
       {!isListLoading && activeTab === "closed" && (
-        <ClosedDisputesTable
-          disputes={closedDisputes}
-          getCampaignTitle={getCampaignTitle}
-          getBrandName={getBrandName}
-          getCreatorName={getCreatorName}
-          currentAdminName={
-            user
-              ? `${user.firstName} ${user.lastName}`.trim()
-              : "Chisom Adeyemi"
-          }
-        />
+        <ClosedDisputesTable disputes={closedDisputes} />
       )}
 
       {/* Activate Chat Confirmation Modal */}
@@ -304,16 +276,8 @@ export default function AdminDisputesPage() {
         isOpen={!!activateDisputeTarget}
         onClose={() => setActivateDisputeTarget(null)}
         onConfirm={handleConfirmActivate}
-        brandName={
-          activateDisputeTarget
-            ? getBrandName(activateDisputeTarget.campaignId)
-            : "Brand"
-        }
-        creatorName={
-          activateDisputeTarget
-            ? getCreatorName(activateDisputeTarget.creatorId)
-            : "Creator"
-        }
+        brandName={activateBrandName}
+        creatorName={activateCreatorName}
         isLoading={activateMutation.isPending}
       />
     </div>

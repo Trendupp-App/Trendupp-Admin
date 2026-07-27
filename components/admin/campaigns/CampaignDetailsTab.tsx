@@ -2,6 +2,8 @@
 
 import { Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCampaign } from "@/hooks/useCampaign";
+import type { Campaign } from "@/types/campaign";
 
 interface CampaignDetailsTabProps {
   isSocial?: boolean;
@@ -10,21 +12,37 @@ interface CampaignDetailsTabProps {
   nicheName?: string;
 }
 
+interface CampaignDetailsData {
+  title: string;
+  niche: string;
+  tokens: string;
+  id: string;
+  goal: string;
+  creatorTiers: string;
+  platforms: string;
+  escrowStatus: string;
+  dateCreated: string;
+  applicationClosing: string;
+  brief: string;
+  deliverables: string[];
+  doItems: string[];
+  dontItems: string[];
+  directions: string[];
+  success: string;
+  usageRights: string;
+}
+
 const MOCK_CAMPAIGN_DETAILS: Record<
   string,
-  {
-    title: string;
-    niche: string;
-    tokens: string;
-    id: string;
-    brief: string;
-    deliverables: string[];
-    doItems: string[];
-    dontItems: string[];
-    directions: string[];
-    success: string;
-    usageRights: string;
-  }
+  Omit<
+    CampaignDetailsData,
+    | "goal"
+    | "creatorTiers"
+    | "platforms"
+    | "escrowStatus"
+    | "dateCreated"
+    | "applicationClosing"
+  >
 > = {
   l1: {
     title: "Clean Nigeria Initiative",
@@ -56,9 +74,18 @@ const MOCK_CAMPAIGN_DETAILS: Record<
   },
 };
 
-const getDetails = (id: string, _isSocial: boolean) => {
+const MOCK_DEFAULTS = {
+  goal: "Create Content",
+  creatorTiers: "Micro, Macro",
+  platforms: "Instagram",
+  escrowStatus: "Funded",
+  dateCreated: "Jun 1, 2026",
+  applicationClosing: "Jun 3, 2026",
+};
+
+const getDetails = (id: string, _isSocial: boolean): CampaignDetailsData => {
   const explicit = MOCK_CAMPAIGN_DETAILS[id];
-  if (explicit) return explicit;
+  if (explicit) return { ...explicit, ...MOCK_DEFAULTS };
 
   if (id.startsWith("a-")) {
     const idx = parseInt(id.replace("a-", ""), 10);
@@ -69,6 +96,7 @@ const getDetails = (id: string, _isSocial: boolean) => {
       niche: nicheVal,
       tokens: "24,500 Tokens",
       id: `TRD-${id.toUpperCase()}`,
+      ...MOCK_DEFAULTS,
       brief:
         "A local retail campaign to push brand visibility across micro creators.",
       deliverables: [
@@ -109,6 +137,7 @@ const getDetails = (id: string, _isSocial: boolean) => {
       niche: nicheVal,
       tokens: tokenVal,
       id: `TRD-${id.toUpperCase()}`,
+      ...MOCK_DEFAULTS,
       brief:
         "A community social impact initiative to distribute tokens and drive student outreach.",
       deliverables: [
@@ -143,6 +172,7 @@ const getDetails = (id: string, _isSocial: boolean) => {
       niche: nicheVal,
       tokens: "700,000 Tokens",
       id: `TRD-${id.toUpperCase()}`,
+      ...MOCK_DEFAULTS,
       brief: "Draft campaign details. Complete setup to publish.",
       deliverables: ["1 &times; Video", "2 &times; Stories"],
       doItems: ["Follow setup instructions"],
@@ -157,38 +187,95 @@ const getDetails = (id: string, _isSocial: boolean) => {
   if (id.startsWith("l")) {
     return {
       ...MOCK_CAMPAIGN_DETAILS.l1,
+      ...MOCK_DEFAULTS,
       id: `TRD-${id.toUpperCase()}`,
     };
   }
 
-  // Paid Campaign Default
   return {
-    title: "Summer Style Collection 2025",
-    niche: "Fashion",
-    tokens: "₦3,000,000",
-    id: "TRD-1001",
-    brief:
-      "Zara Africa is launching a campaign to connect with authentic Nigerian creators and build brand awareness across key demographics.",
-    deliverables: [
-      "1 &times; Platform Reel (60 seconds)",
-      "3 &times; Stories with product tag",
-      "Caption in English or Pidgin",
-    ],
-    doItems: [
-      "Tag brand account and use campaign hashtag",
-      "Show product in natural settings",
-      "Include verbal CTA",
-    ],
-    dontItems: ["No competitor brands visible", "No misleading health claims"],
-    directions: [
-      "Dramatic before and after revealing the collection's impact.",
-      "Incorporate the hair styling seamlessly into your beauty routine.",
-      "Step-by-step guide to achieving an effortless, elegant look.",
-    ],
-    success:
-      "We are looking for content that feels authentic, relatable, visually appealing, and inspires women to explore the new SWW Hair Collection. We are excited to collaborate with you and can't wait to see your creativity bring the SWW Hair Collection to life.",
-    usageRights:
-      "By participating in this campaign, creators grant Zara Africa permission to repost and use campaign content across its digital platforms for marketing and promotional purposes.",
+    title: "Campaign",
+    niche: "",
+    tokens: "—",
+    id,
+    ...MOCK_DEFAULTS,
+    brief: "",
+    deliverables: [],
+    doItems: [],
+    dontItems: [],
+    directions: [],
+    success: "",
+    usageRights: "",
+  };
+};
+
+const formatDate = (dateStr?: string | null) => {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const mapCampaignToDetails = (
+  campaign: Campaign | undefined,
+): CampaignDetailsData => {
+  if (!campaign) {
+    return {
+      title: "",
+      niche: "",
+      tokens: "—",
+      id: "",
+      goal: "—",
+      creatorTiers: "—",
+      platforms: "—",
+      escrowStatus: "—",
+      dateCreated: "—",
+      applicationClosing: "—",
+      brief: "",
+      deliverables: [],
+      doItems: [],
+      dontItems: [],
+      directions: [],
+      success: "",
+      usageRights: "",
+    };
+  }
+
+  const brandName = campaign.brand
+    ? `${campaign.brand.firstName ?? ""} ${campaign.brand.lastName ?? ""}`.trim()
+    : "";
+  const currencySymbol = campaign.currency === "USD" ? "$" : "₦";
+  const applicationWindowEnd =
+    campaign.timeline?.stage1_application_window?.endedDate;
+
+  return {
+    title: campaign.title,
+    niche: campaign.creatorNiche?.name || brandName || "—",
+    tokens: `${currencySymbol}${(campaign.totalBudget ?? 0).toLocaleString()}`,
+    id: campaign.id,
+    goal: campaign.goal || "—",
+    creatorTiers: campaign.creatorCategory?.name || "—",
+    platforms:
+      campaign.preferredPlatforms?.map((p) => p.name).join(", ") || "—",
+    escrowStatus: campaign.paymentStatus === "paid" ? "Funded" : "Not Funded",
+    dateCreated: formatDate(campaign.createdAt),
+    applicationClosing: applicationWindowEnd
+      ? formatDate(applicationWindowEnd)
+      : "—",
+    brief: campaign.campaignBrief || "No campaign brief provided.",
+    deliverables: campaign.deliverables?.length
+      ? campaign.deliverables
+      : ["No deliverables specified."],
+    doItems: campaign.contentGuidelines?.dos ?? [],
+    dontItems: campaign.contentGuidelines?.donts ?? [],
+    directions: campaign.contentDirection?.length
+      ? campaign.contentDirection
+      : ["No content direction specified."],
+    success: campaign.successLooksLike || "Not specified.",
+    usageRights: campaign.usageRights || "Not specified.",
   };
 };
 
@@ -196,7 +283,30 @@ export default function CampaignDetailsTab({
   isSocial,
   campaignId = "",
 }: CampaignDetailsTabProps) {
-  const details = getDetails(campaignId, !!isSocial);
+  const { data: campaign, isLoading } = useCampaign(
+    !isSocial && campaignId ? campaignId : null,
+  );
+
+  const details = isSocial
+    ? getDetails(campaignId, true)
+    : mapCampaignToDetails(campaign);
+
+  if (!isSocial && isLoading) {
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start text-left">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className="lg:col-span-6 bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 h-40 animate-pulse"
+          >
+            <div className="w-24 h-3 bg-[#e8e6f0]/60 rounded-md mb-4" />
+            <div className="w-full h-3 bg-[#e8e6f0]/40 rounded-md mb-2.5" />
+            <div className="w-3/4 h-3 bg-[#e8e6f0]/40 rounded-md" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start text-left">
@@ -211,18 +321,22 @@ export default function CampaignDetailsTab({
             {[
               { label: "Campaign Title", val: details.title },
               { label: "Campaign ID", val: details.id },
-              { label: "Goal", val: "Create Content" },
+              { label: "Goal", val: details.goal },
               { label: "Niche", val: details.niche },
-              { label: "Creator Tiers", val: "Micro, Macro" },
-              { label: "Preferred Platforms", val: "Instagram" },
+              { label: "Creator Tiers", val: details.creatorTiers },
+              { label: "Preferred Platforms", val: details.platforms },
               {
                 label: isSocial ? "Tokens Distributed" : "Total Budget",
                 val: details.tokens,
                 highlight: true,
               },
-              { label: "Escrow Status", val: "Funded", status: true },
-              { label: "Date Created", val: "Jun 1, 2026" },
-              { label: "Application Closing", val: "Jun 3, 2026" },
+              {
+                label: "Escrow Status",
+                val: details.escrowStatus,
+                status: true,
+              },
+              { label: "Date Created", val: details.dateCreated },
+              { label: "Application Closing", val: details.applicationClosing },
             ].map((row, i) => (
               <div key={i} className="flex justify-between items-center py-0.5">
                 <span className="font-medium text-[#7a7a9a]">{row.label}</span>

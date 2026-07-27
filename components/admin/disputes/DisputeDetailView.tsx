@@ -2,12 +2,13 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Dispute, ResolveDisputePayload } from "@/types/dispute";
-import { Campaign } from "@/types/campaign";
 import { X, Send, Paperclip, CheckCircle, ExternalLink } from "lucide-react";
 import EscrowConfirmModal, { EscrowActionType } from "./EscrowConfirmModal";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/authStore";
 import { useUpdateDisputeNotes } from "@/hooks/useDisputes";
+import { useUserById } from "@/hooks/useUsers";
+import { useSubmissions } from "@/hooks/useCampaign";
 
 interface StreamMessage {
   id: string;
@@ -39,7 +40,6 @@ interface ChatChannel {
 
 interface DisputeDetailViewProps {
   dispute: Dispute;
-  campaign: Campaign | null;
   onClose: () => void;
   _activeChannel?: ChatChannel | null;
   messages: StreamMessage[];
@@ -51,11 +51,48 @@ interface DisputeDetailViewProps {
 
 export type CenterTab = "chat" | "evidence" | "timeline";
 
+const STATUS_BADGE: Record<string, { label: string; className: string }> = {
+  raised: {
+    label: "Raised",
+    className: "bg-amber-50 text-amber-700 border-amber-200",
+  },
+  under_review: {
+    label: "Open",
+    className: "bg-rose-50 text-rose-600 border-rose-200",
+  },
+  resolved: {
+    label: "Resolved",
+    className: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  },
+};
+
+const getContentLink = (submission: {
+  draftLink: string | null;
+  liveLink: Record<string, string | { url: string }> | null;
+}) => {
+  if (submission.liveLink) {
+    const urls = Object.values(submission.liveLink)
+      .map((entry) => (typeof entry === "string" ? entry : entry?.url))
+      .filter((url): url is string => Boolean(url));
+    if (urls.length) return urls[0];
+  }
+  return submission.draftLink ?? "";
+};
+
+const formatDate = (dateStr?: string | null) => {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
 export default function DisputeDetailView({
   dispute,
-  campaign,
   onClose,
-  _activeChannel,
   messages,
   onSendMessage,
   onResolve,
@@ -65,6 +102,13 @@ export default function DisputeDetailView({
   const [centerTab, setCenterTab] = useState<CenterTab>("chat");
   const [inputText, setInputText] = useState("");
   const [isSending, setIsSending] = useState(false);
+
+  const { data: brandUser } = useUserById(dispute.brandId);
+  const { data: creatorUser } = useUserById(dispute.creatorId);
+  const { data: submissions } = useSubmissions(dispute.campaignId);
+  const creatorSubmission = submissions?.find(
+    (s) => s.creatorId === dispute.creatorId,
+  );
 
   // Admin notes state
   const [adminNotes, setAdminNotes] = useState(dispute.notes || "");
@@ -79,14 +123,24 @@ export default function DisputeDetailView({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const brandName = campaign?.brand
-    ? `${campaign.brand.firstName} ${campaign.brand.lastName}`.trim()
-    : "Konga";
-  const creatorName = "Alex Okafor";
-  const campaignTitle = campaign?.title || "Summer Style Collection 2025";
-  const budget = campaign?.totalBudget
-    ? `₦${campaign.totalBudget.toLocaleString()}`
-    : "₦3,500,000";
+  const campaign = dispute.campaign;
+  const brandName =
+    `${brandUser?.firstName ?? ""} ${brandUser?.lastName ?? ""}`.trim() ||
+    "Brand";
+  const creatorName =
+    `${creatorUser?.firstName ?? ""} ${creatorUser?.lastName ?? ""}`.trim() ||
+    "Creator";
+  const campaignTitle = campaign?.title || "Campaign";
+  const currencySymbol = campaign?.currency === "USD" ? "$" : "₦";
+  const budgetAmount =
+    campaign?.paymentBreakdown?.totalToPay ?? campaign?.totalBudget;
+  const budget = budgetAmount
+    ? `${currencySymbol}${budgetAmount.toLocaleString()}`
+    : "—";
+  const statusBadge = STATUS_BADGE[dispute.status] ?? {
+    label: dispute.status,
+    className: "bg-[#f4f3f6] text-[#5a5a7a] border-[#e8e6f0]",
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -118,7 +172,7 @@ export default function DisputeDetailView({
 
   const handleConfirmResolve = () => {
     onResolve({
-      action: dispute.action || "release_to_creator",
+      action: dispute.escrowAction || "release_to_creator",
       resolutionNotes: resolutionNotes || "Dispute resolved by admin.",
     });
   };
@@ -137,7 +191,7 @@ export default function DisputeDetailView({
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
               <h2 className="text-base font-extrabold text-[#1a1a2e]">
-                Dispute #TR-2205
+                Dispute #{dispute.id.slice(0, 8).toUpperCase()}
               </h2>
             </div>
             <span className="text-xs text-[#7a7a9a] font-medium">
@@ -147,15 +201,19 @@ export default function DisputeDetailView({
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-600 border border-rose-200">
-            Open
-          </span>
-          <button
-            onClick={() => setShowResolutionSummary(true)}
-            className="flex items-center gap-1.5 h-9 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm"
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-bold border ${statusBadge.className}`}
           >
-            <CheckCircle size={14} /> Mark Resolved
-          </button>
+            {statusBadge.label}
+          </span>
+          {dispute.status !== "resolved" && (
+            <button
+              onClick={() => setShowResolutionSummary(true)}
+              className="flex items-center gap-1.5 h-9 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm"
+            >
+              <CheckCircle size={14} /> Mark Resolved
+            </button>
+          )}
         </div>
       </div>
 
@@ -171,23 +229,32 @@ export default function DisputeDetailView({
             <div className="flex flex-col gap-2 text-xs">
               <div className="flex justify-between items-center">
                 <span className="text-[#7a7a9a] font-medium">Dispute ID</span>
-                <span className="font-bold text-[#1a1a2e]">#TR-2205</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[#7a7a9a] font-medium">Escalation</span>
-                <span className="font-bold text-amber-600">Level 1</span>
+                <span className="font-bold text-[#1a1a2e]">
+                  #{dispute.id.slice(0, 8).toUpperCase()}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[#7a7a9a] font-medium">Submitted</span>
                 <span className="font-semibold text-[#1a1a2e]">
-                  Jun 2, 2025
+                  {formatDate(dispute.createdAt)}
                 </span>
               </div>
-            </div>
-
-            {/* Alert banner */}
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[11px] text-amber-800 font-bold leading-tight">
-              Must resolve by Jun 7, 2025 (3 days remaining)
+              {dispute.activatedAt && (
+                <div className="flex justify-between items-center">
+                  <span className="text-[#7a7a9a] font-medium">Activated</span>
+                  <span className="font-semibold text-[#1a1a2e]">
+                    {formatDate(dispute.activatedAt)}
+                  </span>
+                </div>
+              )}
+              {dispute.resolvedAt && (
+                <div className="flex justify-between items-center">
+                  <span className="text-[#7a7a9a] font-medium">Resolved</span>
+                  <span className="font-semibold text-[#1a1a2e]">
+                    {formatDate(dispute.resolvedAt)}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -221,7 +288,7 @@ export default function DisputeDetailView({
                   {creatorName}
                 </span>
                 <span className="text-[10px] text-[#9a99b0] font-medium">
-                  Creator · Micro
+                  Creator
                 </span>
               </div>
             </div>
@@ -281,64 +348,20 @@ export default function DisputeDetailView({
 
           {/* Sub-tab 1: Chat Thread */}
           {centerTab === "chat" && (
-            <div className="flex flex-col gap-4 bg-[#f8f7fa] border border-[#e8e6f0] rounded-3xl p-4 min-h-[450px] justify-between">
+            <div className="flex flex-col gap-4 bg-[#f8f7fa] border border-[#e8e6f0] rounded-3xl p-4 min-h-112.5 justify-between">
               {/* Message List */}
-              <div className="flex flex-col gap-4 overflow-y-auto max-h-[380px] pr-2">
+              <div className="flex flex-col gap-4 overflow-y-auto max-h-95 pr-2">
                 {/* System Banner */}
                 <div className="bg-[#efedf3] text-[#5a5a7a] rounded-2xl p-3 text-center text-[11px] font-medium max-w-md mx-auto">
-                  This chat was opened by Trendupp Admin on June 2, 2025. All
-                  messages are recorded and monitored.
+                  {dispute.activatedAt
+                    ? `This chat was activated on ${formatDate(dispute.activatedAt)}. All messages are recorded and monitored.`
+                    : "All messages in this chat are recorded and monitored."}
                 </div>
 
-                {/* Stream / Mock Messages */}
                 {messages.length === 0 ? (
-                  <div className="flex flex-col gap-3">
-                    {/* Default Mock Messages matching screenshot */}
-                    <div className="flex gap-2 items-start">
-                      <div className="w-7 h-7 rounded-full bg-purple-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
-                        TA
-                      </div>
-                      <div className="bg-purple-50 text-[#1a1a2e] rounded-2xl p-3 text-xs max-w-md flex flex-col gap-1">
-                        <p>
-                          Hi both. I&apos;ve reviewed the campaign brief and the
-                          submitted content. Please use this space to resolve
-                          the revision disagreement. You have 5 days. Keep
-                          communication professional.
-                        </p>
-                        <span className="text-[9px] text-[#9a99b0]">
-                          Admin · Trendupp
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 items-start justify-end">
-                      <div className="bg-[#f0eff4] text-[#1a1a2e] rounded-2xl p-3 text-xs max-w-md flex flex-col gap-1 text-right">
-                        <p>
-                          The content doesn&apos;t match our brief. The product
-                          wasn&apos;t shown in the first 5 seconds as required.
-                        </p>
-                        <span className="text-[9px] text-[#9a99b0]">
-                          Konga · Brand
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 items-start">
-                      <div className="w-7 h-7 rounded-full bg-blue-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
-                        AO
-                      </div>
-                      <div className="bg-rose-50 text-[#c0185c] rounded-2xl p-3 text-xs max-w-md flex flex-col gap-1">
-                        <p>
-                          The brief said &apos;as early as possible&apos; not
-                          specifically 5 seconds. Here is my content link again:
-                          drive.google.com/...
-                        </p>
-                        <span className="text-[9px] text-rose-400">
-                          Alex Okafor · Creator
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                  <p className="text-center text-[11px] text-[#9a99b0] font-medium py-6">
+                    No messages yet in this dispute chat.
+                  </p>
                 ) : (
                   messages.map((msg) => {
                     const userId = msg.user?.id;
@@ -357,15 +380,18 @@ export default function DisputeDetailView({
 
                     if (isAdmin) {
                       return (
-                        <div key={msg.id} className="flex gap-2 items-start">
-                          <div className="w-7 h-7 rounded-full bg-purple-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
-                            TA
-                          </div>
-                          <div className="bg-purple-50 text-[#1a1a2e] rounded-2xl p-3 text-xs max-w-md flex flex-col gap-1">
+                        <div
+                          key={msg.id}
+                          className="flex gap-2 items-start justify-end"
+                        >
+                          <div className="bg-purple-50 text-[#1a1a2e] rounded-2xl p-3 text-xs max-w-md flex flex-col gap-1 text-right">
                             <p>{msg.text}</p>
                             <span className="text-[9px] text-[#9a99b0]">
                               {userName} · Admin
                             </span>
+                          </div>
+                          <div className="w-7 h-7 rounded-full bg-purple-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
+                            TA
                           </div>
                         </div>
                       );
@@ -373,11 +399,11 @@ export default function DisputeDetailView({
 
                     if (isBrand) {
                       return (
-                        <div
-                          key={msg.id}
-                          className="flex gap-2 items-start justify-end"
-                        >
-                          <div className="bg-[#f0eff4] text-[#1a1a2e] rounded-2xl p-3 text-xs max-w-md flex flex-col gap-1 text-right">
+                        <div key={msg.id} className="flex gap-2 items-start">
+                          <div className="w-7 h-7 rounded-full bg-brand-pink text-white font-bold text-[10px] flex items-center justify-center shrink-0">
+                            {userName.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div className="bg-[#f0eff4] text-[#1a1a2e] rounded-2xl p-3 text-xs max-w-md flex flex-col gap-1">
                             <p>{msg.text}</p>
                             <span className="text-[9px] text-[#9a99b0]">
                               {userName} · Brand
@@ -443,20 +469,13 @@ export default function DisputeDetailView({
           {/* Sub-tab 2: Evidence */}
           {centerTab === "evidence" && (
             <div className="flex flex-col gap-4">
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-[11px] text-amber-800 font-medium">
-                💡 Evidence extracted from dispute request payload. If a
-                dedicated evidence files EP is available, provide the endpoint
-                to bind full uploads.
-              </div>
-
               {/* Original Campaign Brief */}
               <div className="bg-[#f8f7fa] border border-[#e8e6f0] rounded-2xl p-4 flex flex-col gap-2">
                 <span className="text-xs font-bold text-[#1a1a2e]">
                   Original Campaign Brief
                 </span>
                 <p className="text-xs text-[#7a7a9a] leading-relaxed font-medium">
-                  {campaign?.campaignBrief ||
-                    "Campaign requires product to be shown 'as early as possible' in video content. Duration: 30-60 seconds. High energy presentation."}
+                  {campaign?.campaignBrief || "No campaign brief provided."}
                 </p>
               </div>
 
@@ -465,30 +484,39 @@ export default function DisputeDetailView({
                 <span className="text-xs font-bold text-[#1a1a2e]">
                   Creator&apos;s Submitted Content
                 </span>
-                <p className="text-xs text-[#7a7a9a] leading-relaxed font-medium">
-                  Video submitted via Trendupp platform. Product shown at
-                  8-second mark.
-                </p>
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    toast.info("Opening submitted content preview...");
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#c0185c] text-brand-pink rounded-xl text-xs font-bold hover:bg-brand-pink/5 transition-colors w-fit"
-                >
-                  View Content <ExternalLink size={12} />
-                </a>
+                {creatorSubmission ? (
+                  (() => {
+                    const link = getContentLink(creatorSubmission);
+                    return link ? (
+                      <a
+                        href={link}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#c0185c] text-brand-pink rounded-xl text-xs font-bold hover:bg-brand-pink/5 transition-colors w-fit"
+                      >
+                        View Content <ExternalLink size={12} />
+                      </a>
+                    ) : (
+                      <p className="text-xs text-[#7a7a9a] leading-relaxed font-medium">
+                        Creator has a submission on file but no link was
+                        provided.
+                      </p>
+                    );
+                  })()
+                ) : (
+                  <p className="text-xs text-[#7a7a9a] leading-relaxed font-medium">
+                    No submission found for this creator on this campaign.
+                  </p>
+                )}
               </div>
 
-              {/* Brand's Rejection Reason */}
+              {/* Dispute reason */}
               <div className="bg-[#f8f7fa] border border-[#e8e6f0] rounded-2xl p-4 flex flex-col gap-2">
                 <span className="text-xs font-bold text-[#1a1a2e]">
-                  Brand&apos;s Rejection Reason / Dispute Cause
+                  Dispute Reason
                 </span>
-                <p className="text-xs text-[#7a7a9a] leading-relaxed font-medium">
-                  {dispute.reason ||
-                    "Product not shown in first 5 seconds. Does not meet our standard brief requirements."}
+                <p className="text-xs text-[#7a7a9a] leading-relaxed font-medium whitespace-pre-line">
+                  {dispute.reason || "No reason provided."}
                 </p>
               </div>
             </div>
@@ -498,45 +526,56 @@ export default function DisputeDetailView({
           {centerTab === "timeline" && (
             <div className="bg-[#f8f7fa] border border-[#e8e6f0] rounded-3xl p-6 flex flex-col gap-6">
               {[
-                { title: "Campaign created", subtitle: "Konga · May 15, 2025" },
-                { title: "Escrow funded", subtitle: "Konga · May 18, 2025" },
                 {
-                  title: "Campaign approved by admin",
-                  subtitle: "Admin · May 17, 2025",
+                  title: "Dispute raised",
+                  subtitle: formatDate(dispute.createdAt),
+                  show: true,
                 },
                 {
-                  title: "Creator selected",
-                  subtitle: "Platform · May 20, 2025",
+                  title: "Chat activated",
+                  subtitle: [
+                    dispute.activatedBy &&
+                      `${dispute.activatedBy.firstName} ${dispute.activatedBy.lastName}`.trim(),
+                    formatDate(dispute.activatedAt),
+                  ]
+                    .filter(Boolean)
+                    .join(" · "),
+                  show: !!dispute.activatedAt,
                 },
                 {
-                  title: "Content submitted",
-                  subtitle: "Alex Okafor · Jun 2, 2025",
+                  title: "Dispute resolved",
+                  subtitle: [
+                    dispute.resolvedBy &&
+                      `${dispute.resolvedBy.firstName} ${dispute.resolvedBy.lastName}`.trim(),
+                    formatDate(dispute.resolvedAt),
+                  ]
+                    .filter(Boolean)
+                    .join(" · "),
+                  show: !!dispute.resolvedAt,
                 },
-                {
-                  title: "Brand rejected content",
-                  subtitle: "Konga · Jun 2, 2025",
-                },
-                {
-                  title: "Dispute raised by creator",
-                  subtitle: "Alex Okafor · Jun 2, 2025",
-                },
-                {
-                  title: "Chat activated by admin",
-                  subtitle: "Admin · Jun 2, 2025",
-                },
-              ].map((item, idx) => (
-                <div key={idx} className="flex gap-4 items-start relative">
-                  <div className="w-3.5 h-3.5 rounded-full border-2 border-brand-pink bg-white shrink-0 mt-0.5 z-10" />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-[#1a1a2e]">
-                      {item.title}
-                    </span>
-                    <span className="text-[10px] text-[#9a99b0] font-medium">
-                      {item.subtitle}
-                    </span>
+              ]
+                .filter((item) => item.show)
+                .map((item, idx) => (
+                  <div key={idx} className="flex gap-4 items-start relative">
+                    <div className="w-3.5 h-3.5 rounded-full border-2 border-brand-pink bg-white shrink-0 mt-0.5 z-10" />
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-[#1a1a2e]">
+                        {item.title}
+                      </span>
+                      <span className="text-[10px] text-[#9a99b0] font-medium">
+                        {item.subtitle}
+                      </span>
+                    </div>
                   </div>
+                ))}
+              {dispute.resolutionNotes && (
+                <div className="bg-white border border-[#e8e6f0] rounded-2xl p-3 text-xs text-[#5a5a7a] font-medium leading-relaxed">
+                  <span className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider block mb-1">
+                    Resolution Notes
+                  </span>
+                  {dispute.resolutionNotes}
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>
@@ -571,57 +610,81 @@ export default function DisputeDetailView({
           </div>
 
           {/* Escrow Controls */}
-          <div className="bg-[#f8f7fa] border border-[#e8e6f0] rounded-3xl p-4 flex flex-col gap-3">
-            <h4 className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
-              ESCROW CONTROLS
-            </h4>
-            <span className="text-xs font-bold text-[#1a1a2e]">
-              ₦120,000 held
-            </span>
+          {dispute.status === "resolved" ? (
+            <div className="bg-[#f8f7fa] border border-[#e8e6f0] rounded-3xl p-4 flex flex-col gap-2">
+              <h4 className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
+                RESOLUTION
+              </h4>
+              <span className="text-xs font-bold text-[#1a1a2e]">
+                {dispute.escrowAction
+                  ? dispute.escrowAction.replace(/_/g, " ")
+                  : "Resolved"}
+              </span>
+              {dispute.resolutionNotes && (
+                <p className="text-[11px] text-[#7a7a9a] leading-relaxed">
+                  {dispute.resolutionNotes}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="bg-[#f8f7fa] border border-[#e8e6f0] rounded-3xl p-4 flex flex-col gap-3">
+              <h4 className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
+                ESCROW CONTROLS
+              </h4>
+              <span className="text-xs font-bold text-[#1a1a2e]">
+                {budget} held
+              </span>
 
-            <button
-              onClick={() => setEscrowAction("release_to_creator")}
-              className="h-9 w-full bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm"
-            >
-              Release to Creator
-            </button>
+              <button
+                onClick={() => setEscrowAction("release_to_creator")}
+                className="h-9 w-full bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm"
+              >
+                Release to Creator
+              </button>
 
-            <button
-              onClick={() => setEscrowAction("refund_to_brand")}
-              className="h-9 w-full bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm"
-            >
-              Return to Brand
-            </button>
+              <button
+                onClick={() => setEscrowAction("refund_to_brand")}
+                className="h-9 w-full bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm"
+              >
+                Return to Brand
+              </button>
 
-            <button
-              onClick={() => setEscrowAction("split")}
-              className="h-9 w-full bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm"
-            >
-              50/50 Split Escrow
-            </button>
+              <button
+                onClick={() => setEscrowAction("split")}
+                className="h-9 w-full bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm"
+              >
+                50/50 Split Escrow
+              </button>
 
-            <button
-              onClick={() =>
-                toast.success(
-                  "Permission granted: Allow live link resubmission",
-                )
-              }
-              className="h-8 w-full bg-white hover:bg-[#ebe9f1] text-[#5a5a7a] text-[11px] font-bold rounded-xl border border-[#e8e6f0] transition-all cursor-pointer"
-            >
-              Allow live link resubmission
-            </button>
+              <button
+                onClick={() => setEscrowAction("allow_content_submission")}
+                className="h-8 w-full bg-white hover:bg-[#ebe9f1] text-[#5a5a7a] text-[11px] font-bold rounded-xl border border-[#e8e6f0] transition-all cursor-pointer"
+              >
+                Allow content submission
+              </button>
 
-            <button
-              onClick={() =>
-                toast.success(
-                  "Permission granted: Allow revised content resubmission",
-                )
-              }
-              className="h-8 w-full bg-white hover:bg-[#ebe9f1] text-[#5a5a7a] text-[11px] font-bold rounded-xl border border-[#e8e6f0] transition-all cursor-pointer"
-            >
-              Allow revised content resubmission
-            </button>
-          </div>
+              <button
+                onClick={() => setEscrowAction("allow_content_review")}
+                className="h-8 w-full bg-white hover:bg-[#ebe9f1] text-[#5a5a7a] text-[11px] font-bold rounded-xl border border-[#e8e6f0] transition-all cursor-pointer"
+              >
+                Allow content review
+              </button>
+
+              <button
+                onClick={() => setEscrowAction("allow_revised_submission")}
+                className="h-8 w-full bg-white hover:bg-[#ebe9f1] text-[#5a5a7a] text-[11px] font-bold rounded-xl border border-[#e8e6f0] transition-all cursor-pointer"
+              >
+                Allow revised submission
+              </button>
+
+              <button
+                onClick={() => setEscrowAction("allow_revised_review")}
+                className="h-8 w-full bg-white hover:bg-[#ebe9f1] text-[#5a5a7a] text-[11px] font-bold rounded-xl border border-[#e8e6f0] transition-all cursor-pointer"
+              >
+                Allow revised review
+              </button>
+            </div>
+          )}
 
           {/* Resolution Summary Drawer */}
           {showResolutionSummary && (

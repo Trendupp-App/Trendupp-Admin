@@ -9,14 +9,39 @@ interface SocialItem {
 }
 
 export default function ConnectedSocials() {
-  const { isLoading } = useCreatorSummary();
+  const { data, isLoading } = useCreatorSummary();
+
+  const counts = data?.connectedSocials;
+  const total = data?.summary.totalCreators || 1;
+  const pctOf = (count: number) =>
+    Math.min(100, Math.round((count / total) * 100));
 
   const items: SocialItem[] = [
-    { platform: "YouTube", count: 1842, pct: 48 },
-    { platform: "Instagram", count: 1204, pct: 31 },
-    { platform: "TikTok", count: 687, pct: 18 },
-    { platform: "X(Twitter)", count: 687, pct: 18 },
-    { platform: "Facebook", count: 687, pct: 18 },
+    {
+      platform: "YouTube",
+      count: counts?.youtube ?? 0,
+      pct: pctOf(counts?.youtube ?? 0),
+    },
+    {
+      platform: "Instagram",
+      count: counts?.instagram ?? 0,
+      pct: pctOf(counts?.instagram ?? 0),
+    },
+    {
+      platform: "TikTok",
+      count: counts?.tiktok ?? 0,
+      pct: pctOf(counts?.tiktok ?? 0),
+    },
+    {
+      platform: "X(Twitter)",
+      count: counts?.twitter ?? 0,
+      pct: pctOf(counts?.twitter ?? 0),
+    },
+    {
+      platform: "Facebook",
+      count: counts?.facebook ?? 0,
+      pct: pctOf(counts?.facebook ?? 0),
+    },
   ];
 
   return (
