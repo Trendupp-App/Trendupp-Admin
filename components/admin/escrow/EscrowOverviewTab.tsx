@@ -302,7 +302,7 @@ export default function EscrowOverviewTab() {
         />
         <AdminKpiCard
           value={fmt(totalCreatorPayout)}
-          label="Total Creator payout"
+label="Total Creator Payout"
           icon={ArrowUpRight}
           iconBg="bg-amber-50"
           iconColor="text-amber-600"
