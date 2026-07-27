@@ -36,9 +36,9 @@ export default function AdminSecurityGuard({
 
     // 3. Intercept DevTools, Printing, and Screenshot Shortcuts (Mac & Windows)
     const handleKeyDown = (e: KeyboardEvent) => {
-      const isMac =
-        typeof navigator !== "undefined" &&
-        navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+const platform =
+  typeof navigator !== "undefined" ? navigator.platform ?? "" : "";
+const isMac = platform.toUpperCase().includes("MAC");
       const ctrlOrCmd = isMac ? e.metaKey : e.ctrlKey;
       const key = e.key.toLowerCase();
       const code = e.code;
