@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import {
   Search,
-  Eye,
   ChevronDown,
   X,
   RotateCcw,
@@ -219,7 +218,7 @@ export default function CreatorTable() {
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5 shadow-sm">
       {/* Status Filter Tabs */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-1 bg-[#f4f3f6] border border-[#e8e6f0]/80 p-1 rounded-xl w-fit self-start max-w-full overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-1.5 bg-[#f4f3f6] border border-[#e8e6f0]/80 p-1 rounded-xl w-full max-w-full overflow-x-auto no-scrollbar">
           {(["All", "Active", "Suspended", "Pending"] as const).map((tab) => {
             const active = activeTab === tab;
             return (
@@ -232,7 +231,7 @@ export default function CreatorTable() {
                   setPage(1);
                 }}
                 className={cn(
-                  "px-4.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
+                  "px-4.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0",
                   active
                     ? "bg-brand-pink text-white shadow-sm"
                     : "bg-transparent text-[#5a5a7a] hover:text-[#1a1a2e]",
@@ -256,10 +255,10 @@ export default function CreatorTable() {
       </div>
 
       {/* Filters Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3 flex-1 min-w-0">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
           {/* Search */}
-          <div className="relative flex items-center min-w-[240px] flex-1 max-w-sm">
+          <div className="relative flex items-center w-full sm:w-[240px] flex-1 max-w-sm">
             <Search size={14} className="absolute left-3.5 text-[#9a99b0]" />
             <input
               type="text"
@@ -391,7 +390,7 @@ export default function CreatorTable() {
         </div>
 
         {/* Timeframe Switcher */}
-        <div className="flex items-center bg-[#f4f3f6] rounded-xl p-0.5 border border-[#e8e6f0]/60 shrink-0">
+        <div className="flex items-center bg-[#f4f3f6] rounded-xl p-0.5 border border-[#e8e6f0]/60 shrink-0 self-start lg:self-auto">
           {(["Week", "Month", "Year"] as const).map((t) => (
             <button
               key={t}
@@ -519,43 +518,71 @@ export default function CreatorTable() {
           </p>
           <button
             onClick={clearAllFilters}
-            className="mt-4 px-4 py-2 bg-brand-pink text-white text-xs font-bold rounded-xl hover:opacity-90 transition-opacity cursor-pointer inline-flex items-center gap-1.5"
+            className="mt-4 px-4 py-2 rounded-xl bg-brand-pink text-white text-xs font-semibold shadow-xs hover:opacity-90 transition-all cursor-pointer"
           >
-            <RotateCcw size={13} /> Reset All Filters
+            Reset Filters
           </button>
         </div>
       ) : (
-        <div className="overflow-x-auto -mx-6 px-6">
-          <table className="w-full text-left border-collapse">
+        <div className="w-full overflow-x-auto no-scrollbar">
+          <table className="w-full min-w-[1380px] text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-[#e8e6f0]/40 text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
-                <th className="pb-3.5 pl-2">Creator ID</th>
-                <th className="pb-3.5">Creator</th>
-                <th className="pb-3.5">Email</th>
-                <th className="pb-3.5">Country</th>
-                <th className="pb-3.5">Tier</th>
-                <th className="pb-3.5">Niche</th>
-                <th className="pb-3.5">Gender</th>
-                <th className="pb-3.5">Platforms</th>
-                <th className="pb-3.5">Profile Completion</th>
-                <th className="pb-3.5">Earnings</th>
-                <th className="pb-3.5 text-center">Revisions</th>
-                <th className="pb-3.5">Status</th>
-                <th className="pb-3.5">Date Joined</th>
-                <th className="pb-3.5">Last Login</th>
-                <th className="pb-3.5 text-right pr-2">Action</th>
+                <th className="pb-3.5 pt-1 pl-2 pr-3 min-w-[110px] whitespace-nowrap">
+                  Creator ID
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[160px] whitespace-nowrap">
+                  Creator
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[170px] whitespace-nowrap">
+                  Email
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[100px] whitespace-nowrap">
+                  Country
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[90px] whitespace-nowrap">
+                  Tier
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[110px] whitespace-nowrap">
+                  Niche
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[90px] whitespace-nowrap">
+                  Gender
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[100px] whitespace-nowrap">
+                  Platforms
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[130px] whitespace-nowrap">
+                  Profile Completion
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[100px] whitespace-nowrap">
+                  Earnings
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[80px] whitespace-nowrap text-center">
+                  Revisions
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[90px] whitespace-nowrap">
+                  Status
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[110px] whitespace-nowrap">
+                  Date Joined
+                </th>
+                <th className="pb-3.5 pt-1 pl-3 pr-4 min-w-[110px] whitespace-nowrap">
+                  Last Login
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#e8e6f0]/30 text-xs">
+            <tbody className="divide-y divide-[#e8e6f0]/30 text-xs font-medium">
               {filtered.map((c) => (
                 <tr
                   key={c.id}
-                  className="hover:bg-[#faf9fc]/40 transition-colors"
+                  onClick={() => setSelectedCreatorId(c.id)}
+                  className="hover:bg-[#faf9fc] transition-colors cursor-pointer"
                 >
-                  <td className="py-3 pl-2 text-[#5a5a7a] font-medium">
+                  <td className="py-3 pl-2 pr-3 text-[#5a5a7a] font-medium whitespace-nowrap">
                     {c.creatorId}
                   </td>
-                  <td className="py-3">
+                  <td className="py-3 px-3 whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       <UserAvatar
                         initials={c.name
@@ -574,9 +601,13 @@ export default function CreatorTable() {
                       </div>
                     </div>
                   </td>
-                  <td className="py-3 text-[#5a5a7a]">{c.email}</td>
-                  <td className="py-3 text-[#5a5a7a]">{c.country}</td>
-                  <td className="py-3">
+                  <td className="py-3 px-3 text-[#5a5a7a] whitespace-nowrap">
+                    {c.email}
+                  </td>
+                  <td className="py-3 px-3 text-[#5a5a7a] whitespace-nowrap">
+                    {c.country}
+                  </td>
+                  <td className="py-3 px-3 whitespace-nowrap">
                     <span
                       className={cn(
                         "px-2 py-0.5 rounded-md text-[10px] font-bold border capitalize",
@@ -586,9 +617,13 @@ export default function CreatorTable() {
                       {c.tier}
                     </span>
                   </td>
-                  <td className="py-3 text-[#5a5a7a]">{c.niche}</td>
-                  <td className="py-3 text-[#5a5a7a]">{c.gender}</td>
-                  <td className="py-3">
+                  <td className="py-3 px-3 text-[#5a5a7a] whitespace-nowrap">
+                    {c.niche}
+                  </td>
+                  <td className="py-3 px-3 text-[#5a5a7a] whitespace-nowrap">
+                    {c.gender}
+                  </td>
+                  <td className="py-3 px-3 whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
                       {c.platforms.map((p) => {
                         if (p === "IG")
@@ -622,7 +657,7 @@ export default function CreatorTable() {
                       })}
                     </div>
                   </td>
-                  <td className="py-3">
+                  <td className="py-3 px-3 whitespace-nowrap">
                     <div className="flex items-center gap-2 min-w-[100px]">
                       <div className="w-12 h-1.5 bg-[#f4f3f6] rounded-full overflow-hidden shrink-0">
                         <div
@@ -640,30 +675,22 @@ export default function CreatorTable() {
                       </span>
                     </div>
                   </td>
-                  <td className="py-3 font-semibold text-[#1a1a2e] whitespace-nowrap">
+                  <td className="py-3 px-3 font-semibold text-[#1a1a2e] whitespace-nowrap">
                     ₦{c.totalEarnings.toLocaleString()}
                   </td>
-                  <td className="py-3 text-center">
+                  <td className="py-3 px-3 text-center whitespace-nowrap">
                     <span className="px-2 py-0.5 rounded-full bg-[#f4f3f6] text-[#5a5a7a] font-bold text-[10px]">
                       {c.revisionCount}
                     </span>
                   </td>
-                  <td className="py-3">
-                    <AdminStatusBadge status={c.status.toLowerCase()} />
+                  <td className="py-3 px-3 whitespace-nowrap">
+                    <AdminStatusBadge status={c.status} />
                   </td>
-                  <td className="py-3 text-[#9a99b0] whitespace-nowrap">
+                  <td className="py-3 px-3 text-[#5a5a7a] whitespace-nowrap">
                     {c.dateJoined}
                   </td>
-                  <td className="py-3 text-[#9a99b0] whitespace-nowrap">
+                  <td className="py-3 pl-3 pr-4 text-[#7a7a9a] whitespace-nowrap">
                     {c.lastLogin}
-                  </td>
-                  <td className="py-3 text-right pr-2">
-                    <button
-                      onClick={() => setSelectedCreatorId(c.id)}
-                      className="h-8 px-3.5 bg-[#eff6ff] text-[#2563eb] rounded-xl hover:bg-[#dbeafe] transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 text-xs font-bold shrink-0"
-                    >
-                      <Eye size={13} className="shrink-0" /> View
-                    </button>
                   </td>
                 </tr>
               ))}
