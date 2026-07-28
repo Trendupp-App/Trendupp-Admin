@@ -6,6 +6,12 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Trash2, Check, ArrowRight, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import { useAdminBrandsList } from "@/hooks/useAdminBrands";
+import {
+  useCreateSocialImpactCampaign,
+  usePublishSocialImpactCampaign,
+} from "@/hooks/useAdminSocialImpact";
+
 interface BrandOption {
   id: string;
   name: string;
@@ -43,35 +49,49 @@ export default function CreateCampaignPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { data: brandsData } = useAdminBrandsList({ limit: 50 });
+  const createCampaignMutation = useCreateSocialImpactCampaign();
+  const publishCampaignMutation = usePublishSocialImpactCampaign();
+
   // Step 1 state
   const [preview, setPreview] = useState<string>(
     "/dashboard/tiktok_news_banner.png",
   );
-  const [title, setTitle] = useState("Summer Style Collection");
+  const [title, setTitle] = useState("Summer Style Collection 2025");
   const [goal, setGoal] = useState("Create Content");
-  const [tier, setTier] = useState("Micro (10K-200K), Nano (1K-10K)");
+  const [tier, setTier] = useState("Micro, Nano");
   const [selectedAdvertiser, setSelectedAdvertiser] =
     useState<string>("coca-cola");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Step 2 state
   const [desc, setDesc] = useState(
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    "Zara Africa is launching a brand-new summer style collection. Creators are invited to share their unique fashion styling video.",
   );
   const [deliverables, setDeliverables] = useState<string[]>([
-    "1x Instagram Reel (30–60 seconds)",
-    "1x Instagram Reel (30–60 seconds)",
+    "1x Instagram Reel (30-60 seconds)",
   ]);
   const [directions, setDirections] = useState<string[]>([
     "Film in warm, golden-hour lighting",
   ]);
-  const [dos, setDos] = useState<string[]>([
-    "Use natural lighting throughout the video",
-    "Use natural lighting throughout the video",
-  ]);
+  const [dos, setDos] = useState<string[]>(["Tag brand account"]);
   const [donts, setDonts] = useState<string[]>([
-    "Do not feature or mention competitor products",
+    "No competitor brands visible",
   ]);
+
+  const liveBrands: BrandOption[] =
+    brandsData?.data && Array.isArray(brandsData.data)
+      ? brandsData.data.map((b) => {
+          const name = b.brandName || b.advertiser?.brandName || "Brand";
+          return {
+            id: b.id,
+            name,
+            rate: b.industry || "General",
+            logoColor: "bg-brand-pink",
+            logoText: name.slice(0, 4),
+          };
+        })
+      : MOCK_ADVERTISERS;
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -80,11 +100,11 @@ export default function CreateCampaignPage() {
     setPreview(url);
   };
 
-  const filteredAdvertisers = MOCK_ADVERTISERS.filter((adv) =>
+  const filteredAdvertisers = liveBrands.filter((adv) =>
     adv.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const activeAdvertiserObj = MOCK_ADVERTISERS.find(
+  const activeAdvertiserObj = liveBrands.find(
     (a) => a.id === selectedAdvertiser,
   );
 
@@ -112,17 +132,49 @@ export default function CreateCampaignPage() {
     }
   };
 
-  const handleSaveAsDraft = () => {
-    alert("Campaign saved as draft.");
-    router.push("/admin/campaigns/social");
+  const buildPayload = (isDraft: boolean) => ({
+    title,
+    goal,
+    brandId: selectedAdvertiser,
+    creatorTiers: tier
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean),
+    coverImageUrl: preview,
+    campaignBrief: desc,
+    deliverables: deliverables.filter(Boolean),
+    contentDirection: directions.filter(Boolean),
+    dos: dos.filter(Boolean),
+    donts: donts.filter(Boolean),
+    currentStep: step,
+    isDraft,
+  });
+
+  const handleSaveAsDraft = async () => {
+    try {
+      await createCampaignMutation.mutateAsync(buildPayload(true));
+      router.push("/admin/campaigns/social");
+    } catch {
+      // Toast handled by mutation
+    }
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (step < 3) {
       setStep((step + 1) as 1 | 2 | 3);
     } else {
-      alert("Campaign successfully published.");
-      router.push("/admin/campaigns/social");
+      try {
+        const res = await createCampaignMutation.mutateAsync(
+          buildPayload(false),
+        );
+        const campaignId = res.data?.id;
+        if (campaignId) {
+          await publishCampaignMutation.mutateAsync(campaignId);
+        }
+        router.push("/admin/campaigns/social");
+      } catch {
+        // Toast handled by mutation
+      }
     }
   };
 

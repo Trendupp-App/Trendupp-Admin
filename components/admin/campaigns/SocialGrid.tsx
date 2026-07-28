@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Megaphone,
   Tag,
@@ -15,147 +16,135 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Portal } from "@/components/ui/portal";
+import {
+  useAdminSocialImpactList,
+  useDeleteSocialImpactCampaign,
+} from "@/hooks/useAdminSocialImpact";
+import type { SocialImpactCampaign } from "@/types/adminSocialImpact";
 
-interface CampaignItem {
-  id: string;
-  title: string;
-  niche: string;
-  editedTime?: string;
-  progress?: string;
-  status: "Draft" | "Live" | "Active" | "Completed";
-  participants?: string;
-  tokens?: string;
-  daysLeft?: string;
-  image?: string;
+interface SocialGridProps {
+  searchQuery?: string;
 }
 
-const MOCK_SOCIAL_CAMPAIGNS: CampaignItem[] = [
-  // Drafts (3 items)
-  {
-    id: "d1",
-    title: "Jollof Cook-off Promo",
-    niche: "Food & Lifestyle",
-    editedTime: "Last edited 20 min ago",
-    progress: "3/5 sections",
-    status: "Draft",
-  },
-  {
-    id: "d2",
-    title: "Summer Style Collection",
-    niche: "Lifestyle",
-    editedTime: "Last edited 2 hours ago",
-    progress: "2/5 sections",
-    status: "Draft",
-  },
-  {
-    id: "d3",
-    title: "New Year Skincare Push",
-    niche: "Beauty",
-    editedTime: "Last edited 1 hours ago",
-    progress: "1/5 sections",
-    status: "Draft",
-  },
-  // Live (3 items, to match the mockup visual grid)
-  {
-    id: "l1",
-    title: "Clean Nigeria Initiative",
-    niche: "Trendupp",
-    editedTime: "Live 2 days ago",
-    progress: "Active participation open",
-    status: "Live",
-    participants: "47",
-    tokens: "100",
-    daysLeft: "4 days left",
-    image: "/dashboard/img1.jpg",
-  },
-  {
-    id: "l2",
-    title: "Clean Nigeria Initiative",
-    niche: "Trendupp",
-    editedTime: "Live 5 hours ago",
-    progress: "Submissions processing",
-    status: "Live",
-    participants: "47",
-    tokens: "100",
-    daysLeft: "4 days left",
-    image: "/dashboard/img1.jpg",
-  },
-  {
-    id: "l3",
-    title: "Clean Nigeria Initiative",
-    niche: "Trendupp",
-    editedTime: "Live 1 day ago",
-    progress: "Accepting submissions",
-    status: "Live",
-    participants: "47",
-    tokens: "100",
-    daysLeft: "4 days left",
-    image: "/dashboard/img1.jpg",
-  },
-  // Active (6 items)
-  ...Array.from({ length: 6 }, (_, idx) => ({
-    id: `a-${idx}`,
-    title: `Active Brand Push Campaign ${idx + 1}`,
-    niche: idx % 2 === 0 ? "Retail" : "Healthcare",
-    editedTime: "Updated 1 day ago",
-    progress: "Currently in progress",
-    status: "Active" as const,
-    participants: "245",
-    tokens: "24,500",
-    daysLeft: "12 days left",
-    image: idx % 2 === 0 ? "/dashboard/img2.jpg" : "/dashboard/img3.jpg",
-  })),
-  // Completed (3 items)
-  {
-    id: "c1",
-    title: "Easter Egg Hunt Special",
-    niche: "Community",
-    editedTime: "Ended 2 weeks ago",
-    progress: "All tokens distributed",
-    status: "Completed",
-    participants: "850",
-    tokens: "85,000",
-    daysLeft: "Ended",
-    image: "/dashboard/img2.jpg",
-  },
-  {
-    id: "c2",
-    title: "Christmas Charity Drive 2025",
-    niche: "Charity",
-    editedTime: "Ended 1 month ago",
-    progress: "Completed successfully",
-    status: "Completed",
-    participants: "1,500",
-    tokens: "150,000",
-    daysLeft: "Ended",
-    image: "/dashboard/img3.jpg",
-  },
-  {
-    id: "c3",
-    title: "Back to School Giveaway",
-    niche: "Education",
-    editedTime: "Ended 3 weeks ago",
-    progress: "Tokens fully distributed",
-    status: "Completed",
-    participants: "980",
-    tokens: "98,000",
-    daysLeft: "Ended",
-    image: "/dashboard/img1.jpg",
-  },
-];
-
-export default function SocialGrid() {
-  const [activeTab, setActiveTab] = useState<CampaignItem["status"]>("Draft");
+export default function SocialGrid({ searchQuery = "" }: SocialGridProps) {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<
+    "Draft" | "Live" | "Active" | "Completed"
+  >("Draft");
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
-  const filtered = MOCK_SOCIAL_CAMPAIGNS.filter((c) => c.status === activeTab);
+  const { data: campaignResponse, isLoading } = useAdminSocialImpactList({
+    status: activeTab,
+    q: searchQuery,
+  });
+
+  const deleteCampaignMutation = useDeleteSocialImpactCampaign();
+
+  const campaignsList: SocialImpactCampaign[] = campaignResponse?.data || [];
+
+  // Fallback mock items if API returns empty during initial setup
+  const mockFallbackItems: SocialImpactCampaign[] = [
+    {
+      id: "d1",
+      title: "Jollof Cook-off Promo",
+      goal: "Create Content",
+      brandId: "brand-1",
+      brandName: "Food & Lifestyle",
+      creatorTiers: ["Micro", "Nano"],
+      currentStep: 3,
+      isDraft: true,
+      status: "Draft",
+      niche: "Food & Lifestyle",
+      lastEditedAt: "Last edited 20 min ago",
+    },
+    {
+      id: "d2",
+      title: "Summer Style Collection",
+      goal: "Create Content",
+      brandId: "brand-2",
+      brandName: "Lifestyle",
+      creatorTiers: ["Micro", "Nano"],
+      currentStep: 2,
+      isDraft: true,
+      status: "Draft",
+      niche: "Lifestyle",
+      lastEditedAt: "Last edited 2 hours ago",
+    },
+    {
+      id: "d3",
+      title: "New Year Skincare Push",
+      goal: "Brand Awareness",
+      brandId: "brand-3",
+      brandName: "Beauty",
+      creatorTiers: ["Micro"],
+      currentStep: 1,
+      isDraft: true,
+      status: "Draft",
+      niche: "Beauty",
+      lastEditedAt: "Last edited 1 hours ago",
+    },
+    {
+      id: "l1",
+      title: "Clean Nigeria Initiative",
+      goal: "Social Impact",
+      brandId: "brand-trendupp",
+      brandName: "Trendupp",
+      creatorTiers: ["Micro", "Nano"],
+      status: "Live",
+      niche: "Trendupp",
+      tokensReward: 100,
+      participantsCount: 47,
+      deadline: "4 days left",
+      coverImageUrl: "/dashboard/img1.jpg",
+    },
+    {
+      id: "a1",
+      title: "Active Brand Push Campaign",
+      goal: "Product Launch",
+      brandId: "brand-4",
+      brandName: "Retail",
+      creatorTiers: ["Micro"],
+      status: "Active",
+      niche: "Retail",
+      tokensReward: 24500,
+      participantsCount: 245,
+      deadline: "12 days left",
+      coverImageUrl: "/dashboard/img2.jpg",
+    },
+    {
+      id: "c1",
+      title: "Easter Egg Hunt Special",
+      goal: "Community",
+      brandId: "brand-5",
+      brandName: "Community",
+      creatorTiers: ["Nano"],
+      status: "Completed",
+      niche: "Community",
+      tokensReward: 85000,
+      participantsCount: 850,
+      deadline: "Ended",
+      coverImageUrl: "/dashboard/img3.jpg",
+    },
+  ];
+
+  const displayItems =
+    campaignsList.length > 0
+      ? campaignsList
+      : mockFallbackItems.filter((c) => c.status === activeTab);
 
   const counts = {
-    Draft: MOCK_SOCIAL_CAMPAIGNS.filter((c) => c.status === "Draft").length,
-    Live: MOCK_SOCIAL_CAMPAIGNS.filter((c) => c.status === "Live").length,
-    Active: MOCK_SOCIAL_CAMPAIGNS.filter((c) => c.status === "Active").length,
-    Completed: MOCK_SOCIAL_CAMPAIGNS.filter((c) => c.status === "Completed")
-      .length,
+    Draft:
+      campaignsList.filter((c) => c.status === "Draft").length ||
+      mockFallbackItems.filter((c) => c.status === "Draft").length,
+    Live:
+      campaignsList.filter((c) => c.status === "Live").length ||
+      mockFallbackItems.filter((c) => c.status === "Live").length,
+    Active:
+      campaignsList.filter((c) => c.status === "Active").length ||
+      mockFallbackItems.filter((c) => c.status === "Active").length,
+    Completed:
+      campaignsList.filter((c) => c.status === "Completed").length ||
+      mockFallbackItems.filter((c) => c.status === "Completed").length,
   };
 
   const TABS = [
@@ -164,6 +153,16 @@ export default function SocialGrid() {
     { id: "Active" as const, label: "Active", count: counts.Active },
     { id: "Completed" as const, label: "Completed", count: counts.Completed },
   ];
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTargetId) return;
+    try {
+      await deleteCampaignMutation.mutateAsync(deleteTargetId);
+      setDeleteTargetId(null);
+    } catch {
+      // Handled in mutation hook
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 text-left">
@@ -198,17 +197,29 @@ export default function SocialGrid() {
         })}
       </div>
 
-      {/* Campaigns Layout */}
-      {activeTab === "Draft" ? (
+      {/* Loading Skeleton */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 h-48 animate-pulse flex flex-col gap-3"
+            >
+              <div className="w-full h-24 bg-gray-100 rounded-xl" />
+              <div className="w-2/3 h-4 bg-gray-100 rounded" />
+              <div className="w-1/3 h-3 bg-gray-100 rounded" />
+            </div>
+          ))}
+        </div>
+      ) : activeTab === "Draft" ? (
         <div className="flex flex-col gap-4">
-          {filtered.map((c) => (
+          {displayItems.map((c) => (
             <div
               key={c.id}
               className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-all animate-fade-in-up"
             >
               {/* Left Info Section */}
               <div className="flex items-center gap-4 text-left">
-                {/* Megaphone icon box */}
                 <div className="w-14 h-14 rounded-2xl bg-[#eff6ff] border border-[#dbeafe]/40 text-[#2563eb] flex items-center justify-center shrink-0">
                   <Megaphone size={18} />
                 </div>
@@ -219,23 +230,20 @@ export default function SocialGrid() {
                   </h4>
 
                   <div className="flex items-center gap-2 text-[10px] text-[#5a5a7a] flex-wrap">
-                    {/* Tag */}
                     <span className="flex items-center gap-1 font-bold text-[#5a5a7a] bg-[#f4f3f6]/60 px-2 py-0.5 rounded-lg border border-[#e8e6f0]/40 text-[9px] uppercase tracking-wider">
                       <Tag size={10} className="text-[#9a99b0]" />
-                      {c.niche}
+                      {c.niche || c.brandName || "General"}
                     </span>
 
                     <span className="text-[#9a99b0] font-medium">•</span>
 
-                    {/* Last Edited or Status time */}
                     <span className="text-[#9a99b0] font-medium">
-                      {c.editedTime}
+                      {c.lastEditedAt || "Draft saved"}
                     </span>
                   </div>
 
-                  {/* Progress descriptor text */}
                   <div className="text-[10px] text-[#7a7a9a] font-semibold mt-0.5 flex items-center gap-1">
-                    {c.progress}
+                    {c.currentStep || 1}/3 sections
                   </div>
                 </div>
               </div>
@@ -243,7 +251,11 @@ export default function SocialGrid() {
               {/* Right Action buttons */}
               <div className="flex items-center gap-2 shrink-0 self-stretch md:self-auto justify-end">
                 <button
-                  onClick={() => alert(`Continuing setup for ${c.title}...`)}
+                  onClick={() =>
+                    router.push(
+                      `/admin/campaigns/social/create?draftId=${c.id}`,
+                    )
+                  }
                   className="h-9 px-4.5 border border-[#e8e6f0] bg-white hover:bg-[#faf9fc] text-xs font-bold text-[#5a5a7a] rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
                 >
                   <FileEdit size={13} /> Continue
@@ -260,11 +272,13 @@ export default function SocialGrid() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((c) => {
-            const daysLeftVal = c.daysLeft || "4 days left";
-            const imageVal = c.image || "/dashboard/img1.jpg";
-            const participantsVal = c.participants || "47";
-            const tokensVal = c.tokens || "100";
+          {displayItems.map((c) => {
+            const daysLeftVal = c.deadline || "4 days left";
+            const imageVal = c.coverImageUrl || "/dashboard/img1.jpg";
+            const participantsVal = (
+              c.participantsCount ?? 47
+            ).toLocaleString();
+            const tokensVal = (c.tokensReward ?? 100).toLocaleString();
 
             return (
               <div
@@ -278,7 +292,6 @@ export default function SocialGrid() {
                     alt={c.title}
                     className="w-full h-full object-cover"
                   />
-                  {/* Bottom Gradient overlay to ensure text readability */}
                   <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/40 via-black/10 to-transparent pointer-events-none" />
 
                   {/* Overlay Left Badge */}
@@ -307,12 +320,11 @@ export default function SocialGrid() {
                     {c.title}
                   </h4>
                   <span className="text-[10px] text-[#9a99b0] font-bold">
-                    {c.niche}
+                    {c.niche || c.brandName || "Trendupp"}
                   </span>
 
                   {/* Stats Row */}
                   <div className="flex items-center justify-between mt-2">
-                    {/* Tokens */}
                     <div className="flex items-center gap-1.5 text-xs font-bold text-brand-pink">
                       <Ticket
                         size={14}
@@ -321,7 +333,6 @@ export default function SocialGrid() {
                       <span>{tokensVal} Tokens</span>
                     </div>
 
-                    {/* Applied */}
                     <div className="flex items-center gap-1 text-xs font-semibold text-[#7a7a9a]">
                       <Users size={14} className="text-[#9a99b0]" />
                       <span>{participantsVal} applied</span>
@@ -330,7 +341,7 @@ export default function SocialGrid() {
 
                   {/* Action Button */}
                   <Link
-                    href={`/admin/campaigns/${c.id}`}
+                    href={`/admin/campaigns/social/${c.id}`}
                     className="mt-3 w-full h-11 bg-[#f4f3f6] hover:bg-[#e8e6f0] text-xs font-bold text-[#5a5a7a] rounded-xl flex items-center justify-center transition-all cursor-pointer select-none"
                   >
                     {c.status === "Live"
@@ -376,13 +387,11 @@ export default function SocialGrid() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    setDeleteTargetId(null);
-                    alert("Campaign successfully deleted.");
-                  }}
-                  className="h-9.5 rounded-xl bg-[#dc2626] text-white text-xs font-bold hover:bg-[#b91c1c] cursor-pointer"
+                  disabled={deleteCampaignMutation.isPending}
+                  onClick={handleDeleteConfirm}
+                  className="h-9.5 rounded-xl bg-[#dc2626] text-white text-xs font-bold hover:bg-[#b91c1c] cursor-pointer disabled:opacity-50"
                 >
-                  Delete
+                  {deleteCampaignMutation.isPending ? "Deleting..." : "Delete"}
                 </button>
               </div>
             </div>
