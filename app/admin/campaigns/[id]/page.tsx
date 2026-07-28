@@ -344,9 +344,9 @@ export default function CampaignDetailsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-6 md:p-8 relative min-h-screen animate-fade-in-up">
+    <div className="flex flex-col gap-6 p-4 sm:p-6 md:p-8 relative min-h-screen animate-fade-in-up w-full max-w-full overflow-x-hidden">
       {/* Header */}
-      <div className="flex justify-between items-start gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between items-start gap-4">
         <div className="flex items-center gap-3">
           <Link
             href={isSocial ? "/admin/campaigns/social" : "/admin/campaigns"}
@@ -386,7 +386,7 @@ export default function CampaignDetailsPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
           <button className="h-9 px-4 border border-[#e8e6f0] text-xs font-bold text-[#5a5a7a] rounded-xl hover:bg-[#faf9fc] transition-colors cursor-pointer flex items-center gap-1.5">
             <Download size={13} /> Export
           </button>

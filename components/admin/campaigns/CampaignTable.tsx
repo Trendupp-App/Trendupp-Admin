@@ -166,10 +166,10 @@ export default function CampaignTable({
   const COLUMN_COUNT = 8;
 
   return (
-    <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5">
+    <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-4 sm:p-6 flex flex-col gap-5">
       {/* Top Search bar & Filters toggle */}
-      <div className="flex items-center gap-3.5">
-        <div className="relative flex items-center min-w-[280px] flex-1 max-w-md">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5">
+        <div className="relative flex items-center w-full sm:min-w-[280px] flex-1 max-w-md">
           <Search size={14} className="absolute left-3.5 text-[#9a99b0]" />
           <input
             type="text"
@@ -264,7 +264,7 @@ export default function CampaignTable({
       )}
 
       {/* Status tab pills row */}
-      <div className="flex items-center gap-1 border-[#e8e6f0]/80 p-1 rounded-xl w-fit self-start max-w-full overflow-x-auto scrollbar-none">
+      <div className="flex items-center gap-1.5 border-[#e8e6f0]/80 p-1 rounded-xl w-full max-w-full overflow-x-auto scrollbar-none">
         {STATUS_TABS.map((label) => {
           const active = selectedStatus === label;
           return (
@@ -275,7 +275,7 @@ export default function CampaignTable({
                 setPage(1);
               }}
               className={cn(
-                "px-4.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
+                "px-3.5 sm:px-4.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0",
                 active
                   ? "bg-brand-pink text-white shadow-sm"
                   : "bg-transparent text-[#5a5a7a] hover:text-[#1a1a2e]",
@@ -288,19 +288,37 @@ export default function CampaignTable({
       </div>
 
       {/* Campaigns Table */}
-      <div className="overflow-x-auto -mx-6 px-6">
-        <table className="w-full text-left border-collapse text-xs">
+      <div className="w-full overflow-x-auto no-scrollbar">
+        <table className="w-full min-w-[960px] text-left border-collapse text-xs">
           <thead>
             <tr className="border-b border-[#e8e6f0]/40 text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
-              <th className="pb-3.5 pl-2">Campaign Title</th>
-              <th className="pb-3.5">Brand</th>
-              <th className="pb-3.5">Budget</th>
-              <th className="pb-3.5">Applications</th>
-              <th className="pb-3.5">Status</th>
-              <th className="pb-3.5">Escrow</th>
-              <th className="pb-3.5">End Date</th>
-              <th className="pb-3.5">Created</th>
-              <th className="pb-3.5 text-right pr-2">Actions</th>
+              <th className="pb-3.5 pt-1 pl-2 pr-3 min-w-[170px] whitespace-nowrap">
+                Campaign Title
+              </th>
+              <th className="pb-3.5 pt-1 px-3 min-w-[120px] whitespace-nowrap">
+                Brand
+              </th>
+              <th className="pb-3.5 pt-1 px-3 min-w-[90px] whitespace-nowrap">
+                Budget
+              </th>
+              <th className="pb-3.5 pt-1 px-3 min-w-[100px] whitespace-nowrap text-center">
+                Applications
+              </th>
+              <th className="pb-3.5 pt-1 px-3 min-w-[90px] whitespace-nowrap">
+                Status
+              </th>
+              <th className="pb-3.5 pt-1 px-3 min-w-[100px] whitespace-nowrap">
+                Escrow
+              </th>
+              <th className="pb-3.5 pt-1 px-3 min-w-[100px] whitespace-nowrap">
+                End Date
+              </th>
+              <th className="pb-3.5 pt-1 px-3 min-w-[100px] whitespace-nowrap">
+                Created
+              </th>
+              <th className="pb-3.5 pt-1 pr-2 pl-3 text-right whitespace-nowrap">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#e8e6f0]/30 font-medium">
@@ -331,29 +349,36 @@ export default function CampaignTable({
                     className="hover:bg-[#faf9fc]/40 transition-colors"
                   >
                     <td
-                      className="py-3.5 pl-2 font-bold text-[#1a1a2e]"
+                      className="py-3.5 pl-2 pr-3 font-bold text-[#1a1a2e] whitespace-nowrap"
                       title={c.title}
                     >
                       {truncateTitle(c.title)}
                     </td>
-                    <td className="py-3.5 text-[#5a5a7a]" title={c.brand?.name}>
+                    <td
+                      className="py-3.5 px-3 text-[#5a5a7a] whitespace-nowrap"
+                      title={c.brand?.name}
+                    >
                       {c.brand?.name ? truncateBrandName(c.brand.name) : ""}
                     </td>
-                    <td className="py-3.5 font-bold text-brand-pink">
+                    <td className="py-3.5 px-3 font-bold text-brand-pink whitespace-nowrap">
                       ₦{c.budget.toLocaleString()}
                     </td>
-                    <td className="py-3.5 font-bold text-[#1a1a2e]">
+                    <td className="py-3.5 px-3 font-bold text-[#1a1a2e] text-center whitespace-nowrap">
                       {c.applicationsCount}
                     </td>
-                    <td className="py-3.5">{getStatusChip(status)}</td>
-                    <td className="py-3.5">{getEscrowChip(escrow)}</td>
-                    <td className="py-3.5 text-[#5a5a7a]">
+                    <td className="py-3.5 px-3 whitespace-nowrap">
+                      {getStatusChip(status)}
+                    </td>
+                    <td className="py-3.5 px-3 whitespace-nowrap">
+                      {getEscrowChip(escrow)}
+                    </td>
+                    <td className="py-3.5 px-3 text-[#5a5a7a] whitespace-nowrap">
                       {formatDate(c.endDate)}
                     </td>
-                    <td className="py-3.5 text-[#9a99b0]">
+                    <td className="py-3.5 px-3 text-[#9a99b0] whitespace-nowrap">
                       {formatDate(c.createdAt)}
                     </td>
-                    <td className="py-3.5 text-right pr-2">
+                    <td className="py-3.5 pr-2 pl-3 text-right whitespace-nowrap">
                       <Link
                         href={`/admin/campaigns/${c.id}`}
                         aria-label={`View campaign ${c.title}`}
@@ -373,7 +398,7 @@ export default function CampaignTable({
 
       {/* Pagination */}
       {meta && meta.total > 0 && (
-        <div className="flex items-center justify-between border-t border-[#e8e6f0]/40 pt-4 mt-2">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[#e8e6f0]/40 pt-4 mt-2">
           <span className="text-[11px] text-[#9a99b0] font-medium">
             Showing {(meta.page - 1) * meta.limit + 1}-
             {Math.min(meta.page * meta.limit, meta.total)} of {meta.total}{" "}
