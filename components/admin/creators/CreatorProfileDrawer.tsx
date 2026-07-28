@@ -313,7 +313,7 @@ export default function CreatorProfileDrawer({
       );
     } else if (activeAction === "delete") {
       deleteAccountMutation.mutate(
-        { id: creatorId, reason: inputValue },
+        { id: creatorId },
         {
           onSuccess: () => {
             setSuccessModalTitle("Account Deleted");
