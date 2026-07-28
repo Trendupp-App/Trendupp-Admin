@@ -37,7 +37,7 @@ function ContactInfoFormInner({
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white border border-[#f0f0f5] rounded-2xl p-7 flex flex-col gap-5 shadow-xs max-w-2xl"
+      className="bg-white border border-[#f0f0f5] rounded-2xl p-4 sm:p-7 flex flex-col gap-5 shadow-xs w-full max-w-2xl"
     >
       {/* Business Address */}
       <div className="flex flex-col gap-1.5">

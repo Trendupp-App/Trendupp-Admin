@@ -17,17 +17,19 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("commission");
 
   return (
-    <div className="flex flex-col gap-6 p-6 min-h-screen bg-[#fafafa]">
+    <div className="flex flex-col gap-6 p-4 sm:p-6 min-h-screen bg-[#fafafa] w-full max-w-full overflow-x-hidden">
       {/* Top Header */}
       <div>
-        <h1 className="text-2xl font-bold text-[#1a1a2e]">Settings</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-[#1a1a2e]">
+          Settings
+        </h1>
       </div>
 
-      {/* Main Settings Content with Left Navigation */}
-      <div className="flex items-start gap-6">
+      {/* Main Settings Content with Left/Top Navigation */}
+      <div className="flex flex-col lg:flex-row items-start gap-6 w-full min-w-0">
         <SettingsNav activeTab={activeTab} onTabChange={setActiveTab} />
 
-        <main className="flex-1 min-w-0">
+        <main className="flex-1 w-full min-w-0">
           {activeTab === "commission" ? (
             <CommissionSettingsView />
           ) : activeTab === "creator-niches" ? (
