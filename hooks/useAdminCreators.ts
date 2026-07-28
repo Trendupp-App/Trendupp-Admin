@@ -259,3 +259,105 @@ export function useDeleteCreatorNote(onSuccess?: () => void) {
     },
   });
 }
+
+/* Actions Mutations */
+
+export function useSuspendCreatorAccount() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      adminCreatorsApi.suspendCreatorAccount(id, { reason }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-creators-list"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-creator-summary"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-creator-details", variables.id],
+      });
+    },
+    onError: (err: AxiosError<{ message?: string }>) => {
+      toast.error(
+        err?.response?.data?.message ?? "Failed to suspend creator account",
+      );
+    },
+  });
+}
+
+export function useSuspendCreatorCampaignAccess() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      adminCreatorsApi.suspendCreatorCampaignAccess(id, { reason }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-creators-list"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-creator-summary"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-creator-details", variables.id],
+      });
+    },
+    onError: (err: AxiosError<{ message?: string }>) => {
+      toast.error(
+        err?.response?.data?.message ??
+          "Failed to suspend creator campaign access",
+      );
+    },
+  });
+}
+
+export function useReactivateCreatorAccount() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      adminCreatorsApi.reactivateCreatorAccount(id, { reason }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-creators-list"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-creator-summary"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-creator-details", variables.id],
+      });
+    },
+    onError: (err: AxiosError<{ message?: string }>) => {
+      toast.error(
+        err?.response?.data?.message ?? "Failed to reactivate creator account",
+      );
+    },
+  });
+}
+
+export function useChangeCreatorTier() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, tier }: { id: string; tier: string }) =>
+      adminCreatorsApi.changeCreatorTier(id, { tier }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-creators-list"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-creator-tier-distribution"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-creator-details", variables.id],
+      });
+    },
+    onError: (err: AxiosError<{ message?: string }>) => {
+      toast.error(
+        err?.response?.data?.message ?? "Failed to change creator tier",
+      );
+    },
+  });
+}
+
+export function useDeleteCreatorAccount() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      adminCreatorsApi.deleteCreatorAccount(id, { reason }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-creators-list"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-creator-summary"] });
+    },
+    onError: (err: AxiosError<{ message?: string }>) => {
+      toast.error(
+        err?.response?.data?.message ?? "Failed to delete creator account",
+      );
+    },
+  });
+}

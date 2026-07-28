@@ -36,6 +36,11 @@ import {
   useAddCreatorNote,
   useUpdateCreatorNote,
   useDeleteCreatorNote,
+  useSuspendCreatorAccount,
+  useSuspendCreatorCampaignAccess,
+  useReactivateCreatorAccount,
+  useChangeCreatorTier,
+  useDeleteCreatorAccount,
 } from "@/hooks/useAdminCreators";
 
 interface CreatorProfileDrawerProps {
@@ -206,6 +211,13 @@ export default function CreatorProfileDrawer({
   const updateNoteMutation = useUpdateCreatorNote();
   const deleteNoteMutation = useDeleteCreatorNote();
 
+  /* Actions Mutations */
+  const suspendAccountMutation = useSuspendCreatorAccount();
+  const suspendCampaignAccessMutation = useSuspendCreatorCampaignAccess();
+  const reactivateAccountMutation = useReactivateCreatorAccount();
+  const changeTierMutation = useChangeCreatorTier();
+  const deleteAccountMutation = useDeleteCreatorAccount();
+
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
     return () => {
@@ -238,6 +250,91 @@ export default function CreatorProfileDrawer({
   const creatorStatus = (
     profileDetails?.accountStatus || "active"
   ).toLowerCase();
+
+  // Action Confirmation Submission
+  const handleConfirmAction = (inputValue: string) => {
+    if (!creatorId || !activeAction) return;
+
+    if (activeAction === "suspend") {
+      suspendAccountMutation.mutate(
+        { id: creatorId, reason: inputValue },
+        {
+          onSuccess: () => {
+            setSuccessModalTitle("Account Suspended");
+            setSuccessModalMessage(
+              "You have successfully suspended this creator account",
+            );
+            setIsSuccessModalOpen(true);
+            setActiveAction(null);
+          },
+        },
+      );
+    } else if (activeAction === "suspendCampaign") {
+      suspendCampaignAccessMutation.mutate(
+        { id: creatorId, reason: inputValue },
+        {
+          onSuccess: () => {
+            setSuccessModalTitle("Campaign Access Suspended");
+            setSuccessModalMessage(
+              "You have successfully restricted campaign access for this creator",
+            );
+            setIsSuccessModalOpen(true);
+            setActiveAction(null);
+          },
+        },
+      );
+    } else if (activeAction === "reactivate") {
+      reactivateAccountMutation.mutate(
+        { id: creatorId, reason: inputValue },
+        {
+          onSuccess: () => {
+            setSuccessModalTitle("Account Reactivated");
+            setSuccessModalMessage(
+              "You have successfully reactivated this creator account",
+            );
+            setIsSuccessModalOpen(true);
+            setActiveAction(null);
+          },
+        },
+      );
+    } else if (activeAction === "changeTier") {
+      changeTierMutation.mutate(
+        { id: creatorId, tier: inputValue },
+        {
+          onSuccess: () => {
+            setSuccessModalTitle("Creator tier changed successfully");
+            setSuccessModalMessage(
+              `You have successfully changed the creator tier to ${inputValue}`,
+            );
+            setIsSuccessModalOpen(true);
+            setActiveAction(null);
+          },
+        },
+      );
+    } else if (activeAction === "delete") {
+      deleteAccountMutation.mutate(
+        { id: creatorId },
+        {
+          onSuccess: () => {
+            setSuccessModalTitle("Account Deleted");
+            setSuccessModalMessage(
+              "You have successfully deleted this creator account",
+            );
+            setIsSuccessModalOpen(true);
+            setActiveAction(null);
+            onClose();
+          },
+        },
+      );
+    }
+  };
+
+  const isActionSubmitting =
+    suspendAccountMutation.isPending ||
+    suspendCampaignAccessMutation.isPending ||
+    reactivateAccountMutation.isPending ||
+    changeTierMutation.isPending ||
+    deleteAccountMutation.isPending;
 
   // Dynamic reviews array
   const displayReviews = useMemo(() => {
@@ -284,7 +381,6 @@ export default function CreatorProfileDrawer({
   const totalFollowersCount = useMemo(() => {
     if (!creatorProfile) return 0;
 
-    // 1. Root level properties
     const rootObj = creatorProfile as unknown as Record<string, unknown>;
     const rootVal =
       rootObj["total followers"] ??
@@ -296,7 +392,6 @@ export default function CreatorProfileDrawer({
       if (!isNaN(num) && num > 0) return num;
     }
 
-    // 2. Metrics object properties
     const m = (metricsData || rootObj.metrics) as
       Record<string, unknown> | undefined;
     if (m) {
@@ -311,7 +406,6 @@ export default function CreatorProfileDrawer({
       }
     }
 
-    // 3. Profile details object properties
     const pd = (profileDetails || rootObj.profileDetails) as
       Record<string, unknown> | undefined;
     if (pd) {
@@ -327,7 +421,6 @@ export default function CreatorProfileDrawer({
       }
     }
 
-    // 4. Stats object properties
     const st = rootObj.stats as Record<string, unknown> | undefined;
     if (st) {
       const rawVal =
@@ -341,7 +434,6 @@ export default function CreatorProfileDrawer({
       }
     }
 
-    // 5. Sum of socialAccounts
     if (
       socialAccounts &&
       Array.isArray(socialAccounts) &&
@@ -357,7 +449,6 @@ export default function CreatorProfileDrawer({
     return 0;
   }, [creatorProfile, metricsData, profileDetails, socialAccounts]);
 
-  // Metrics under Overview (derived from GET /api/v1/admin/creators/{id} -> metrics)
   const metrics = [
     {
       label: "Followers",
@@ -975,32 +1066,10 @@ export default function CreatorProfileDrawer({
               {/* Action confirmation Modal */}
               <CreatorActionModal
                 action={activeAction}
+                currentTier={creatorTier}
                 onClose={() => setActiveAction(null)}
-                onConfirm={() => {
-                  if (activeAction === "changeTier") {
-                    setSuccessModalTitle("Creator tier changed successfully");
-                    setSuccessModalMessage(
-                      "You have successfully changed the creator tier to another tier",
-                    );
-                  } else if (activeAction === "suspend") {
-                    setSuccessModalTitle("Account Suspended");
-                    setSuccessModalMessage(
-                      "You have successfully suspended this creator account",
-                    );
-                  } else if (activeAction === "delete") {
-                    setSuccessModalTitle("Account Deleted");
-                    setSuccessModalMessage(
-                      "You have successfully deleted this creator account",
-                    );
-                  } else {
-                    setSuccessModalTitle("Action Successful");
-                    setSuccessModalMessage(
-                      "The requested action completed successfully",
-                    );
-                  }
-                  setIsSuccessModalOpen(true);
-                  setActiveAction(null);
-                }}
+                onConfirm={handleConfirmAction}
+                isSubmitting={isActionSubmitting}
               />
 
               {/* Note Modal (Add/Edit) */}

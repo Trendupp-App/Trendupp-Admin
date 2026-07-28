@@ -126,7 +126,7 @@ export default function CampaignCreatorDrawer({
         />
 
         {/* Drawer Container */}
-        <div className="relative z-10 w-full max-w-[400px] h-full bg-white shadow-2xl flex flex-col overflow-y-auto">
+        <div className="relative z-10 w-full max-w-[440px] h-full bg-white shadow-2xl flex flex-col overflow-y-auto">
           {/* Header dark card block */}
           <div className="bg-[#121026] text-white p-5 pt-8 relative flex flex-col gap-4 text-left shrink-0">
             <button

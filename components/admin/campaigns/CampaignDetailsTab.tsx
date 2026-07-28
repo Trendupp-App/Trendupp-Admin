@@ -313,7 +313,7 @@ export default function CampaignDetailsTab({
       {/* Left section */}
       <div className="lg:col-span-6 flex flex-col gap-6">
         {/* Campaign Info */}
-        <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-4">
+        <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-4 sm:p-5 flex flex-col gap-4">
           <h3 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
             Campaign Info
           </h3>
@@ -338,11 +338,14 @@ export default function CampaignDetailsTab({
               { label: "Date Created", val: details.dateCreated },
               { label: "Application Closing", val: details.applicationClosing },
             ].map((row, i) => (
-              <div key={i} className="flex justify-between items-center py-0.5">
+              <div
+                key={i}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 py-1 border-b border-[#f4f3f6] sm:border-0 last:border-0 sm:py-0.5"
+              >
                 <span className="font-medium text-[#7a7a9a]">{row.label}</span>
                 <span
                   className={cn(
-                    "font-semibold text-[#1a1a2e]",
+                    "font-semibold text-[#1a1a2e] text-left sm:text-right",
                     row.highlight ? "text-brand-pink font-bold" : "",
                     row.status ? "text-[#16a34a] font-bold" : "",
                   )}

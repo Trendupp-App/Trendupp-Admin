@@ -7,7 +7,6 @@ import StreamChatProvider from "@/lib/providers/StreamChatProvider";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminHeader from "@/components/admin/AdminHeader";
 import AdminNotificationDrawer from "@/components/admin/AdminNotificationDrawer";
-import AdminSecurityGuard from "@/components/security/AdminSecurityGuard";
 import { useAuthStore } from "@/store/authStore";
 
 const PUBLIC_ADMIN_PATHS = ["/admin/signin"];
@@ -83,9 +82,7 @@ export default function AdminLayout({
   return (
     <QueryProvider>
       <StreamChatProvider>
-        <AdminSecurityGuard enabled={true}>
-          <AdminShell>{children}</AdminShell>
-        </AdminSecurityGuard>
+        <AdminShell>{children}</AdminShell>
       </StreamChatProvider>
     </QueryProvider>
   );
