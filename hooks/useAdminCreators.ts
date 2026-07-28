@@ -237,6 +237,7 @@ export function useSuspendCreatorAccount() {
       adminCreatorsApi.suspendCreatorAccount(id, { reason }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-creators-list"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-creator-summary"] });
       queryClient.invalidateQueries({
         queryKey: ["admin-creator-details", variables.id],
       });
@@ -256,6 +257,7 @@ export function useSuspendCreatorCampaignAccess() {
       adminCreatorsApi.suspendCreatorCampaignAccess(id, { reason }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-creators-list"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-creator-summary"] });
       queryClient.invalidateQueries({
         queryKey: ["admin-creator-details", variables.id],
       });
@@ -276,6 +278,7 @@ export function useReactivateCreatorAccount() {
       adminCreatorsApi.reactivateCreatorAccount(id, { reason }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-creators-list"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-creator-summary"] });
       queryClient.invalidateQueries({
         queryKey: ["admin-creator-details", variables.id],
       });
@@ -296,6 +299,9 @@ export function useChangeCreatorTier() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-creators-list"] });
       queryClient.invalidateQueries({
+        queryKey: ["admin-creator-tier-distribution"],
+      });
+      queryClient.invalidateQueries({
         queryKey: ["admin-creator-details", variables.id],
       });
     },
@@ -314,6 +320,7 @@ export function useDeleteCreatorAccount() {
       adminCreatorsApi.deleteCreatorAccount(id, { reason }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-creators-list"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-creator-summary"] });
     },
     onError: (err: AxiosError<{ message?: string }>) => {
       toast.error(

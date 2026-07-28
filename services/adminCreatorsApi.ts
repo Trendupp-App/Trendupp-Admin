@@ -113,21 +113,32 @@ export const adminCreatorsApi = {
 
   // 18. Suspend Account
   suspendCreatorAccount: (id: string, payload: { reason: string }) =>
-    apiClient.patch(`/admin/creators/${id}/suspend`, payload),
+    apiClient.patch<{ message?: string }>(
+      `/admin/users/${id}/suspend`,
+      payload,
+    ),
 
   // 19. Suspend Campaign Access
   suspendCreatorCampaignAccess: (id: string, payload: { reason: string }) =>
-    apiClient.patch(`/admin/creators/${id}/suspend-campaign`, payload),
+    apiClient.patch<{ message?: string }>(`/admin/users/${id}/suspend`, {
+      ...payload,
+      scope: "campaign",
+    }),
 
   // 20. Reactivate Account
   reactivateCreatorAccount: (id: string, payload: { reason: string }) =>
-    apiClient.patch(`/admin/creators/${id}/reactivate`, payload),
+    apiClient.patch<{ message?: string }>(
+      `/admin/users/${id}/reactivate`,
+      payload,
+    ),
 
   // 21. Change Creator Tier
   changeCreatorTier: (id: string, payload: { tier: string }) =>
-    apiClient.patch(`/admin/creators/${id}/tier`, payload),
+    apiClient.patch<{ message?: string }>(`/admin/users/${id}`, payload),
 
   // 22. Delete Creator Account
   deleteCreatorAccount: (id: string, payload?: { reason?: string }) =>
-    apiClient.delete(`/admin/creators/${id}`, { data: payload }),
+    apiClient.delete<{ message?: string }>(`/admin/users/${id}`, {
+      data: payload,
+    }),
 };
