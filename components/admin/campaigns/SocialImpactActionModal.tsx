@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar } from "lucide-react";
+import {
+  X,
+  AlertTriangle,
+  Calendar,
+  PauseCircle,
+  Ban,
+  Clock,
+  XCircle,
+} from "lucide-react";
 import { Portal } from "@/components/ui/portal";
 
 export type SocialActionType =
@@ -47,41 +55,59 @@ export default function SocialImpactActionModal({
     switch (actionType) {
       case "pause":
         return {
-          questionTitle: "Are you sure you want to Pause this Campaign?",
+          icon: PauseCircle,
+          iconBg: "bg-[#fff7ed] text-[#ea580c] border-[#ffedd5]",
+          headerTitle: `Pause ${title}?`,
           subtitle:
             "Temporarily suspend active submissions. Creators will be notified.",
-          confirmText: "Yes",
+          buttonText: "Pause Campaign",
+          buttonBg: "bg-[#ea580c] hover:bg-[#c2410c]",
         };
       case "cancel":
         return {
-          questionTitle: "Are you sure you want to Cancel this Campaign?",
+          icon: Ban,
+          iconBg: "bg-[#fef2f2] text-[#dc2626] border-[#fee2e2]",
+          headerTitle: `Cancel ${title}?`,
           subtitle:
             "Permanently cancel this social campaign. All pending submissions will be closed.",
-          confirmText: "Yes",
+          buttonText: "Cancel Campaign",
+          buttonBg: "bg-[#dc2626] hover:bg-[#b91c1c]",
         };
       case "extend-deadline":
         return {
-          questionTitle: "Are you sure you want to Extend the Deadline?",
+          icon: Clock,
+          iconBg: "bg-[#eff6ff] text-[#2563eb] border-[#dbeafe]",
+          headerTitle: `Extend Deadline for ${title}`,
           subtitle: "Set a new deadline date for creator participation.",
-          confirmText: "Yes",
+          buttonText: "Extend Deadline",
+          buttonBg: "bg-[#2563eb] hover:bg-[#1d4ed8]",
         };
       case "close-applications":
         return {
-          questionTitle: "Are you sure you want to Close the Applications?",
+          icon: XCircle,
+          iconBg: "bg-[#fff1f2] text-brand-pink border-[#ffe4e6]",
+          headerTitle: `Close Applications for ${title}?`,
           subtitle: "Stop accepting new participant applications early.",
-          confirmText: "Yes",
+          buttonText: "Close Applications",
+          buttonBg: "bg-brand-pink hover:opacity-90",
         };
       case "reject-participant":
         return {
-          questionTitle: "Are you sure you want to Reject this Submission?",
+          icon: AlertTriangle,
+          iconBg: "bg-[#fef2f2] text-[#dc2626] border-[#fee2e2]",
+          headerTitle: "Reject Participant Submission?",
           subtitle: "Specify the reason for rejecting this creator submission.",
-          confirmText: "Yes",
+          buttonText: "Reject Submission",
+          buttonBg: "bg-[#dc2626] hover:bg-[#b91c1c]",
         };
       default:
         return {
-          questionTitle: `Confirm action for ${title}?`,
+          icon: AlertTriangle,
+          iconBg: "bg-gray-100 text-gray-700 border-gray-200",
+          headerTitle: title,
           subtitle: "Confirm action.",
-          confirmText: "Yes",
+          buttonText: "Confirm",
+          buttonBg: "bg-[#1a1a2e]",
         };
     }
   };
@@ -104,31 +130,39 @@ export default function SocialImpactActionModal({
     <Portal>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div
-          className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
+          className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
           onClick={onClose}
         />
 
-        <div className="relative z-10 w-full max-w-[440px] bg-white rounded-[28px] shadow-2xl p-8 flex flex-col items-center gap-6 text-center animate-scale-up">
-          {/* Top Yellow Warning Exclamation Badge */}
-          <div className="w-16 h-16 rounded-full border-2 border-[#f59e0b] text-[#f59e0b] flex items-center justify-center text-3xl font-light shrink-0">
-            !
-          </div>
-
-          {/* Title Wording */}
-          <div className="flex flex-col items-center gap-1">
-            <h3 className="text-base font-bold text-[#1a1a2e] max-w-[320px] leading-snug">
-              {config.questionTitle}
-            </h3>
-            {config.subtitle && (
-              <p className="text-xs text-[#7a7a9a] leading-tight max-w-[300px]">
-                {config.subtitle}
-              </p>
-            )}
+        <div className="relative z-10 w-full max-w-[420px] bg-white rounded-3xl shadow-2xl p-6 flex flex-col gap-5 text-left animate-scale-up">
+          {/* Header */}
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-10 h-10 rounded-2xl flex items-center justify-center border shrink-0 ${config.iconBg}`}
+              >
+                <config.icon size={18} />
+              </div>
+              <div className="flex flex-col">
+                <h3 className="text-sm font-bold text-[#1a1a2e]">
+                  {config.headerTitle}
+                </h3>
+                <p className="text-[11px] text-[#7a7a9a] leading-tight">
+                  {config.subtitle}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-1 rounded-full text-[#9a99b0] hover:bg-[#f4f3f6] cursor-pointer"
+            >
+              <X size={16} />
+            </button>
           </div>
 
           <form
             onSubmit={handleSubmit}
-            className="w-full flex flex-col gap-4 text-xs font-semibold text-[#1a1a2e] text-left"
+            className="flex flex-col gap-4 text-xs font-semibold text-[#1a1a2e]"
           >
             {allowsDeadline && (
               <div className="flex flex-col gap-1.5">
@@ -152,24 +186,23 @@ export default function SocialImpactActionModal({
                   Reason <span className="text-red-500">*</span>
                 </label>
                 <textarea
-                  rows={2}
+                  rows={3}
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  placeholder="Enter reason..."
+                  placeholder="e.g. Compliance check initiated / Hashtag missing from caption"
                   required={requiresReason}
                   className="w-full bg-[#faf9fc] border border-[#e8e6f0] rounded-xl p-3 text-xs focus:outline-none focus:border-brand-pink font-medium resize-none"
                 />
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-3 pt-2 w-full">
+            <div className="grid grid-cols-2 gap-3 pt-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="h-11 rounded-xl bg-[#f4f3f6] border border-[#e8e6f0] text-xs font-bold text-[#5a5a7a] hover:bg-[#e8e6f0] cursor-pointer transition-colors"
+                className="h-10 rounded-xl border border-[#e8e6f0] text-xs font-bold text-[#5a5a7a] hover:bg-[#faf9fc] cursor-pointer"
               >
-                No, go back
+                Cancel
               </button>
               <button
                 type="submit"
@@ -178,9 +211,9 @@ export default function SocialImpactActionModal({
                   (requiresReason && !reason.trim()) ||
                   (requiresDeadline && !newDeadline)
                 }
-                className="h-11 rounded-xl bg-brand-pink text-white text-xs font-bold hover:opacity-90 cursor-pointer transition-all disabled:opacity-50"
+                className={`h-10 rounded-xl text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-50 ${config.buttonBg}`}
               >
-                {isLoading ? "Processing..." : config.confirmText}
+                {isLoading ? "Processing..." : config.buttonText}
               </button>
             </div>
           </form>

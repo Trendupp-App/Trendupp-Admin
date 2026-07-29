@@ -43,9 +43,9 @@ export default function SocialImpactDetailsPage({
   params: Promise<PageParams>;
 }) {
   const { id } = use(params);
-  const [activeTab, setActiveTab] = useState<
-    "Campaign Details" | "Participants" | "Analytics" | "Admin Action"
-  >("Campaign Details");
+  const [activeTab, setActiveTab] = useState<"Overview" | "Participants">(
+    "Overview",
+  );
 
   // Action modal state
   const [actionModal, setActionModal] = useState<{
@@ -233,15 +233,8 @@ export default function SocialImpactDetailsPage({
       </div>
 
       {/* Tabs Row */}
-      <div className="flex items-center gap-6 border-b border-[#e8e6f0]/60 w-full overflow-x-auto scrollbar-none">
-        {(
-          [
-            "Campaign Details",
-            "Participants",
-            "Analytics",
-            "Admin Action",
-          ] as const
-        ).map((tab) => (
+      <div className="flex items-center gap-6 border-b border-[#e8e6f0]/60 w-full">
+        {(["Overview", "Participants"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -252,7 +245,9 @@ export default function SocialImpactDetailsPage({
                 : "border-transparent text-[#7a7a9a] hover:text-[#1a1a2e]",
             )}
           >
-            <span>{tab}</span>
+            <span>
+              {tab === "Participants" ? "Participants / Submissions" : tab}
+            </span>
             {tab === "Participants" && (
               <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-brand-pink text-white">
                 {participantsList.length}
@@ -263,7 +258,7 @@ export default function SocialImpactDetailsPage({
       </div>
 
       {/* TAB CONTENT */}
-      {activeTab === "Campaign Details" && (
+      {activeTab === "Overview" ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Details (2 Cols) */}
           <div className="lg:col-span-2 flex flex-col gap-6">
@@ -409,10 +404,8 @@ export default function SocialImpactDetailsPage({
             </div>
           </div>
         </div>
-      )}
-
-      {/* PARTICIPANTS TAB */}
-      {activeTab === "Participants" && (
+      ) : (
+        /* PARTICIPANTS / SUBMISSIONS TAB */
         <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-4 shadow-sm">
           <h3 className="text-sm font-bold text-[#1a1a2e]">
             Creator Submissions ({participantsList.length})
@@ -517,129 +510,6 @@ export default function SocialImpactDetailsPage({
               ))}
             </div>
           )}
-        </div>
-      )}
-
-      {/* ANALYTICS TAB */}
-      {activeTab === "Analytics" && (
-        <div className="flex flex-col gap-6 animate-fade-in-up">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 text-left">
-            <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-2 shadow-sm">
-              <span className="text-[10px] font-bold text-[#7a7a9a] uppercase tracking-wider">
-                Total Participants
-              </span>
-              <span className="text-xl font-bold text-[#1a1a2e]">
-                {participantsList.length}
-              </span>
-            </div>
-            <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-2 shadow-sm">
-              <span className="text-[10px] font-bold text-[#7a7a9a] uppercase tracking-wider">
-                Approved Submissions
-              </span>
-              <span className="text-xl font-bold text-[#16a34a]">
-                {participantsList.filter((p) => p.status === "Approved").length}
-              </span>
-            </div>
-            <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-2 shadow-sm">
-              <span className="text-[10px] font-bold text-[#7a7a9a] uppercase tracking-wider">
-                Pending Submissions
-              </span>
-              <span className="text-xl font-bold text-[#ea580c]">
-                {participantsList.filter((p) => p.status === "Pending").length}
-              </span>
-            </div>
-            <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-2 shadow-sm">
-              <span className="text-[10px] font-bold text-[#7a7a9a] uppercase tracking-wider">
-                Tokens Allocated
-              </span>
-              <span className="text-xl font-bold text-brand-pink">
-                {(campaignData.tokensReward ?? 100) * participantsList.length}{" "}
-                Tokens
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ADMIN ACTION TAB (Matching Image 1 Screenshot) */}
-      {activeTab === "Admin Action" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up">
-          {/* Card 1: Pause Campaign */}
-          <button
-            onClick={() => setActionModal({ isOpen: true, type: "pause" })}
-            className="bg-white border border-[#e8e6f0]/80 hover:border-brand-pink/50 rounded-[24px] p-6 flex flex-col items-start gap-4 shadow-sm hover:shadow-md transition-all text-left cursor-pointer group"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-[#fff7ed] text-[#ea580c] border border-[#ffedd5] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <PauseCircle size={22} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <h4 className="text-sm font-bold text-[#1a1a2e]">
-                Pause Campaign
-              </h4>
-              <p className="text-xs text-[#7a7a9a] leading-relaxed">
-                Temporarily pause new submissions or activity for this campaign.
-              </p>
-            </div>
-          </button>
-
-          {/* Card 2: Extend Deadline */}
-          <button
-            onClick={() =>
-              setActionModal({ isOpen: true, type: "extend-deadline" })
-            }
-            className="bg-white border border-[#e8e6f0]/80 hover:border-brand-pink/50 rounded-[24px] p-6 flex flex-col items-start gap-4 shadow-sm hover:shadow-md transition-all text-left cursor-pointer group"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-[#eff6ff] text-[#2563eb] border border-[#dbeafe] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <Clock size={22} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <h4 className="text-sm font-bold text-[#1a1a2e]">
-                Extend Deadline
-              </h4>
-              <p className="text-xs text-[#7a7a9a] leading-relaxed">
-                Set a new deadline date for creators to participate.
-              </p>
-            </div>
-          </button>
-
-          {/* Card 3: Close Applications */}
-          <button
-            onClick={() =>
-              setActionModal({ isOpen: true, type: "close-applications" })
-            }
-            className="bg-white border border-[#e8e6f0]/80 hover:border-brand-pink/50 rounded-[24px] p-6 flex flex-col items-start gap-4 shadow-sm hover:shadow-md transition-all text-left cursor-pointer group"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-[#fff1f2] text-brand-pink border border-[#ffe4e6] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <XCircle size={22} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <h4 className="text-sm font-bold text-[#1a1a2e]">
-                Close Applications
-              </h4>
-              <p className="text-xs text-[#7a7a9a] leading-relaxed">
-                Stop accepting new creator applications for this campaign.
-              </p>
-            </div>
-          </button>
-
-          {/* Card 4: Cancel Campaign */}
-          <button
-            onClick={() => setActionModal({ isOpen: true, type: "cancel" })}
-            className="bg-white border border-[#e8e6f0]/80 hover:border-brand-pink/50 rounded-[24px] p-6 flex flex-col items-start gap-4 shadow-sm hover:shadow-md transition-all text-left cursor-pointer group"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-[#fef2f2] text-[#dc2626] border border-[#fee2e2] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <Ban size={22} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <h4 className="text-sm font-bold text-[#1a1a2e]">
-                Cancel Social Impact
-              </h4>
-              <p className="text-xs text-[#7a7a9a] leading-relaxed">
-                Permanently cancel this social impact campaign and close active
-                tasks.
-              </p>
-            </div>
-          </button>
         </div>
       )}
 
