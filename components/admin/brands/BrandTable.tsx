@@ -247,20 +247,22 @@ export default function BrandTable() {
       </div>
 
       {/* Directory Table */}
-      <div className="overflow-x-auto rounded-2xl border border-[#e8e6f0]/60">
-        <table className="w-full text-left border-collapse text-xs">
+      <div className="w-full overflow-x-auto no-scrollbar rounded-2xl border border-[#e8e6f0]/60">
+        <table className="w-full min-w-[1100px] text-left border-collapse text-xs">
           <thead>
             <tr className="bg-[#faf9fc] border-b border-[#e8e6f0]/60 text-[10px] font-extrabold uppercase tracking-wider text-[#7a7a9a]">
-              <th className="py-3.5 px-4">Advertisers ID</th>
-              <th className="py-3.5 px-4">Advertiser</th>
-              <th className="py-3.5 px-4">Representative</th>
-              <th className="py-3.5 px-4">Industry</th>
-              <th className="py-3.5 px-4">Location</th>
-              <th className="py-3.5 px-4">Profile Completion</th>
-              <th className="py-3.5 px-4">Status</th>
-              <th className="py-3.5 px-4">Total Spend</th>
-              <th className="py-3.5 px-4">Campaigns</th>
-              <th className="py-3.5 px-4">Join Date</th>
+              <th className="py-3.5 px-4 whitespace-nowrap">Advertisers ID</th>
+              <th className="py-3.5 px-4 whitespace-nowrap">Advertiser</th>
+              <th className="py-3.5 px-4 whitespace-nowrap">Representative</th>
+              <th className="py-3.5 px-4 whitespace-nowrap">Industry</th>
+              <th className="py-3.5 px-4 whitespace-nowrap">Location</th>
+              <th className="py-3.5 px-4 whitespace-nowrap">
+                Profile Completion
+              </th>
+              <th className="py-3.5 px-4 whitespace-nowrap">Status</th>
+              <th className="py-3.5 px-4 whitespace-nowrap">Total Spend</th>
+              <th className="py-3.5 px-4 whitespace-nowrap">Campaigns</th>
+              <th className="py-3.5 px-4 whitespace-nowrap">Join Date</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#e8e6f0]/40">

@@ -17,6 +17,7 @@ import {
   Ban,
   ShieldOff,
   ShieldCheck,
+  CheckCircle2,
   Layers,
 } from "lucide-react";
 import { FaTiktok, FaInstagram, FaYoutube } from "react-icons/fa";
@@ -449,6 +450,57 @@ export default function CreatorProfileDrawer({
     return 0;
   }, [creatorProfile, metricsData, profileDetails, socialAccounts]);
 
+  const realBankDetails = useMemo(() => {
+    const rootObj = (creatorProfile || {}) as Record<string, unknown>;
+    const rootBank = (creatorProfile?.bankDetails ||
+      profileDetails?.bankDetails ||
+      rootObj?.bankDetails ||
+      rootObj?.bank_details ||
+      rootObj?.bank) as Record<string, unknown> | undefined;
+
+    const accountNumber =
+      (rootBank?.accountNumber as string) ??
+      (rootBank?.account_number as string) ??
+      profileDetails?.accountNumber ??
+      profileDetails?.bankAccountNumber ??
+      "";
+
+    const bankName =
+      (rootBank?.bankName as string) ??
+      (rootBank?.bank_name as string) ??
+      profileDetails?.bankName ??
+      "";
+
+    const accountName =
+      (rootBank?.accountName as string) ??
+      (rootBank?.account_name as string) ??
+      profileDetails?.accountName ??
+      profileDetails?.bankAccountName ??
+      profileDetails?.fullName ??
+      creatorName;
+
+    const bankAccountStatus =
+      (rootBank?.status as string) ??
+      (rootBank?.bankAccountStatus as string) ??
+      (rootBank?.bank_account_status as string) ??
+      profileDetails?.bankAccountStatus ??
+      (accountNumber ? "Verified" : "Unverified");
+
+    const isVerified =
+      String(bankAccountStatus).toLowerCase().includes("verified") ||
+      String(bankAccountStatus).toLowerCase() === "active" ||
+      Boolean(rootBank?.isVerified || rootBank?.is_verified);
+
+    return {
+      accountNumber: accountNumber ? String(accountNumber) : "",
+      bankName: bankName ? String(bankName) : "",
+      accountName: accountName ? String(accountName) : "",
+      bankAccountStatus: String(bankAccountStatus),
+      isVerified,
+      hasBank: Boolean(accountNumber || bankName),
+    };
+  }, [creatorProfile, profileDetails, creatorName]);
+
   const metrics = [
     {
       label: "Followers",
@@ -578,11 +630,11 @@ export default function CreatorProfileDrawer({
                 {/* OVERVIEW TAB */}
                 {activeTab === "Overview" && (
                   <>
-                    <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-4">
-                      <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
+                    <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-4">
+                      <h4 className="text-sm font-bold text-[#1a1a2e]">
                         Profile Details
                       </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3.5 text-xs">
+                      <div className="flex flex-col gap-3.5 text-xs">
                         {[
                           {
                             label: "Full name",
@@ -590,7 +642,7 @@ export default function CreatorProfileDrawer({
                           },
                           {
                             label: "Email",
-                            value: profileDetails?.email || "alex@email.com",
+                            value: profileDetails?.email || "amara@email.com",
                           },
                           {
                             label: "Country of residence",
@@ -598,7 +650,7 @@ export default function CreatorProfileDrawer({
                               profileDetails?.countryOfResidence || "Nigeria",
                           },
                           {
-                            label: "State / Location",
+                            label: "State",
                             value: profileDetails?.state || "Lagos",
                           },
                           {
@@ -606,53 +658,125 @@ export default function CreatorProfileDrawer({
                             value: profileDetails?.nationality || "Nigeria",
                           },
                           {
-                            label: "Phone",
-                            value: profileDetails?.phoneNumber || "N/A",
-                          },
-                          {
                             label: "Bio",
                             value:
                               profileDetails?.bio ||
                               "Fashion content creator passionate about African aesthetics and modern style.",
-                            span: true,
+                          },
+                          {
+                            label: "Gender",
+                            value: profileDetails?.gender || "Male",
+                          },
+                          {
+                            label: "Date of Birth",
+                            value:
+                              profileDetails?.dateOfBirth ||
+                              profileDetails?.dob ||
+                              "11-05-2000",
                           },
                           {
                             label: "Profile Completion",
                             value: profileDetails?.profileCompletion || "100%",
                           },
                           {
-                            label: "Bank Account",
+                            label: "Account Number",
                             value:
-                              profileDetails?.bankAccountStatus || "Verified",
-                            color: "text-[#16a34a] font-bold",
+                              realBankDetails.accountNumber ||
+                              profileDetails?.accountNumber ||
+                              profileDetails?.bankAccountNumber ||
+                              "—",
+                            isBankAccountNumber: Boolean(
+                              realBankDetails.accountNumber ||
+                              profileDetails?.accountNumber ||
+                              profileDetails?.bankAccountNumber,
+                            ),
+                          },
+                          {
+                            label: "Bank Name",
+                            value:
+                              realBankDetails.bankName ||
+                              profileDetails?.bankName ||
+                              "—",
+                          },
+                          {
+                            label: "Account Name",
+                            value:
+                              realBankDetails.accountName ||
+                              profileDetails?.accountName ||
+                              profileDetails?.bankAccountName ||
+                              profileDetails?.fullName ||
+                              creatorName,
+                          },
+                          {
+                            label: "Bank Account Status",
+                            value:
+                              realBankDetails.bankAccountStatus ||
+                              profileDetails?.bankAccountStatus ||
+                              "Verified",
+                            isBankStatusBadge: true,
                           },
                           {
                             label: "Date Joined",
-                            value: formatDateOnly(profileDetails?.dateJoined),
+                            value:
+                              formatDateOnly(profileDetails?.dateJoined) !== "—"
+                                ? formatDateOnly(profileDetails?.dateJoined)
+                                : "Jan 15, 2026",
                           },
-                          { label: "Account Status", badge: true },
+                          {
+                            label: "Account Status",
+                            isBadge: true,
+                          },
                         ].map((f, i) => (
                           <div
                             key={i}
-                            className={cn(
-                              "flex flex-col gap-1",
-                              f.span && "sm:col-span-2",
-                            )}
+                            className="grid grid-cols-1 sm:grid-cols-[170px_1fr] items-start gap-1 sm:gap-4"
                           >
-                            <span className="text-[#9a99b0] text-[10px] font-semibold uppercase">
+                            <span className="font-bold text-[#5a5a7a]">
                               {f.label}
                             </span>
-                            {f.badge ? (
+                            {f.isBadge ? (
                               <div className="w-fit">
                                 <AdminStatusBadge status={creatorStatus} />
                               </div>
-                            ) : (
+                            ) : f.isBankStatusBadge ? (
                               <span
                                 className={cn(
-                                  "text-[#1a1a2e] font-medium leading-relaxed",
-                                  f.color,
+                                  "px-2.5 py-0.5 rounded-full text-[10px] font-bold border capitalize w-fit inline-block",
+                                  (String(f.value)
+                                    .toLowerCase()
+                                    .includes("verified") &&
+                                    !String(f.value)
+                                      .toLowerCase()
+                                      .includes("unverified")) ||
+                                    String(f.value).toLowerCase() === "active"
+                                    ? "bg-[#f0fdf4] text-[#16a34a] border-emerald-200"
+                                    : String(f.value)
+                                          .toLowerCase()
+                                          .includes("unverified") ||
+                                        String(f.value)
+                                          .toLowerCase()
+                                          .includes("rejected") ||
+                                        String(f.value)
+                                          .toLowerCase()
+                                          .includes("failed")
+                                      ? "bg-[#fef2f2] text-[#dc2626] border-red-200"
+                                      : "bg-[#fffbeb] text-[#d97706] border-amber-200",
                                 )}
                               >
+                                {f.value}
+                              </span>
+                            ) : f.isBankAccountNumber ? (
+                              <div className="flex items-center gap-1.5 font-semibold text-[#1a1a2e]">
+                                <span>{f.value}</span>
+                                {realBankDetails.isVerified && (
+                                  <CheckCircle2
+                                    size={15}
+                                    className="text-[#10b981] fill-[#10b981]/15 shrink-0"
+                                  />
+                                )}
+                              </div>
+                            ) : (
+                              <span className="font-semibold text-[#1a1a2e] leading-relaxed">
                                 {f.value}
                               </span>
                             )}
