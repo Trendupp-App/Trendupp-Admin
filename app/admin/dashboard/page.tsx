@@ -39,15 +39,6 @@ export default function AdminDashboardPage() {
       iconColor: "text-[#2f63eb]",
     },
     {
-      value: formatMetricValue(topMetrics?.totalBrands),
-      label: "Total Advertisers",
-      trend: weeklyTrend(topMetrics?.newBrandsThisWeek),
-      trendUp: true,
-      icon: TrendingUp,
-      iconBg: "bg-[#f0fdf4]",
-      iconColor: "text-[#16a34a]",
-    },
-    {
       value: formatMetricValue(topMetrics?.totalCampaigns),
       label: "Total Campaigns",
       trend: weeklyTrend(topMetrics?.newCampaignsThisWeek),
@@ -55,6 +46,15 @@ export default function AdminDashboardPage() {
       icon: Wallet,
       iconBg: "bg-[#fef9e7]",
       iconColor: "text-[#ca8a04]",
+    },
+    {
+      value: formatMetricValue(topMetrics?.totalBrands),
+      label: "Total Advertisers",
+      trend: weeklyTrend(topMetrics?.newBrandsThisWeek),
+      trendUp: true,
+      icon: TrendingUp,
+      iconBg: "bg-[#f0fdf4]",
+      iconColor: "text-[#16a34a]",
     },
     {
       value: formatMetricValue(topMetrics?.openDisputes),

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { ChevronRight } from "lucide-react";
 import { useTopBrands } from "@/hooks/useAdminBrands";
 import UserAvatar from "@/shared/UserAvatar";
 
@@ -150,9 +151,10 @@ export default function TopBrands({ onViewAll }: { onViewAll?: () => void }) {
         <div className="pt-2 flex justify-end">
           <button
             onClick={onViewAll}
-            className="px-4 py-2 bg-[#edf2fe] hover:bg-[#dbe5fe] text-[#2f63eb] text-xs font-bold rounded-xl transition-all cursor-pointer inline-flex items-center gap-1"
+            className="h-7 px-3 bg-[#edf3ff] hover:bg-[#dbe9ff] text-[#2f63eb] text-xs font-bold rounded-xl flex items-center gap-1 transition-colors cursor-pointer"
           >
-            View All &gt;
+            <span>View All</span>
+            <ChevronRight size={13} className="stroke-[2.5]" />
           </button>
         </div>
       )}
