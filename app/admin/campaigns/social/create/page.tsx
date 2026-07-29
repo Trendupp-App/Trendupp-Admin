@@ -1,15 +1,25 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
-import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, Trash2, Check, ArrowRight, Search, X } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  ArrowLeft,
+  Trash2,
+  Check,
+  ArrowRight,
+  Search,
+  X,
+  UploadCloud,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { useAdminBrandsList } from "@/hooks/useAdminBrands";
 import {
   useCreateSocialImpactCampaign,
+  useUpdateSocialImpactCampaign,
   usePublishSocialImpactCampaign,
+  useAdminSocialImpactDetails,
 } from "@/hooks/useAdminSocialImpact";
 
 interface BrandOption {
@@ -46,38 +56,44 @@ const MOCK_ADVERTISERS: BrandOption[] = [
 
 export default function CreateCampaignPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const draftIdParam = searchParams.get("draftId");
+
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(
+    draftIdParam,
+  );
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: brandsData } = useAdminBrandsList({ limit: 50 });
+  const { data: existingDraft } = useAdminSocialImpactDetails(
+    editingDraftId || "",
+    Boolean(editingDraftId),
+  );
+
   const createCampaignMutation = useCreateSocialImpactCampaign();
+  const updateCampaignMutation = useUpdateSocialImpactCampaign();
   const publishCampaignMutation = usePublishSocialImpactCampaign();
 
   // Step 1 state
-  const [preview, setPreview] = useState<string>(
-    "/dashboard/tiktok_news_banner.png",
+  const [preview, setPreview] = useState<string>("");
+  const [title, setTitle] = useState("");
+  const [goal, setGoal] = useState("Amplify Content");
+  const [contentLink, setContentLink] = useState("");
+  const [tier, setTier] = useState(
+    "Micro (10K-200K / 3 Token), Nano (1K-10K / 1 Token)",
   );
-  const [title, setTitle] = useState("Summer Style Collection 2025");
-  const [goal, setGoal] = useState("Create Content");
-  const [tier, setTier] = useState("Micro, Nano");
-  const [selectedAdvertiser, setSelectedAdvertiser] =
-    useState<string>("coca-cola");
+  const [selectedAdvertiser, setSelectedAdvertiser] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [platform, setPlatform] = useState("Instagram");
+  const [endDate, setEndDate] = useState("");
 
   // Step 2 state
-  const [desc, setDesc] = useState(
-    "Zara Africa is launching a brand-new summer style collection. Creators are invited to share their unique fashion styling video.",
-  );
-  const [deliverables, setDeliverables] = useState<string[]>([
-    "1x Instagram Reel (30-60 seconds)",
-  ]);
-  const [directions, setDirections] = useState<string[]>([
-    "Film in warm, golden-hour lighting",
-  ]);
-  const [dos, setDos] = useState<string[]>(["Tag brand account"]);
-  const [donts, setDonts] = useState<string[]>([
-    "No competitor brands visible",
-  ]);
+  const [desc, setDesc] = useState("");
+  const [deliverables, setDeliverables] = useState<string[]>([""]);
+  const [directions, setDirections] = useState<string[]>([""]);
+  const [dos, setDos] = useState<string[]>([""]);
+  const [donts, setDonts] = useState<string[]>([""]);
 
   const liveBrands: BrandOption[] =
     brandsData?.data && Array.isArray(brandsData.data)
@@ -132,16 +148,157 @@ export default function CreateCampaignPage() {
     }
   };
 
+  // Local draft cache helper to guarantee 100% data retention even for non-DTO fields
+  const saveLocalDraftCache = (targetId: string) => {
+    try {
+      const cacheObj = {
+        title,
+        goal,
+        selectedAdvertiser,
+        tier,
+        preview,
+        desc,
+        deliverables,
+        directions,
+        dos,
+        donts,
+        contentLink,
+        platform,
+        endDate,
+        step,
+      };
+      localStorage.setItem(
+        `trendupp_draft_${targetId}`,
+        JSON.stringify(cacheObj),
+      );
+    } catch {
+      // LocalStorage access ignore
+    }
+  };
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      // 1. First load from localStorage cache if available for this draftId
+      if (editingDraftId) {
+        try {
+          const cachedRaw = localStorage.getItem(
+            `trendupp_draft_${editingDraftId}`,
+          );
+          if (cachedRaw) {
+            const cached = JSON.parse(cachedRaw);
+            if (cached.title) setTitle(cached.title);
+            if (cached.goal) setGoal(cached.goal);
+            if (cached.selectedAdvertiser)
+              setSelectedAdvertiser(cached.selectedAdvertiser);
+            if (cached.tier) setTier(cached.tier);
+            if (cached.preview) setPreview(cached.preview);
+            if (cached.desc) setDesc(cached.desc);
+            if (cached.deliverables) setDeliverables(cached.deliverables);
+            if (cached.directions) setDirections(cached.directions);
+            if (cached.dos) setDos(cached.dos);
+            if (cached.donts) setDonts(cached.donts);
+            if (cached.contentLink) setContentLink(cached.contentLink);
+            if (cached.platform) setPlatform(cached.platform);
+            if (cached.endDate) setEndDate(cached.endDate);
+            if (cached.step) setStep(cached.step);
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+
+      // 2. Merge/override with server payload if existingDraft returns
+      if (existingDraft) {
+        const anyDraft = existingDraft as unknown as {
+          id?: string;
+          title?: string;
+          goal?: string;
+          brandId?: string;
+          brandName?: string;
+          brand?: { id?: string; name?: string; brandName?: string };
+          creatorTiers?: string[];
+          coverImageUrl?: string;
+          coverImage?: string;
+          image?: string;
+          campaignBrief?: string;
+          brief?: string;
+          deliverables?: string[];
+          contentDirection?: string[];
+          dos?: string[];
+          donts?: string[];
+          guidelines?: { dos?: string[]; donts?: string[] };
+          contentLink?: string;
+          link?: string;
+          platforms?: string;
+          platform?: string;
+          deadline?: string;
+          endDate?: string;
+          currentStep?: number;
+        };
+
+        if (anyDraft.title) setTitle(anyDraft.title);
+        if (anyDraft.goal) setGoal(anyDraft.goal);
+
+        const bId = anyDraft.brandId || anyDraft.brand?.id;
+        if (bId) setSelectedAdvertiser(bId);
+
+        if (anyDraft.creatorTiers && anyDraft.creatorTiers.length > 0) {
+          setTier(anyDraft.creatorTiers.join(", "));
+        }
+
+        const img =
+          anyDraft.coverImageUrl || anyDraft.coverImage || anyDraft.image;
+        if (img) setPreview(img);
+
+        const linkVal = anyDraft.contentLink || anyDraft.link;
+        if (linkVal) setContentLink(linkVal);
+
+        const platformVal = anyDraft.platforms || anyDraft.platform;
+        if (platformVal) setPlatform(platformVal);
+
+        const dateVal = anyDraft.deadline || anyDraft.endDate;
+        if (dateVal) setEndDate(dateVal);
+
+        const briefVal = anyDraft.campaignBrief || anyDraft.brief;
+        if (briefVal) setDesc(briefVal);
+
+        if (anyDraft.deliverables && anyDraft.deliverables.length > 0) {
+          setDeliverables(anyDraft.deliverables);
+        }
+        if (anyDraft.contentDirection && anyDraft.contentDirection.length > 0) {
+          setDirections(anyDraft.contentDirection);
+        }
+
+        const extractedDos = anyDraft.dos || anyDraft.guidelines?.dos || [];
+        const extractedDonts =
+          anyDraft.donts || anyDraft.guidelines?.donts || [];
+
+        if (extractedDos.length > 0) setDos(extractedDos);
+        if (extractedDonts.length > 0) setDonts(extractedDonts);
+
+        if (anyDraft.currentStep) {
+          setStep(Math.min(Math.max(anyDraft.currentStep, 1), 3) as 1 | 2 | 3);
+        }
+      }
+    });
+  }, [editingDraftId, existingDraft]);
+
+  // Clean POST payload (omits contentLink, platforms, deadline per NestJS DTO whitelist)
   const buildPayload = (isDraft: boolean) => ({
-    title,
-    goal,
-    brandId: selectedAdvertiser,
+    title: title || "Untitled Campaign Draft",
+    goal: goal || "Amplify Content",
+    brandId:
+      selectedAdvertiser ||
+      liveBrands[0]?.id ||
+      "2be03919-825f-430f-8e30-aa4cea473c7d",
     creatorTiers: tier
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean),
-    coverImageUrl: preview,
-    campaignBrief: desc,
+      ? tier
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean)
+      : ["Micro", "Nano"],
+    coverImageUrl: preview || undefined,
+    campaignBrief: desc || undefined,
     deliverables: deliverables.filter(Boolean),
     contentDirection: directions.filter(Boolean),
     dos: dos.filter(Boolean),
@@ -150,10 +307,50 @@ export default function CreateCampaignPage() {
     isDraft,
   });
 
+  // Clean PATCH payload (omits isDraft, contentLink, platforms, deadline per NestJS DTO whitelist)
+  const buildUpdatePayload = () => ({
+    title: title || "Untitled Campaign Draft",
+    goal: goal || "Amplify Content",
+    brandId:
+      selectedAdvertiser ||
+      liveBrands[0]?.id ||
+      "2be03919-825f-430f-8e30-aa4cea473c7d",
+    creatorTiers: tier
+      ? tier
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean)
+      : ["Micro", "Nano"],
+    coverImageUrl: preview || undefined,
+    campaignBrief: desc || undefined,
+    deliverables: deliverables.filter(Boolean),
+    contentDirection: directions.filter(Boolean),
+    dos: dos.filter(Boolean),
+    donts: donts.filter(Boolean),
+    currentStep: step,
+  });
+
   const handleSaveAsDraft = async () => {
     try {
-      await createCampaignMutation.mutateAsync(buildPayload(true));
-      router.push("/admin/campaigns/social");
+      if (editingDraftId) {
+        // Repeated draft saving on existing draft (PATCH)
+        await updateCampaignMutation.mutateAsync({
+          id: editingDraftId,
+          payload: buildUpdatePayload(),
+        });
+        saveLocalDraftCache(editingDraftId);
+      } else {
+        // Initial draft creation (POST)
+        const res = await createCampaignMutation.mutateAsync(
+          buildPayload(true),
+        );
+        const newDraftId = res.data?.id;
+        if (newDraftId) {
+          setEditingDraftId(newDraftId);
+          saveLocalDraftCache(newDraftId);
+          window.history.replaceState(null, "", `?draftId=${newDraftId}`);
+        }
+      }
     } catch {
       // Toast handled by mutation
     }
@@ -164,12 +361,21 @@ export default function CreateCampaignPage() {
       setStep((step + 1) as 1 | 2 | 3);
     } else {
       try {
-        const res = await createCampaignMutation.mutateAsync(
-          buildPayload(false),
-        );
-        const campaignId = res.data?.id;
-        if (campaignId) {
-          await publishCampaignMutation.mutateAsync(campaignId);
+        let finalCampaignId = editingDraftId;
+        if (editingDraftId) {
+          await updateCampaignMutation.mutateAsync({
+            id: editingDraftId,
+            payload: buildUpdatePayload(),
+          });
+        } else {
+          const res = await createCampaignMutation.mutateAsync(
+            buildPayload(false),
+          );
+          finalCampaignId = res.data?.id || null;
+        }
+
+        if (finalCampaignId) {
+          await publishCampaignMutation.mutateAsync(finalCampaignId);
         }
         router.push("/admin/campaigns/social");
       } catch {
@@ -280,20 +486,39 @@ export default function CreateCampaignPage() {
 
         {/* Content Body */}
         <div className="py-6 flex flex-col gap-6">
-          {/* Cover image (Always shows, matches mockup image) */}
+          {/* Cover image container */}
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="relative h-48 bg-[#eff6ff] rounded-[24px] overflow-hidden flex items-center justify-center border border-[#e8e6f0]/40 group cursor-pointer"
+            className="relative h-48 bg-[#f4f3f6] border-2 border-dashed border-[#e8e6f0] hover:border-brand-pink/50 rounded-[24px] overflow-hidden flex flex-col items-center justify-center gap-2 group cursor-pointer transition-colors"
           >
-            <img
-              src={preview}
-              alt="Campaign Cover"
-              className="absolute inset-0 w-full h-full object-cover object-center"
-            />
-            <div className="absolute inset-0 bg-black/20" />
-            <button className="px-4 py-2 rounded-xl bg-white text-[10px] font-bold text-[#1a1a2e] hover:bg-white/95 transition-colors cursor-pointer shadow-sm relative z-10 select-none">
-              Change photo
-            </button>
+            {preview ? (
+              <>
+                <img
+                  src={preview}
+                  alt="Campaign Cover"
+                  onError={() => setPreview("")}
+                  className="absolute inset-0 w-full h-full object-cover object-center"
+                />
+                <div className="absolute inset-0 bg-black/20" />
+                <button className="px-4 py-2 rounded-xl bg-white text-[10px] font-bold text-[#1a1a2e] hover:bg-white/95 transition-colors cursor-pointer shadow-sm relative z-10 select-none">
+                  Change photo
+                </button>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-2 text-[#7a7a9a]">
+                <div className="w-10 h-10 rounded-full bg-white border border-[#e8e6f0] flex items-center justify-center text-[#5a5a7a] shadow-xs group-hover:scale-105 transition-transform">
+                  <UploadCloud size={18} className="text-brand-pink" />
+                </div>
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-xs font-bold text-[#1a1a2e]">
+                    Upload cover photo
+                  </span>
+                  <span className="text-[10px] text-[#9a99b0] font-medium">
+                    PNG or JPG (recommended 1200x400)
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
           <input
             ref={fileInputRef}
@@ -327,24 +552,45 @@ export default function CreateCampaignPage() {
                   onChange={(e) => setGoal(e.target.value)}
                   className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium cursor-pointer"
                 >
+                  <option value="Amplify Content">Amplify Content</option>
                   <option value="Create Content">Create Content</option>
                   <option value="Brand Awareness">Brand Awareness</option>
                 </select>
               </div>
 
+              {/* Content Link Input */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
-                  Creator tier
+                  Content Link
+                </label>
+                <input
+                  type="text"
+                  placeholder="enter the content link"
+                  value={contentLink}
+                  onChange={(e) => setContentLink(e.target.value)}
+                  className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium placeholder:text-[#c4c2d4]"
+                />
+              </div>
+
+              {/* Creator Tier and Reward */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
+                  Creator Tier and Reward
                 </label>
                 <select
                   value={tier}
                   onChange={(e) => setTier(e.target.value)}
                   className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium cursor-pointer"
                 >
-                  <option value="Micro (10K-200K), Nano (1K-10K)">
-                    Micro (10K-200K), Nano (1K-10K)
+                  <option value="Micro (10K-200K / 3 Token), Nano (1K-10K / 1 Token)">
+                    Micro (10K-200K / 3 Token), Nano (1K-10K / 1 Token)
                   </option>
-                  <option value="Macro, Micro">Macro, Micro</option>
+                  <option value="Micro (10K-200K / 100 Tokens)">
+                    Micro (10K-200K / 100 Tokens)
+                  </option>
+                  <option value="Nano (1K-10K / 50 Tokens)">
+                    Nano (1K-10K / 50 Tokens)
+                  </option>
                 </select>
               </div>
 
@@ -415,6 +661,38 @@ export default function CreateCampaignPage() {
                       </span>
                     )}
                   </div>
+                </div>
+              </div>
+
+              {/* Posting Platforms */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
+                  Posting Platforms
+                </label>
+                <select
+                  value={platform}
+                  onChange={(e) => setPlatform(e.target.value)}
+                  className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium cursor-pointer"
+                >
+                  <option value="Instagram">Instagram</option>
+                  <option value="TikTok">TikTok</option>
+                  <option value="YouTube">YouTube</option>
+                  <option value="X">X (Twitter)</option>
+                </select>
+              </div>
+
+              {/* End Date */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
+                  End Date
+                </label>
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium text-[#1a1a2e]"
+                  />
                 </div>
               </div>
             </div>

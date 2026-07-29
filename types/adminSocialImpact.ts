@@ -52,6 +52,10 @@ export interface CreateSocialImpactCampaignDto {
   contentDirection?: string[];
   dos?: string[];
   donts?: string[];
+  contentLink?: string;
+  platforms?: string;
+  deadline?: string;
+  tokensReward?: number;
   currentStep?: number;
   isDraft?: boolean;
 }
@@ -67,6 +71,10 @@ export interface UpdateSocialImpactCampaignDto {
   contentDirection?: string[];
   dos?: string[];
   donts?: string[];
+  contentLink?: string;
+  platforms?: string;
+  deadline?: string;
+  tokensReward?: number;
   currentStep?: number;
   isDraft?: boolean;
 }
@@ -79,7 +87,7 @@ export interface SocialImpactParticipant {
   creatorHandle: string;
   creatorAvatar?: string | null;
   creatorTier?: string | null;
-  status: "Pending" | "Approved" | "Rejected";
+  status: "Pending" | "Approved" | "Rejected" | "No Submission";
   submissionUrl?: string | null;
   submissionNotes?: string | null;
   tokensEarned?: number | null;
@@ -97,7 +105,6 @@ export interface PaginatedParticipantsResponse {
 
 export interface PauseCampaignDto {
   reason: string;
-  newDeadline?: string;
 }
 
 export interface CancelCampaignDto {
@@ -105,7 +112,7 @@ export interface CancelCampaignDto {
 }
 
 export interface ExtendDeadlineDto {
-  newDeadline: string;
+  endDate?: string;
   reason?: string;
 }
 

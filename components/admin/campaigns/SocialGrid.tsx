@@ -28,13 +28,12 @@ interface SocialGridProps {
 
 export default function SocialGrid({ searchQuery = "" }: SocialGridProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<
-    "Draft" | "Live" | "Active" | "Completed"
-  >("Draft");
+  const [activeTab, setActiveTab] = useState<"Draft" | "Active" | "Completed">(
+    "Draft",
+  );
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   const { data: campaignResponse, isLoading } = useAdminSocialImpactList({
-    status: activeTab,
     q: searchQuery,
   });
 
@@ -42,114 +41,36 @@ export default function SocialGrid({ searchQuery = "" }: SocialGridProps) {
 
   const campaignsList: SocialImpactCampaign[] = campaignResponse?.data || [];
 
-  // Fallback mock items if API returns empty during initial setup
-  const mockFallbackItems: SocialImpactCampaign[] = [
-    {
-      id: "d1",
-      title: "Jollof Cook-off Promo",
-      goal: "Create Content",
-      brandId: "brand-1",
-      brandName: "Food & Lifestyle",
-      creatorTiers: ["Micro", "Nano"],
-      currentStep: 3,
-      isDraft: true,
-      status: "Draft",
-      niche: "Food & Lifestyle",
-      lastEditedAt: "Last edited 20 min ago",
-    },
-    {
-      id: "d2",
-      title: "Summer Style Collection",
-      goal: "Create Content",
-      brandId: "brand-2",
-      brandName: "Lifestyle",
-      creatorTiers: ["Micro", "Nano"],
-      currentStep: 2,
-      isDraft: true,
-      status: "Draft",
-      niche: "Lifestyle",
-      lastEditedAt: "Last edited 2 hours ago",
-    },
-    {
-      id: "d3",
-      title: "New Year Skincare Push",
-      goal: "Brand Awareness",
-      brandId: "brand-3",
-      brandName: "Beauty",
-      creatorTiers: ["Micro"],
-      currentStep: 1,
-      isDraft: true,
-      status: "Draft",
-      niche: "Beauty",
-      lastEditedAt: "Last edited 1 hours ago",
-    },
-    {
-      id: "l1",
-      title: "Clean Nigeria Initiative",
-      goal: "Social Impact",
-      brandId: "brand-trendupp",
-      brandName: "Trendupp",
-      creatorTiers: ["Micro", "Nano"],
-      status: "Live",
-      niche: "Trendupp",
-      tokensReward: 100,
-      participantsCount: 47,
-      deadline: "4 days left",
-      coverImageUrl: "/dashboard/img1.jpg",
-    },
-    {
-      id: "a1",
-      title: "Active Brand Push Campaign",
-      goal: "Product Launch",
-      brandId: "brand-4",
-      brandName: "Retail",
-      creatorTiers: ["Micro"],
-      status: "Active",
-      niche: "Retail",
-      tokensReward: 24500,
-      participantsCount: 245,
-      deadline: "12 days left",
-      coverImageUrl: "/dashboard/img2.jpg",
-    },
-    {
-      id: "c1",
-      title: "Easter Egg Hunt Special",
-      goal: "Community",
-      brandId: "brand-5",
-      brandName: "Community",
-      creatorTiers: ["Nano"],
-      status: "Completed",
-      niche: "Community",
-      tokensReward: 85000,
-      participantsCount: 850,
-      deadline: "Ended",
-      coverImageUrl: "/dashboard/img3.jpg",
-    },
-  ];
+  const isDraftCampaign = (c: SocialImpactCampaign) => {
+    const s = String(c.status || "").toLowerCase();
+    return Boolean(c.isDraft) || s === "draft";
+  };
 
-  const displayItems =
-    campaignsList.length > 0
-      ? campaignsList
-      : mockFallbackItems.filter((c) => c.status === activeTab);
+  const isCompletedCampaign = (c: SocialImpactCampaign) => {
+    const s = String(c.status || "").toLowerCase();
+    return s === "completed";
+  };
 
   const counts = {
-    Draft:
-      campaignsList.filter((c) => c.status === "Draft").length ||
-      mockFallbackItems.filter((c) => c.status === "Draft").length,
-    Live:
-      campaignsList.filter((c) => c.status === "Live").length ||
-      mockFallbackItems.filter((c) => c.status === "Live").length,
-    Active:
-      campaignsList.filter((c) => c.status === "Active").length ||
-      mockFallbackItems.filter((c) => c.status === "Active").length,
-    Completed:
-      campaignsList.filter((c) => c.status === "Completed").length ||
-      mockFallbackItems.filter((c) => c.status === "Completed").length,
+    Draft: campaignsList.filter(isDraftCampaign).length,
+    Active: campaignsList.filter(
+      (c) => !isDraftCampaign(c) && !isCompletedCampaign(c),
+    ).length,
+    Completed: campaignsList.filter(isCompletedCampaign).length,
   };
+
+  const displayItems = campaignsList.filter((c) => {
+    if (activeTab === "Draft") {
+      return isDraftCampaign(c);
+    }
+    if (activeTab === "Completed") {
+      return isCompletedCampaign(c);
+    }
+    return !isDraftCampaign(c) && !isCompletedCampaign(c);
+  });
 
   const TABS = [
     { id: "Draft" as const, label: "Draft", count: counts.Draft },
-    { id: "Live" as const, label: "Live", count: counts.Live },
     { id: "Active" as const, label: "Active", count: counts.Active },
     { id: "Completed" as const, label: "Completed", count: counts.Completed },
   ];
@@ -273,25 +194,34 @@ export default function SocialGrid({ searchQuery = "" }: SocialGridProps) {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {displayItems.map((c) => {
-            const daysLeftVal = c.deadline || "4 days left";
-            const imageVal = c.coverImageUrl || "/dashboard/img1.jpg";
-            const participantsVal = (
-              c.participantsCount ?? 47
-            ).toLocaleString();
-            const tokensVal = (c.tokensReward ?? 100).toLocaleString();
+            const daysLeftVal = c.deadline || "Open";
+            const participantsVal = (c.participantsCount ?? 0).toLocaleString();
+            const tokensVal = (c.tokensReward ?? 0).toLocaleString();
 
             return (
               <div
                 key={c.id}
-                className="bg-white border border-[#e8e6f0]/60 rounded-[24px] p-4 flex flex-col gap-4 shadow-sm hover:shadow-md transition-all animate-fade-in-up"
+                className="bg-white border border-[#e8e6f0]/60 rounded-[24px] p-4 flex flex-col gap-4 shadow-sm hover:shadow-md transition-all animate-fade-in-up text-left"
               >
                 {/* Inset Cover Image Container */}
-                <div className="relative w-full h-[190px] rounded-2xl overflow-hidden shrink-0">
-                  <img
-                    src={imageVal}
-                    alt={c.title}
-                    className="w-full h-full object-cover"
-                  />
+                <div className="relative w-full h-[190px] rounded-2xl overflow-hidden shrink-0 bg-gradient-to-br from-brand-pink/20 to-[#7c3aed]/20 flex items-center justify-center">
+                  {c.coverImageUrl ? (
+                    <img
+                      src={c.coverImageUrl}
+                      alt={c.title}
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = "none";
+                      }}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 text-[#7a7a9a]">
+                      <Megaphone size={24} className="text-brand-pink/70" />
+                      <span className="text-[10px] font-bold">
+                        Social Impact
+                      </span>
+                    </div>
+                  )}
                   <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/40 via-black/10 to-transparent pointer-events-none" />
 
                   {/* Overlay Left Badge */}
