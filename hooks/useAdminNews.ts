@@ -52,14 +52,16 @@ export function useCreateNews() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateNewsDto) => adminNewsApi.createNews(data),
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["admin-news-list"] });
-      toast.success("News article published successfully");
+      const saved = res.data as AdminNewsItem;
+      const isDraft = (saved?.status || "").toLowerCase() === "draft";
+      toast.success(
+        isDraft ? "Article saved as draft" : "Article published successfully",
+      );
     },
     onError: (err: AxiosError<{ message?: string }>) => {
-      toast.error(
-        err.response?.data?.message || "Failed to publish news article",
-      );
+      toast.error(err.response?.data?.message || "Failed to save news article");
     },
   });
 }
@@ -69,12 +71,16 @@ export function useUpdateNews() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateNewsDto }) =>
       adminNewsApi.updateNews(id, data),
-    onSuccess: (_, variables) => {
+    onSuccess: (res, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-news-list"] });
       queryClient.invalidateQueries({
         queryKey: ["admin-news-details", variables.id],
       });
-      toast.success("News article updated successfully");
+      const saved = res.data as AdminNewsItem;
+      const isDraft = (saved?.status || "").toLowerCase() === "draft";
+      toast.success(
+        isDraft ? "Article saved as draft" : "Article updated successfully",
+      );
     },
     onError: (err: AxiosError<{ message?: string }>) => {
       toast.error(
