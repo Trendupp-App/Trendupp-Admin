@@ -11,37 +11,17 @@ import {
   Cell,
 } from "recharts";
 import { useBrandActiveUsers } from "@/hooks/useAdminBrands";
-import { cn } from "@/lib/utils";
+import { CardFilterHeaderControls } from "../creators/CardFilterHeaderControls";
 
 export default function BrandActiveUsersChart() {
-  const [period, setPeriod] = useState<"daily" | "weekly" | "monthly">(
-    "weekly",
-  );
+  const [period, setPeriod] = useState<
+    "all_time" | "daily" | "weekly" | "yearly"
+  >("all_time");
   const [selectedYear, setSelectedYear] = useState(2026);
-  const [selectedMonth, setSelectedMonth] = useState("July");
-
-  const monthNumber = useMemo(() => {
-    const idx = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ].indexOf(selectedMonth);
-    return idx >= 0 ? idx + 1 : undefined;
-  }, [selectedMonth]);
 
   const { data: apiData, isLoading } = useBrandActiveUsers(
-    period,
+    period === "all_time" ? "yearly" : period,
     selectedYear,
-    monthNumber,
   );
 
   const chartData = useMemo(() => {
@@ -77,58 +57,12 @@ export default function BrandActiveUsersChart() {
           <span className="text-[11px] text-[#9a99b0]">Active advertisers</span>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center p-1 bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-xl">
-            {(["daily", "weekly", "monthly"] as const).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={cn(
-                  "px-3 py-1 text-[11px] font-bold rounded-lg capitalize transition-all cursor-pointer",
-                  period === p
-                    ? "bg-brand-pink text-white shadow-xs"
-                    : "text-[#7a7a9a] hover:text-[#1a1a2e]",
-                )}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="h-8 px-2.5 bg-[#faf9fc] border border-[#e8e6f0]/60 text-[#1a1a2e] text-[11px] font-semibold rounded-xl outline-none cursor-pointer"
-          >
-            <option value={2026}>2026</option>
-            <option value={2025}>2025</option>
-          </select>
-
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="h-8 px-2.5 bg-[#faf9fc] border border-[#e8e6f0]/60 text-[#1a1a2e] text-[11px] font-semibold rounded-xl outline-none cursor-pointer"
-          >
-            {[
-              "January",
-              "February",
-              "March",
-              "April",
-              "May",
-              "June",
-              "July",
-              "August",
-              "September",
-              "October",
-              "November",
-              "December",
-            ].map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
-        </div>
+        <CardFilterHeaderControls
+          onPeriodChange={(p) => setPeriod(p)}
+          onYearChange={(y) => setSelectedYear(y)}
+          defaultPeriod="all_time"
+          defaultYear={2026}
+        />
       </div>
 
       <div className="w-full h-56 pt-2">

@@ -1,6 +1,8 @@
 "use client";
 
 import { useBrandIndustryBreakdown } from "@/hooks/useAdminBrands";
+import { CardFilterHeaderControls } from "../creators/CardFilterHeaderControls";
+import { CardDateRangeBar } from "../creators/CardDateRangeBar";
 
 export default function BrandIndustry() {
   const { data, isLoading } = useBrandIndustryBreakdown();
@@ -13,7 +15,7 @@ export default function BrandIndustry() {
 
   if (isLoading) {
     return (
-      <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-4.5 h-full justify-center animate-pulse">
+      <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-4.5 animate-pulse">
         <div className="w-24 h-4 bg-[#e8e6f0]/60 rounded-md" />
         <div className="flex flex-col gap-3.5">
           {[...Array(5)].map((_, i) => (
@@ -25,12 +27,23 @@ export default function BrandIndustry() {
   }
 
   return (
-    <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-4.5 h-full justify-center">
-      <div>
-        <h2 className="text-sm font-semibold text-[#1a1a2e]">Industry</h2>
-        <span className="text-[10px] text-[#9a99b0] font-medium">
-          {industries.length} industr{industries.length === 1 ? "y" : "ies"}
-        </span>
+    <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5 shadow-xs">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-[#1a1a2e]">Industry</h2>
+            <span className="text-[10px] text-[#9a99b0] font-medium">
+              {industries.length} industr{industries.length === 1 ? "y" : "ies"}
+            </span>
+          </div>
+
+          <CardFilterHeaderControls />
+        </div>
+
+        {/* Date Range Toolbar */}
+        <div className="pt-2 border-t border-[#f4f3f6] flex justify-start">
+          <CardDateRangeBar />
+        </div>
       </div>
 
       {industries.length === 0 && (
@@ -39,7 +52,7 @@ export default function BrandIndustry() {
         </p>
       )}
 
-      <div className="flex flex-col gap-3.5">
+      <div className="flex flex-col gap-3.5 max-h-[340px] overflow-y-auto pr-1 scrollbar-thin">
         {industries.map((ind) => (
           <div key={ind.name} className="flex flex-col gap-1.5">
             <div className="flex justify-between items-center text-xs">

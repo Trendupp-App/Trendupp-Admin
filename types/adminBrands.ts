@@ -117,6 +117,8 @@ export interface BrandDetailsSectionDto {
   country?: string | null;
   stateCity?: string | null;
   monthlyBudget?: number | null;
+  accountStatus?: string | null;
+  status?: string | null;
 }
 
 export interface BrandRepresentativeDto {
@@ -135,10 +137,20 @@ export interface BrandMetricsDto {
   avgCreatorRating?: number | string | null;
 }
 
+export interface BrandRefundAccountDto {
+  accountNumber?: string | null;
+  bankName?: string | null;
+  accountName?: string | null;
+  isVerified?: boolean | null;
+  status?: string | null;
+}
+
 export interface AdminBrandDetails {
   header?: BrandHeaderDto;
   brandDetails?: BrandDetailsSectionDto;
   brandRepresentative?: BrandRepresentativeDto;
+  refundAccount?: BrandRefundAccountDto;
+  bankDetails?: BrandRefundAccountDto;
   metrics?: BrandMetricsDto;
 
   profileDetails?: {
@@ -157,6 +169,9 @@ export interface AdminBrandDetails {
     dateJoined?: string | null;
     accountStatus?: string | null;
     industry?: string | null;
+    accountNumber?: string | null;
+    bankName?: string | null;
+    accountName?: string | null;
   };
 }
 

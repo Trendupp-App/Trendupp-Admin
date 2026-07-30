@@ -1,6 +1,8 @@
 "use client";
 
 import { useCreatorGenderDistribution } from "@/hooks/useAdminCreators";
+import { CardFilterHeaderControls } from "./CardFilterHeaderControls";
+import { CardDateRangeBar } from "./CardDateRangeBar";
 
 export default function CreatorGender() {
   const { data: genderData, isLoading } = useCreatorGenderDistribution();
@@ -17,8 +19,16 @@ export default function CreatorGender() {
 
   return (
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-4.5">
-      <div>
-        <h2 className="text-sm font-semibold text-[#1a1a2e]">Gender</h2>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold text-[#1a1a2e]">Gender</h2>
+          <CardFilterHeaderControls />
+        </div>
+
+        {/* Date Range Selector Toolbar (From, To) */}
+        <div className="pt-2 border-t border-[#f4f3f6] flex justify-start">
+          <CardDateRangeBar />
+        </div>
       </div>
 
       <div className="flex flex-col gap-4">

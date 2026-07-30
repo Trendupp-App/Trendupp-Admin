@@ -5,6 +5,9 @@ import { ChevronRight } from "lucide-react";
 import { useTopBrands } from "@/hooks/useAdminBrands";
 import UserAvatar from "@/shared/UserAvatar";
 
+import { CardFilterHeaderControls } from "../creators/CardFilterHeaderControls";
+import { CardDateRangeBar } from "../creators/CardDateRangeBar";
+
 const PepsiLogo = () => (
   <svg
     viewBox="0 0 100 100"
@@ -30,7 +33,7 @@ export default function TopBrands({ onViewAll }: { onViewAll?: () => void }) {
 
   const brands = useMemo(() => {
     if (apiData && Array.isArray(apiData) && apiData.length > 0) {
-      return apiData.slice(0, 5).map((b, idx) => {
+      return apiData.map((b, idx) => {
         const formattedSpend =
           b.totalSpend >= 1000000
             ? `₦${(b.totalSpend / 1000000).toFixed(1)}M`
@@ -93,26 +96,31 @@ export default function TopBrands({ onViewAll }: { onViewAll?: () => void }) {
 
   return (
     <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col justify-between gap-5 shadow-xs">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-[#1a1a2e]">Top Advertisers</h3>
-
-        <div className="flex items-center gap-2">
-          <select className="h-8 px-2.5 bg-[#faf9fc] border border-[#e8e6f0]/60 text-[#1a1a2e] text-[11px] font-semibold rounded-xl outline-none cursor-pointer">
-            <option>Custom</option>
-          </select>
-          <div className="h-8 px-3 bg-[#faf9fc] border border-[#e8e6f0]/60 text-[#5a5a7a] text-[11px] font-semibold rounded-xl flex items-center gap-1.5">
-            📅 1 Jun, 2025 - 30 Jun, 2025
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-bold text-[#1a1a2e]">
+              Top Advertisers
+            </h3>
+            <span className="text-[11px] text-[#9a99b0]">By total spend</span>
           </div>
+
+          <CardFilterHeaderControls />
+        </div>
+
+        {/* Date Range Toolbar */}
+        <div className="pt-2 border-t border-[#f4f3f6] flex justify-start">
+          <CardDateRangeBar />
         </div>
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 max-h-[340px] overflow-y-auto pr-1 scrollbar-thin">
         {brands.map((b) => (
           <div
             key={b.rank}
-            className="flex items-center justify-between py-2 border-b border-[#e8e6f0]/30 last:border-0 text-xs"
+            className="flex items-center justify-between py-2 border-b border-[#e8e6f0]/30 last:border-0 text-xs hover:bg-[#faf9fc] rounded-xl px-2 transition-colors"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <span
                 className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold shrink-0 ${getRankBadgeClass(b.rank)}`}
               >
@@ -129,13 +137,17 @@ export default function TopBrands({ onViewAll }: { onViewAll?: () => void }) {
                 />
               )}
 
-              <div className="flex flex-col">
-                <span className="font-bold text-[#1a1a2e]">{b.name}</span>
-                <span className="text-[10px] text-[#9a99b0]">{b.web}</span>
+              <div className="flex flex-col min-w-0">
+                <span className="font-bold text-[#1a1a2e] truncate">
+                  {b.name}
+                </span>
+                <span className="text-[10px] text-[#9a99b0] truncate">
+                  {b.web}
+                </span>
               </div>
             </div>
 
-            <div className="flex flex-col items-end">
+            <div className="flex flex-col items-end shrink-0 pl-2">
               <span className="font-bold text-brand-pink text-xs">
                 {b.spend}
               </span>

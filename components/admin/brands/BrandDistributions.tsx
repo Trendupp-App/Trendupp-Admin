@@ -5,6 +5,8 @@ import {
   useBrandIndustryBreakdown,
   useBrandCountryBreakdown,
 } from "@/hooks/useAdminBrands";
+import { CardFilterHeaderControls } from "../creators/CardFilterHeaderControls";
+import { CardDateRangeBar } from "../creators/CardDateRangeBar";
 
 export default function BrandDistributions() {
   const { data: industryData, isLoading: isLoadingIndustry } =
@@ -71,22 +73,25 @@ export default function BrandDistributions() {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Industry Card */}
       <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5 shadow-xs">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-[#1a1a2e]">Industry</h3>
-            <span className="text-[11px] text-[#9a99b0]">5 Industry</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <select className="h-8 px-2.5 bg-[#faf9fc] border border-[#e8e6f0]/60 text-[#1a1a2e] text-[11px] font-semibold rounded-xl outline-none cursor-pointer">
-              <option>Custom</option>
-            </select>
-            <div className="h-8 px-3 bg-[#faf9fc] border border-[#e8e6f0]/60 text-[#5a5a7a] text-[11px] font-semibold rounded-xl flex items-center gap-1.5">
-              📅 1 Jun, 2025 - 30 Jun, 2025
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-bold text-[#1a1a2e]">Industry</h3>
+              <span className="text-[11px] text-[#9a99b0]">
+                {industries.length} Industry Breakdown
+              </span>
             </div>
+
+            <CardFilterHeaderControls />
+          </div>
+
+          {/* Date Range Toolbar */}
+          <div className="pt-2 border-t border-[#f4f3f6] flex justify-start">
+            <CardDateRangeBar />
           </div>
         </div>
 
-        <div className="flex flex-col gap-3.5">
+        <div className="flex flex-col gap-3.5 max-h-[340px] overflow-y-auto pr-1 scrollbar-thin">
           {industries.map((item) => (
             <div key={item.label} className="flex flex-col gap-1.5">
               <div className="flex justify-between items-center text-xs">
@@ -111,17 +116,25 @@ export default function BrandDistributions() {
 
       {/* Country Card */}
       <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5 shadow-xs">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-[#1a1a2e]">Country</h3>
-            <span className="text-[11px] text-[#9a99b0]">5 Total Country</span>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-bold text-[#1a1a2e]">Country</h3>
+              <span className="text-[11px] text-[#9a99b0]">
+                {countries.length} Total Countries
+              </span>
+            </div>
+
+            <CardFilterHeaderControls />
           </div>
-          <select className="h-8 px-2.5 bg-[#faf9fc] border border-[#e8e6f0]/60 text-[#1a1a2e] text-[11px] font-semibold rounded-xl outline-none cursor-pointer">
-            <option>This Month</option>
-          </select>
+
+          {/* Date Range Toolbar */}
+          <div className="pt-2 border-t border-[#f4f3f6] flex justify-start">
+            <CardDateRangeBar />
+          </div>
         </div>
 
-        <div className="flex flex-col gap-3.5">
+        <div className="flex flex-col gap-3.5 max-h-[340px] overflow-y-auto pr-1 scrollbar-thin">
           {countries.map((item) => (
             <div key={item.label} className="flex flex-col gap-1.5">
               <div className="flex justify-between items-center text-xs">
