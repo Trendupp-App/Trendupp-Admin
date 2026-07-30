@@ -31,9 +31,14 @@ export interface EscrowMonthlyChartItem {
 }
 
 export interface EscrowBreakdownDto {
-  agencyCommission?: number;
+  commission?: number;
+  commissionRate?: number;
   vat?: number;
-  gatewayCharges?: number;
+  vatRate?: number;
+  gatewayFee?: number;
+  gatewayRate?: number;
+  netAmount?: number;
+  agencyCommission?: number;
   creatorNetBudget?: number;
 }
 
@@ -45,11 +50,24 @@ export interface EscrowRecentActivityItem {
     id?: string;
     name?: string;
   };
+  brand?: {
+    id?: string;
+    name?: string;
+  };
+  brandName?: string;
   totalFunded?: number;
+  totalAmount?: number;
+  amount?: number;
+  campaignBudget?: number;
+  agencyCommission?: number;
+  vat?: number;
   breakdown?: EscrowBreakdownDto;
   fundingStatus?: string;
+  status?: string;
   campaignStatus?: string;
   lastUpdated?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface EscrowOverviewDto {
@@ -94,6 +112,7 @@ export interface EscrowBalanceItem {
     id?: string;
     title?: string;
     platform?: string;
+    status?: string;
   };
   brand?: {
     id?: string;
@@ -115,7 +134,13 @@ export interface EscrowBalanceItem {
   totalFunded?: number;
   escrowAmount?: number;
   amount?: number;
-status?: EscrowStatus | (string & {});
+  campaignBudget?: number;
+  agencyCommission?: number;
+  commission?: number;
+  vat?: number;
+  netAmount?: number;
+  breakdown?: EscrowBreakdownDto;
+  status?: EscrowStatus | (string & {});
   fundingStatus?: string;
   campaignStatus?: string;
   dueDate?: string;
@@ -161,7 +186,7 @@ export interface CreatorPayoutItem {
   };
   campaignTitle?: string;
   amount: number;
-status: PayoutStatus | (string & {});
+  status: PayoutStatus | (string & {});
   account?: string;
   transactionTrigger?: string;
   triggeredBy?: string;
@@ -199,7 +224,7 @@ export interface AdvertiserRefundItem {
   };
   campaignTitle?: string;
   amount: number;
-status: RefundStatus | (string & {});
+  status: RefundStatus | (string & {});
   reason?: string;
   refundedAt?: string;
   createdAt?: string;

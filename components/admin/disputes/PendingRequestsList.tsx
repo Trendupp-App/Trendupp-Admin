@@ -6,17 +6,14 @@ import { useUserById } from "@/hooks/useUsers";
 interface PendingRequestsListProps {
   disputes: Dispute[];
   onActivateClick: (dispute: Dispute) => void;
-  onDeclineClick: (dispute: Dispute) => void;
 }
 
 function PendingRequestRow({
   dispute,
   onActivateClick,
-  onDeclineClick,
 }: {
   dispute: Dispute;
   onActivateClick: (dispute: Dispute) => void;
-  onDeclineClick: (dispute: Dispute) => void;
 }) {
   const { data: brandUser } = useUserById(dispute.brandId);
   const { data: creatorUser } = useUserById(dispute.creatorId);
@@ -74,16 +71,11 @@ function PendingRequestRow({
 
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={() => onActivateClick(dispute)}
             className="h-8 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-bold rounded-xl transition-all cursor-pointer shadow-sm"
           >
             Activate Chat
-          </button>
-          <button
-            onClick={() => onDeclineClick(dispute)}
-            className="h-8 px-4 bg-rose-500 hover:bg-rose-600 text-white text-[11px] font-bold rounded-xl transition-all cursor-pointer shadow-sm"
-          >
-            Decline Request
           </button>
         </div>
       </div>
@@ -94,7 +86,6 @@ function PendingRequestRow({
 export default function PendingRequestsList({
   disputes,
   onActivateClick,
-  onDeclineClick,
 }: PendingRequestsListProps) {
   if (disputes.length === 0) {
     return (
@@ -111,7 +102,6 @@ export default function PendingRequestsList({
           key={dispute.id}
           dispute={dispute}
           onActivateClick={onActivateClick}
-          onDeclineClick={onDeclineClick}
         />
       ))}
     </div>

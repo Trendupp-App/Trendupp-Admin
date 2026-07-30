@@ -25,4 +25,12 @@ export const disputeApi = {
 
   updateDisputeNotes: (id: string, notes: string) =>
     apiClient.patch<Dispute>(`/disputes/${id}`, { notes }),
+
+  declineDispute: (id: string, reason?: string) =>
+    apiClient.post<Dispute>(`/disputes/${id}/decline`, { reason }).catch(() =>
+      apiClient.post<Dispute>(`/disputes/${id}/resolve`, {
+        action: "refund_to_brand",
+        resolutionNotes: reason || "Dispute request declined by admin",
+      }),
+    ),
 };

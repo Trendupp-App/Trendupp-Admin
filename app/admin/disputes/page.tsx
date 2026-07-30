@@ -20,7 +20,6 @@ import ClosedDisputesTable from "@/components/admin/disputes/ClosedDisputesTable
 import DisputeDetailView from "@/components/admin/disputes/DisputeDetailView";
 import DisputeSkeleton from "@/components/admin/disputes/DisputeSkeleton";
 import { Dispute, ResolveDisputePayload } from "@/types/dispute";
-import { toast } from "sonner";
 
 import { useAuthStore } from "@/store/authStore";
 
@@ -254,9 +253,6 @@ export default function AdminDisputesPage() {
         <PendingRequestsList
           disputes={pendingRequests}
           onActivateClick={(dispute) => setActivateDisputeTarget(dispute)}
-          onDeclineClick={(dispute) =>
-            toast.info(`Declining request ${dispute.id}`)
-          }
         />
       )}
 

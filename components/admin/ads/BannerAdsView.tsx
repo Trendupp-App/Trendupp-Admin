@@ -37,73 +37,6 @@ import {
 } from "@/hooks/useAdminAds";
 import type { BannerAdItem, CreateAdDto } from "@/types/adminAds";
 
-const DEFAULT_SAMPLE_ADS: BannerAdItem[] = [
-  {
-    id: "79f451f4-9dff-413c-844b-95048513839d",
-    title: "Creator Workshop Series — Register Now",
-    adType: "Banner",
-    targetAudience: ["All Creators"],
-    placement: ["Home Page"],
-    adImageUrl:
-      "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=800&auto=format&fit=crop",
-    linkUrl: "https://trendupp.com/workshops",
-    startDate: "2026-06-01T00:00:00.000Z",
-    endDate: "2026-06-30T23:59:59.000Z",
-    status: "active",
-    impressions: 48200,
-    clicks: 3100,
-    ctr: "6.5%",
-  },
-  {
-    id: "ad-2",
-    title: "Trendupp Premium Creator Badge",
-    adType: "Announcement",
-    targetAudience: ["All Creators"],
-    placement: ["Home Page", "Explore"],
-    adImageUrl:
-      "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?q=80&w=800&auto=format&fit=crop",
-    linkUrl: "https://trendupp.com/premium",
-    startDate: "2026-06-05T00:00:00.000Z",
-    endDate: "2026-07-05T23:59:59.000Z",
-    status: "active",
-    impressions: 32100,
-    clicks: 2900,
-    ctr: "8.9%",
-  },
-  {
-    id: "ad-3",
-    title: "New Brand Partners Q3 2026",
-    adType: "Sponsored",
-    targetAudience: ["Micro", "Macro"],
-    placement: ["Home Page"],
-    adImageUrl:
-      "https://images.unsplash.com/photo-1557804506-669a67965ba0?q=80&w=800&auto=format&fit=crop",
-    linkUrl: "https://trendupp.com/partners",
-    startDate: "2026-07-01T00:00:00.000Z",
-    endDate: "2026-08-31T23:59:59.000Z",
-    status: "scheduled",
-    impressions: 0,
-    clicks: 0,
-    ctr: "0%",
-  },
-  {
-    id: "ad-4",
-    title: "Content Creator Bootcamp",
-    adType: "Banner",
-    targetAudience: ["Nano", "Micro"],
-    placement: ["Explore"],
-    adImageUrl:
-      "https://images.unsplash.com/photo-1512428559087-560fa5ceab42?q=80&w=800&auto=format&fit=crop",
-    linkUrl: "https://trendupp.com/bootcamp",
-    startDate: "2026-05-15T00:00:00.000Z",
-    endDate: "2026-06-15T23:59:59.000Z",
-    status: "paused",
-    impressions: 12400,
-    clicks: 840,
-    ctr: "6.8%",
-  },
-];
-
 function SortableBannerAdCard({
   ad,
   onEdit,
@@ -168,18 +101,11 @@ export default function BannerAdsView() {
   const updateMutation = useUpdateAd();
   const deleteMutation = useDeleteAd();
 
-  const baseAds = useMemo(() => {
-    if (process.env.NODE_ENV === "development" && ads.length === 0) {
-      return DEFAULT_SAMPLE_ADS;
-    }
-    return ads;
-  }, [ads]);
-
   const displayAds = useMemo(() => {
-    if (!baseAds.length) return [];
-    if (!customOrderIds.length) return baseAds;
+    if (!ads.length) return [];
+    if (!customOrderIds.length) return ads;
 
-    return [...baseAds].sort((a, b) => {
+    return [...ads].sort((a, b) => {
       const indexA = customOrderIds.indexOf(String(a.id));
       const indexB = customOrderIds.indexOf(String(b.id));
       if (indexA === -1 && indexB === -1) return 0;
@@ -187,7 +113,7 @@ export default function BannerAdsView() {
       if (indexB === -1) return 1;
       return indexA - indexB;
     });
-  }, [baseAds, customOrderIds]);
+  }, [ads, customOrderIds]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
