@@ -11,16 +11,17 @@ import {
   Cell,
 } from "recharts";
 import { useCreatorActiveUsers } from "@/hooks/useAdminCreators";
-import { cn } from "@/lib/utils";
+import {
+  CardFilterHeaderControls,
+  type CardPeriod,
+} from "./CardFilterHeaderControls";
 
 export default function ActiveUsersChart() {
-  const [period, setPeriod] = useState<
-    "all_time" | "daily" | "weekly" | "yearly"
-  >("all_time");
+  const [period, setPeriod] = useState<CardPeriod>("all_time");
   const [selectedYear, setSelectedYear] = useState(2026);
 
   const { data: apiData, isLoading } = useCreatorActiveUsers(
-    period === "all_time" ? "monthly" : period,
+    period === "all_time" ? "monthly" : period === "yearly" ? "yearly" : period,
     selectedYear,
   );
 
@@ -39,8 +40,8 @@ export default function ActiveUsersChart() {
       <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-4 animate-pulse">
         <div className="flex justify-between items-center">
           <div className="flex flex-col gap-1.5">
-            <div className="w-32 h-4 bg-[#e8e6f0]/60 rounded-md" />
-            <div className="w-48 h-3 bg-[#e8e6f0]/40 rounded-md" />
+            <div className="w-28 h-4 bg-[#e8e6f0]/60 rounded-md" />
+            <div className="w-40 h-3 bg-[#e8e6f0]/40 rounded-md" />
           </div>
           <div className="w-40 h-8 bg-[#e8e6f0]/60 rounded-xl" />
         </div>
@@ -49,58 +50,23 @@ export default function ActiveUsersChart() {
     );
   }
 
-  const periodLabels: Record<string, string> = {
-    all_time: "All Time",
-    daily: "Daily",
-    weekly: "Weekly",
-    yearly: "Yearly",
-  };
-
   return (
     <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5 shadow-xs">
-      <div className="flex flex-col gap-4">
-        {/* Row 1: Title Header & Controls (Toggles + Year Filter) */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-bold text-[#1a1a2e]">Active users</h3>
-            <span className="text-[11px] text-[#9a99b0]">Active creators</span>
-          </div>
+      <div className="flex flex-col gap-3">
+        <div>
+          <h3 className="text-sm font-bold text-[#1a1a2e]">Active users</h3>
+          <span className="text-[11px] text-[#9a99b0]">
+            Active creators count
+          </span>
+        </div>
 
-          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
-            {/* Frequency Toggle Buttons: All Time | Daily | Weekly | Yearly */}
-            <div className="flex items-center p-1 bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-xl">
-              {(["all_time", "daily", "weekly", "yearly"] as const).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPeriod(p)}
-                  className={cn(
-                    "px-3 py-1 text-[11px] font-bold rounded-lg capitalize transition-all cursor-pointer",
-                    period === p
-                      ? "bg-brand-pink text-white shadow-xs"
-                      : "text-[#7a7a9a] hover:text-[#1a1a2e]",
-                  )}
-                >
-                  {periodLabels[p]}
-                </button>
-              ))}
-            </div>
-
-            {/* Year Filter Dropdown */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-bold text-[#9a99b0] uppercase">
-                Year:
-              </span>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="h-8 px-3 bg-[#faf9fc] border border-[#e8e6f0]/80 text-[#1a1a2e] text-[11px] font-bold rounded-xl outline-none cursor-pointer hover:bg-white transition-all shadow-2xs"
-              >
-                <option value={2026}>2026</option>
-                <option value={2025}>2025</option>
-                <option value={2024}>2024</option>
-              </select>
-            </div>
-          </div>
+        <div className="pt-0.5">
+          <CardFilterHeaderControls
+            onPeriodChange={(p) => setPeriod(p)}
+            onYearChange={(y) => setSelectedYear(y)}
+            defaultPeriod="all_time"
+            defaultYear={selectedYear}
+          />
         </div>
       </div>
 

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-export type CardPeriod = "all_time" | "daily" | "weekly" | "yearly";
+export type CardPeriod = "all_time" | "daily" | "weekly" | "monthly" | "yearly";
 
 interface CardFilterHeaderControlsProps {
   onPeriodChange?: (period: CardPeriod) => void;
@@ -16,6 +16,7 @@ const PERIOD_LABELS: Record<CardPeriod, string> = {
   all_time: "All Time",
   daily: "Daily",
   weekly: "Weekly",
+  monthly: "Monthly",
   yearly: "Yearly",
 };
 
@@ -41,9 +42,9 @@ export function CardFilterHeaderControls({
 
   return (
     <div className="flex items-center gap-2.5 flex-wrap shrink-0">
-      {/* Frequency Toggle Buttons: All Time | Daily | Weekly | Yearly */}
+      {/* Frequency Toggle Buttons: All Time | Daily | Weekly | Monthly */}
       <div className="flex items-center p-1 bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-xl">
-        {(["all_time", "daily", "weekly", "yearly"] as const).map((p) => (
+        {(["all_time", "daily", "weekly", "monthly"] as const).map((p) => (
           <button
             key={p}
             type="button"

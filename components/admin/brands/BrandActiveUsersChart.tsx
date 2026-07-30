@@ -11,12 +11,13 @@ import {
   Cell,
 } from "recharts";
 import { useBrandActiveUsers } from "@/hooks/useAdminBrands";
-import { CardFilterHeaderControls } from "../creators/CardFilterHeaderControls";
+import {
+  CardFilterHeaderControls,
+  type CardPeriod,
+} from "../creators/CardFilterHeaderControls";
 
 export default function BrandActiveUsersChart() {
-  const [period, setPeriod] = useState<
-    "all_time" | "daily" | "weekly" | "yearly"
-  >("all_time");
+  const [period, setPeriod] = useState<CardPeriod>("all_time");
   const [selectedYear, setSelectedYear] = useState(2026);
 
   const { data: apiData, isLoading } = useBrandActiveUsers(
@@ -51,18 +52,22 @@ export default function BrandActiveUsersChart() {
 
   return (
     <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5 shadow-xs">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex flex-col gap-3">
         <div>
           <h3 className="text-sm font-bold text-[#1a1a2e]">Active users</h3>
-          <span className="text-[11px] text-[#9a99b0]">Active advertisers</span>
+          <span className="text-[11px] text-[#9a99b0]">
+            Active advertisers count
+          </span>
         </div>
 
-        <CardFilterHeaderControls
-          onPeriodChange={(p) => setPeriod(p)}
-          onYearChange={(y) => setSelectedYear(y)}
-          defaultPeriod="all_time"
-          defaultYear={2026}
-        />
+        <div className="pt-0.5">
+          <CardFilterHeaderControls
+            onPeriodChange={(p) => setPeriod(p)}
+            onYearChange={(y) => setSelectedYear(y)}
+            defaultPeriod="all_time"
+            defaultYear={2026}
+          />
+        </div>
       </div>
 
       <div className="w-full h-56 pt-2">

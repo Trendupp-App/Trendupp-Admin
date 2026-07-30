@@ -97,14 +97,12 @@ export default function TopBrands({ onViewAll }: { onViewAll?: () => void }) {
   return (
     <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col justify-between gap-5 shadow-xs">
       <div className="flex flex-col gap-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-bold text-[#1a1a2e]">
-              Top Advertisers
-            </h3>
-            <span className="text-[11px] text-[#9a99b0]">By total spend</span>
-          </div>
+        <div>
+          <h3 className="text-sm font-bold text-[#1a1a2e]">Top Advertisers</h3>
+          <span className="text-[11px] text-[#9a99b0]">By total spend</span>
+        </div>
 
+        <div className="pt-0.5">
           <CardFilterHeaderControls />
         </div>
 

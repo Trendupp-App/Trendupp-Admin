@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
-import { Camera, Link2 } from "lucide-react";
+import { Link2, Upload, X } from "lucide-react";
+import { toast } from "sonner";
 import {
   Sheet,
   SheetContent,
@@ -28,10 +29,53 @@ const TARGET_AUDIENCE_OPTIONS = [
   "Micro",
   "Macro",
   "Mega",
-  "Advertisers",
+  "Brand",
 ];
 
-const PLACEMENT_OPTIONS = ["Home Page", "Explore", "Campaigns", "Profile"];
+function compressImageFile(
+  file: File,
+  maxWidth = 1000,
+  maxHeight = 600,
+  quality = 0.75,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = (err) => reject(err);
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.onerror = (err) => reject(err);
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(e.target?.result as string);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        resolve(dataUrl);
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
 function AdFormInner({
   ad,
@@ -40,12 +84,11 @@ function AdFormInner({
 }: Omit<AddEditAdSheetProps, "isOpen">) {
   const [title, setTitle] = useState(ad?.title || "");
   const [adType, setAdType] = useState(ad?.adType || "Banner");
-  const [targetAudience, setTargetAudience] = useState<string[]>(
-    ad?.targetAudience || ["All Creators"],
-  );
-  const [placement, setPlacement] = useState<string[]>(
-    ad?.placement || ["Home Page"],
-  );
+  const [targetAudience, setTargetAudience] = useState<string[]>(() => {
+    if (!ad?.targetAudience) return ["All Creators"];
+    return ad.targetAudience.map((a) => (a === "Advertisers" ? "Brand" : a));
+  });
+  const [placement] = useState<string[]>(ad?.placement || ["Home Page"]);
   const [adImageUrl, setAdImageUrl] = useState(ad?.adImageUrl || "");
   const [linkUrl, setLinkUrl] = useState(ad?.linkUrl || "");
   const [startDate, setStartDate] = useState(
@@ -54,6 +97,44 @@ function AdFormInner({
   const [endDate, setEndDate] = useState(
     ad?.endDate ? ad.endDate.split("T")[0] : "2026-06-30",
   );
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const processFile = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image file size must be less than 10MB");
+      return;
+    }
+    try {
+      const compressedDataUrl = await compressImageFile(file);
+      setAdImageUrl(compressedDataUrl);
+      toast.success("Image file uploaded and optimized successfully");
+    } catch {
+      toast.error("Failed to process image file");
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processFile(file);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processFile(file);
+    }
+  };
 
   const toggleAudience = (aud: string) => {
     if (aud === "All Creators") {
@@ -66,15 +147,6 @@ function AdFormInner({
       setTargetAudience(next.length === 0 ? ["All Creators"] : next);
     } else {
       setTargetAudience([...filtered, aud]);
-    }
-  };
-
-  const togglePlacement = (place: string) => {
-    if (placement.includes(place)) {
-      if (placement.length === 1) return; // keep at least 1
-      setPlacement(placement.filter((p) => p !== place));
-    } else {
-      setPlacement([...placement, place]);
     }
   };
 
@@ -172,45 +244,49 @@ function AdFormInner({
         </div>
       </div>
 
-      {/* Placement */}
+      {/* Ad Image Upload & Preview */}
       <div className="flex flex-col gap-2">
-        <label className="text-xs font-bold text-[#1a1a2e]">Placement</label>
-        <div className="flex flex-wrap gap-2">
-          {PLACEMENT_OPTIONS.map((place) => {
-            const isSelected = placement.includes(place);
-            return (
-              <button
-                key={place}
-                type="button"
-                onClick={() => togglePlacement(place)}
-                className={cn(
-                  "px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer",
-                  isSelected
-                    ? "bg-[#2563eb] text-white shadow-xs"
-                    : "bg-[#f8f8fa] border border-[#ececf2] text-[#6b6b80] hover:bg-white",
-                )}
-              >
-                {place}
-              </button>
-            );
-          })}
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-bold text-[#1a1a2e]">Ad Image *</label>
+          {adImageUrl && (
+            <button
+              type="button"
+              onClick={() => setAdImageUrl("")}
+              className="text-[11px] font-semibold text-rose-600 hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <X size={12} /> Remove Image
+            </button>
+          )}
         </div>
-      </div>
 
-      {/* Ad Image URL & Preview */}
-      <div className="flex flex-col gap-2">
-        <label className="text-xs font-bold text-[#1a1a2e]">Ad Image URL</label>
         <input
-          type="text"
-          value={adImageUrl}
-          onChange={(e) => setAdImageUrl(e.target.value)}
-          placeholder="https://images.unsplash.com/photo-..."
-          className="w-full bg-[#f8f8fa] border border-[#ececf2] rounded-xl px-4 py-2.5 text-xs text-[#1a1a2e] placeholder:text-[#9a99b0] focus:outline-none focus:border-brand-pink focus:bg-white transition-all"
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+          className="hidden"
         />
 
-        <div className="border border-dashed border-[#d0d0dc] rounded-2xl p-4 bg-[#fafafa] flex flex-col items-center justify-center gap-2 text-center min-h-[120px] relative overflow-hidden">
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            setIsDragging(false);
+          }}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+          className={cn(
+            "border border-dashed rounded-2xl p-4 bg-[#fafafa] flex flex-col items-center justify-center gap-2 text-center min-h-[130px] relative overflow-hidden transition-all cursor-pointer",
+            isDragging
+              ? "border-brand-pink bg-brand-pink/5"
+              : "border-[#d0d0dc] hover:border-brand-pink/50 hover:bg-white",
+          )}
+        >
           {adImageUrl ? (
-            <div className="relative w-full h-[120px]">
+            <div className="relative w-full h-[120px] rounded-xl overflow-hidden group">
               <Image
                 src={adImageUrl}
                 alt="Ad preview"
@@ -218,17 +294,38 @@ function AdFormInner({
                 className="object-cover rounded-xl"
                 unoptimized
               />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white text-xs font-semibold">
+                <Upload size={16} /> Click or drop new file to replace
+              </div>
             </div>
           ) : (
-            <>
-              <div className="w-10 h-10 rounded-full bg-white border border-[#ececf2] flex items-center justify-center text-[#9a99b0]">
-                <Camera size={18} />
+            <div className="flex flex-col items-center gap-1.5 py-1">
+              <div className="w-10 h-10 rounded-full bg-white border border-[#ececf2] flex items-center justify-center text-brand-pink shadow-2xs">
+                <Upload size={18} />
               </div>
-              <span className="text-xs text-[#7a7a9a]">
-                Drag & drop image here or paste a URL above
-              </span>
-            </>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs font-bold text-[#1a1a2e]">
+                  Click or drag & drop image here
+                </span>
+                <span className="text-[10px] text-[#9a99b0]">
+                  Supports PNG, JPG, WEBP up to 5MB
+                </span>
+              </div>
+            </div>
           )}
+        </div>
+
+        <div className="flex flex-col gap-1 mt-0.5">
+          <span className="text-[10px] font-semibold text-[#7a7a9a]">
+            Or paste image URL:
+          </span>
+          <input
+            type="text"
+            value={adImageUrl}
+            onChange={(e) => setAdImageUrl(e.target.value)}
+            placeholder="https://images.unsplash.com/photo-..."
+            className="w-full bg-[#f8f8fa] border border-[#ececf2] rounded-xl px-3.5 py-2 text-xs text-[#1a1a2e] placeholder:text-[#9a99b0] focus:outline-none focus:border-brand-pink focus:bg-white transition-all"
+          />
         </div>
       </div>
 

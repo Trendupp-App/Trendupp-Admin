@@ -20,8 +20,14 @@ export default function CreatorGender() {
   return (
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-4.5">
       <div className="flex flex-col gap-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
           <h2 className="text-sm font-semibold text-[#1a1a2e]">Gender</h2>
+          <span className="text-[11px] text-[#9a99b0]">
+            Distribution by gender
+          </span>
+        </div>
+
+        <div className="pt-0.5">
           <CardFilterHeaderControls />
         </div>
 

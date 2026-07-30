@@ -29,14 +29,14 @@ export default function BrandIndustry() {
   return (
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5 shadow-xs">
       <div className="flex flex-col gap-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold text-[#1a1a2e]">Industry</h2>
-            <span className="text-[10px] text-[#9a99b0] font-medium">
-              {industries.length} industr{industries.length === 1 ? "y" : "ies"}
-            </span>
-          </div>
+        <div>
+          <h2 className="text-sm font-semibold text-[#1a1a2e]">Industry</h2>
+          <span className="text-[10px] text-[#9a99b0] font-medium">
+            {industries.length} industr{industries.length === 1 ? "y" : "ies"}
+          </span>
+        </div>
 
+        <div className="pt-0.5">
           <CardFilterHeaderControls />
         </div>
 

@@ -79,15 +79,16 @@ export default function ProfileCompletionCard() {
   return (
     <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-4 shadow-xs">
       <div className="flex flex-col gap-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h3 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
-              Profile Completion
-            </h3>
-            <span className="text-[10px] text-[#9a99b0] font-medium">
-              Completion
-            </span>
-          </div>
+        <div>
+          <h3 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
+            Profile Completion
+          </h3>
+          <span className="text-[10px] text-[#9a99b0] font-medium">
+            Completion distribution
+          </span>
+        </div>
+
+        <div className="pt-0.5">
           <CardFilterHeaderControls />
         </div>
 

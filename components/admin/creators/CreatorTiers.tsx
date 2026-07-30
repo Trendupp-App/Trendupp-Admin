@@ -42,15 +42,16 @@ export default function CreatorTiers() {
   return (
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5">
       <div className="flex flex-col gap-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold text-[#1a1a2e]">
-              Creator Tiers
-            </h2>
-            <span className="text-xs text-[#9a99b0]">
-              Distribution by follower count
-            </span>
-          </div>
+        <div>
+          <h2 className="text-sm font-semibold text-[#1a1a2e]">
+            Creator Tiers
+          </h2>
+          <span className="text-xs text-[#9a99b0]">
+            Distribution by follower count
+          </span>
+        </div>
+
+        <div className="pt-0.5">
           <CardFilterHeaderControls />
         </div>
 

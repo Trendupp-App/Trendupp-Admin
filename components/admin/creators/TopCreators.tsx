@@ -50,22 +50,24 @@ export default function TopCreators() {
   return (
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5">
       <div className="flex flex-col gap-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center justify-between">
           <div>
             <h2 className="text-sm font-semibold text-[#1a1a2e]">
               Top Creators
             </h2>
             <span className="text-xs text-[#9a99b0]">By total earnings</span>
           </div>
-          <div className="flex items-center gap-2.5">
-            <CardFilterHeaderControls />
-            <Link
-              href="/admin/users/creators"
-              className="text-xs font-bold text-brand-pink hover:underline shrink-0"
-            >
-              View all
-            </Link>
-          </div>
+
+          <Link
+            href="/admin/users/creators"
+            className="text-xs font-bold text-brand-pink hover:underline shrink-0"
+          >
+            View all
+          </Link>
+        </div>
+
+        <div className="pt-0.5">
+          <CardFilterHeaderControls />
         </div>
 
         {/* Date Range Selector Toolbar (From, To) */}

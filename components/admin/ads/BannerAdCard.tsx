@@ -19,6 +19,8 @@ interface BannerAdCardProps {
   onEdit: (ad: BannerAdItem) => void;
   onToggleStatus: (ad: BannerAdItem) => void;
   onDelete: (ad: BannerAdItem) => void;
+  dragHandleProps?: Record<string, unknown>;
+  isDragging?: boolean;
 }
 
 export default function BannerAdCard({
@@ -26,6 +28,8 @@ export default function BannerAdCard({
   onEdit,
   onToggleStatus,
   onDelete,
+  dragHandleProps,
+  isDragging,
 }: BannerAdCardProps) {
   const statusLower = (ad.status || "active").toLowerCase();
   const isPaused = statusLower === "paused";
@@ -48,8 +52,12 @@ export default function BannerAdCard({
       : "bg-[#e0f2fe] text-[#0284c7]";
 
   const audienceLabel = Array.isArray(ad.targetAudience)
-    ? ad.targetAudience.join(", ")
-    : ad.targetAudience || "All Creators";
+    ? ad.targetAudience
+        .map((a) => (a === "Advertisers" ? "Brand" : a))
+        .join(", ")
+    : ad.targetAudience === "Advertisers"
+      ? "Brand"
+      : ad.targetAudience || "All Creators";
 
   const placementLabel = Array.isArray(ad.placement)
     ? ad.placement.join(", ")
@@ -77,9 +85,26 @@ export default function BannerAdCard({
   const ctr = ad.ctr !== undefined ? ad.ctr : "6.5%";
 
   return (
-    <div className="bg-white border border-[#f0f0f5] rounded-2xl overflow-hidden flex flex-col shadow-xs transition-all hover:border-[#e2e2ec]">
+    <div
+      className={cn(
+        "bg-white border border-[#f0f0f5] rounded-2xl overflow-hidden flex flex-col shadow-xs transition-all",
+        isDragging
+          ? "opacity-50 border-brand-pink/40 shadow-xl scale-[1.01]"
+          : "hover:border-[#e2e2ec]",
+      )}
+    >
       {/* Banner Image Container */}
       <div className="relative w-full h-[170px] bg-[#f0f0f5]">
+        {dragHandleProps && (
+          <div
+            {...dragHandleProps}
+            className="absolute top-3 left-3 z-10 bg-white/90 backdrop-blur-xs p-1.5 rounded-xl shadow-xs text-[#7a7a9a] hover:text-brand-pink cursor-grab active:cursor-grabbing touch-none transition-colors"
+            title="Drag to reorder ad"
+          >
+            <GripVertical size={14} />
+          </div>
+        )}
+
         {ad.adImageUrl ? (
           <Image
             src={ad.adImageUrl}
@@ -191,7 +216,11 @@ export default function BannerAdCard({
           {/* Action Row */}
           <div className="flex items-center gap-2.5">
             <button
-              onClick={() => onEdit(ad)}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(ad);
+              }}
               className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-[#e0e0ea] text-xs font-semibold text-[#1a1a2e] hover:bg-[#fafafa] transition-all cursor-pointer"
             >
               <Pencil size={13} />
@@ -199,7 +228,11 @@ export default function BannerAdCard({
             </button>
 
             <button
-              onClick={() => onToggleStatus(ad)}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleStatus(ad);
+              }}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer",
                 isPaused
@@ -219,7 +252,11 @@ export default function BannerAdCard({
             </button>
 
             <button
-              onClick={() => onDelete(ad)}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(ad);
+              }}
               title="Delete Ad"
               className="p-2 rounded-xl text-[#9a99b0] hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer shrink-0"
             >
@@ -227,8 +264,10 @@ export default function BannerAdCard({
             </button>
 
             <button
-              title="Reorder"
-              className="p-2 rounded-xl text-[#c0c0d0] hover:text-[#1a1a2e] transition-colors cursor-grab active:cursor-grabbing shrink-0"
+              type="button"
+              {...dragHandleProps}
+              title="Drag to reorder"
+              className="p-2 rounded-xl text-[#7a7a9a] hover:text-brand-pink hover:bg-[#faf9fc] transition-colors cursor-grab active:cursor-grabbing shrink-0 touch-none"
             >
               <GripVertical size={16} />
             </button>

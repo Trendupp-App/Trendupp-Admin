@@ -60,11 +60,11 @@ function MiniBarChart({
   onYearChange,
   color = PINK,
 }: MiniChartProps) {
-const years = Array.from({ length: 3 }, (_, i) => selectedYear - i);
+  const years = [2026, 2025, 2024];
 
   return (
     <div className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-5 flex flex-col gap-3 shadow-xs">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between flex-wrap gap-2">
         <div>
           <p className="text-xs font-bold text-[#1a1a2e]">{title}</p>
           <p className="text-[10px] text-[#7a7a9a] mt-0.5">
@@ -72,17 +72,19 @@ const years = Array.from({ length: 3 }, (_, i) => selectedYear - i);
             <span className="font-bold text-[#1a1a2e]">{rate}%</span>
           </p>
         </div>
-        <select
-          value={selectedYear}
-          onChange={(e) => onYearChange(Number(e.target.value))}
-          className="text-xs font-medium border border-[#e8e6f0] rounded-xl px-2.5 py-1 bg-white text-[#4a4a6a] focus:outline-none cursor-pointer"
-        >
-          {years.map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-1.5">
+          <select
+            value={selectedYear}
+            onChange={(e) => onYearChange(Number(e.target.value))}
+            className="text-xs font-medium border border-[#e8e6f0] rounded-xl px-2.5 py-1 bg-white text-[#4a4a6a] focus:outline-none cursor-pointer"
+          >
+            {years.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
       <div className="h-36 pt-2">
         {data.length === 0 ? (
@@ -302,7 +304,7 @@ export default function EscrowOverviewTab() {
         />
         <AdminKpiCard
           value={fmt(totalCreatorPayout)}
-label="Total Creator Payout"
+          label="Total Creator Payout"
           icon={ArrowUpRight}
           iconBg="bg-amber-50"
           iconColor="text-amber-600"
