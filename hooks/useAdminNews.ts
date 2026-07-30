@@ -55,10 +55,14 @@ export function useCreateNews() {
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["admin-news-list"] });
       const saved = res.data as AdminNewsItem;
-      const isDraft = (saved?.status || "").toLowerCase() === "draft";
-      toast.success(
-        isDraft ? "Article saved as draft" : "Article published successfully",
-      );
+      const statusLower = (saved?.status || "").toLowerCase();
+      if (statusLower === "draft") {
+        toast.success("Article saved as draft");
+      } else if (statusLower === "scheduled") {
+        toast.success("Article scheduled successfully");
+      } else {
+        toast.success("Article published successfully");
+      }
     },
     onError: (err: AxiosError<{ message?: string }>) => {
       toast.error(err.response?.data?.message || "Failed to save news article");
@@ -77,10 +81,14 @@ export function useUpdateNews() {
         queryKey: ["admin-news-details", variables.id],
       });
       const saved = res.data as AdminNewsItem;
-      const isDraft = (saved?.status || "").toLowerCase() === "draft";
-      toast.success(
-        isDraft ? "Article saved as draft" : "Article updated successfully",
-      );
+      const statusLower = (saved?.status || "").toLowerCase();
+      if (statusLower === "draft") {
+        toast.success("Article saved as draft");
+      } else if (statusLower === "scheduled") {
+        toast.success("Article scheduled successfully");
+      } else {
+        toast.success("Article updated successfully");
+      }
     },
     onError: (err: AxiosError<{ message?: string }>) => {
       toast.error(

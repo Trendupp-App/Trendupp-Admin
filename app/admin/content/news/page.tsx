@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { Portal } from "@/components/ui/portal";
 import NewsDrawer from "@/components/admin/content/NewsDrawer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CardDateRangeBar } from "@/components/admin/creators/CardDateRangeBar";
 import {
   useAdminNews,
   useCreateNews,
@@ -35,6 +36,8 @@ export default function TrenduppNewsPage() {
     "All",
   );
   const [searchQuery, setSearchQuery] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   // Drawer & Modal states
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -76,7 +79,25 @@ export default function TrenduppNewsPage() {
       const matchTags = Array.isArray(article.tags)
         ? article.tags.some((t) => t.toLowerCase().includes(q))
         : false;
-      return matchTitle || matchCategory || matchTags;
+      if (!matchTitle && !matchCategory && !matchTags) return false;
+    }
+
+    const articleDateStr =
+      article.publishedAt || article.createdAt || article.updatedAt;
+    if (fromDate && articleDateStr) {
+      const articleTime = new Date(articleDateStr).getTime();
+      const fromTime = new Date(fromDate).getTime();
+      if (!isNaN(articleTime) && !isNaN(fromTime) && articleTime < fromTime) {
+        return false;
+      }
+    }
+
+    if (toDate && articleDateStr) {
+      const articleTime = new Date(articleDateStr).getTime();
+      const toTime = new Date(toDate).setHours(23, 59, 59, 999);
+      if (!isNaN(articleTime) && !isNaN(toTime) && articleTime > toTime) {
+        return false;
+      }
     }
 
     return true;
@@ -84,12 +105,10 @@ export default function TrenduppNewsPage() {
 
   const handleSaveArticle = (
     savedData: CreateNewsDto,
-    customStatus?: "published" | "draft",
+    customStatus: "published" | "draft" | "scheduled",
+    scheduledAt?: string,
   ) => {
-    const payload = {
-      ...savedData,
-      status: customStatus || savedData.status || "draft",
-    };
+    const payload = { ...savedData, status: customStatus, scheduledAt };
 
     if (editingArticle) {
       updateMutation.mutate(
@@ -148,71 +167,81 @@ export default function TrenduppNewsPage() {
         </button>
       </div>
 
-      {/* Tabs list */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <button
-          onClick={() => setActiveTab("All")}
-          className={cn(
-            "h-8 px-4 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
-            activeTab === "All"
-              ? "bg-brand-pink text-white"
-              : "bg-white border border-[#e8e6f0] text-[#7a7a9a] hover:bg-[#faf9fc]",
-          )}
-        >
-          All{" "}
-          <span
+      {/* Tabs & Custom Date Range Filter */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 flex-wrap">
+        <div className="flex flex-wrap gap-2 items-center">
+          <button
+            onClick={() => setActiveTab("All")}
             className={cn(
-              "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+              "h-8 px-4 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
               activeTab === "All"
-                ? "bg-white/20 text-white"
-                : "bg-[#f4f3f6] text-[#7a7a9a]",
+                ? "bg-brand-pink text-white"
+                : "bg-white border border-[#e8e6f0] text-[#7a7a9a] hover:bg-[#faf9fc]",
             )}
           >
-            {totalArticles}
-          </span>
-        </button>
-        <button
-          onClick={() => setActiveTab("Published")}
-          className={cn(
-            "h-8 px-4 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
-            activeTab === "Published"
-              ? "bg-brand-pink text-white"
-              : "bg-white border border-[#e8e6f0] text-[#7a7a9a] hover:bg-[#faf9fc]",
-          )}
-        >
-          Published{" "}
-          <span
+            All{" "}
+            <span
+              className={cn(
+                "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+                activeTab === "All"
+                  ? "bg-white/20 text-white"
+                  : "bg-[#f4f3f6] text-[#7a7a9a]",
+              )}
+            >
+              {totalArticles}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab("Published")}
             className={cn(
-              "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+              "h-8 px-4 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
               activeTab === "Published"
-                ? "bg-white/20 text-white"
-                : "bg-[#f4f3f6] text-[#7a7a9a]",
+                ? "bg-brand-pink text-white"
+                : "bg-white border border-[#e8e6f0] text-[#7a7a9a] hover:bg-[#faf9fc]",
             )}
           >
-            {publishedCount}
-          </span>
-        </button>
-        <button
-          onClick={() => setActiveTab("Draft")}
-          className={cn(
-            "h-8 px-4 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
-            activeTab === "Draft"
-              ? "bg-brand-pink text-white"
-              : "bg-white border border-[#e8e6f0] text-[#7a7a9a] hover:bg-[#faf9fc]",
-          )}
-        >
-          Draft{" "}
-          <span
+            Published{" "}
+            <span
+              className={cn(
+                "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+                activeTab === "Published"
+                  ? "bg-white/20 text-white"
+                  : "bg-[#f4f3f6] text-[#7a7a9a]",
+              )}
+            >
+              {publishedCount}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab("Draft")}
             className={cn(
-              "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+              "h-8 px-4 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
               activeTab === "Draft"
-                ? "bg-white/20 text-white"
-                : "bg-[#f4f3f6] text-[#7a7a9a]",
+                ? "bg-brand-pink text-white"
+                : "bg-white border border-[#e8e6f0] text-[#7a7a9a] hover:bg-[#faf9fc]",
             )}
           >
-            {draftCount}
-          </span>
-        </button>
+            Draft{" "}
+            <span
+              className={cn(
+                "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+                activeTab === "Draft"
+                  ? "bg-white/20 text-white"
+                  : "bg-[#f4f3f6] text-[#7a7a9a]",
+              )}
+            >
+              {draftCount}
+            </span>
+          </button>
+        </div>
+
+        {/* Custom From/To Date Filter */}
+        <CardDateRangeBar
+          onDateChange={(from, to) => {
+            setFromDate(from);
+            setToDate(to);
+          }}
+        />
       </div>
 
       {/* Search Input bar */}
@@ -295,7 +324,9 @@ export default function TrenduppNewsPage() {
                         "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1",
                         statusLower === "published"
                           ? "text-[#16a34a] bg-[#f0fdf4]"
-                          : "text-[#d97706] bg-[#fffbeb]",
+                          : statusLower === "scheduled"
+                            ? "text-[#2563eb] bg-[#eff6ff]"
+                            : "text-[#d97706] bg-[#fffbeb]",
                       )}
                     >
                       <span
@@ -303,7 +334,9 @@ export default function TrenduppNewsPage() {
                           "w-1 h-1 rounded-full",
                           statusLower === "published"
                             ? "bg-[#16a34a]"
-                            : "bg-[#d97706]",
+                            : statusLower === "scheduled"
+                              ? "bg-[#2563eb]"
+                              : "bg-[#d97706]",
                         )}
                       />
                       {article.status || "Draft"}

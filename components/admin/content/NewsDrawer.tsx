@@ -36,7 +36,8 @@ interface NewsDrawerProps {
   onClose: () => void;
   onSave: (
     articleData: CreateNewsDto,
-    customStatus?: "published" | "draft",
+    customStatus: "published" | "draft" | "scheduled",
+    scheduledAt?: string,
   ) => void;
   article: AdminNewsItem | null;
   isSaving?: boolean;
@@ -563,11 +564,10 @@ function NewsDrawerFormInner({
   const [tagsInput, setTagsInput] = useState(
     Array.isArray(article?.tags) ? article.tags.join(", ") : "",
   );
-  const [status, setStatus] = useState<string>(
-    (article?.status || "draft").toLowerCase(),
-  );
-
   const [isDragging, setIsDragging] = useState(false);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
 
   const processFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -624,13 +624,15 @@ function NewsDrawerFormInner({
     }
   };
 
-  const handleSave = (customStatus?: "published" | "draft") => {
+  const handleSave = (
+    customStatus: "published" | "draft" | "scheduled",
+    scheduledAtTimestamp?: string,
+  ) => {
     if (!title.trim()) {
       alert("Please enter an article title.");
       return;
     }
 
-    const finalStatus = customStatus || status || "draft";
     const plainTextBody = bodyContent.replace(/<[^>]*>/g, "").trim();
     const summaryText =
       plainTextBody.slice(0, 150) + (plainTextBody.length > 150 ? "..." : "");
@@ -640,7 +642,7 @@ function NewsDrawerFormInner({
       summary: summaryText || title.trim(),
       content: bodyContent || `<p>${title.trim()}</p>`,
       category,
-      status: finalStatus,
+      status: customStatus,
       coverImage: coverFile || coverUrl || null,
       brand: source.trim() || "Trendupp Africa",
       authorName: authorName.trim(),
@@ -648,9 +650,37 @@ function NewsDrawerFormInner({
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean),
+      scheduledAt: scheduledAtTimestamp,
     };
 
-    onSave(dto, customStatus);
+    onSave(dto, customStatus, scheduledAtTimestamp);
+  };
+
+  const handleOpenScheduleModal = () => {
+    if (!title.trim()) {
+      toast.error("Please enter an article title before scheduling.");
+      return;
+    }
+    setIsScheduleModalOpen(true);
+  };
+
+  const handleConfirmSchedule = () => {
+    if (!scheduleDate || !scheduleTime) {
+      toast.error("Please select both a date and a time to schedule.");
+      return;
+    }
+    const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
+    if (isNaN(scheduledDateTime.getTime())) {
+      toast.error("Invalid date or time selected.");
+      return;
+    }
+    if (scheduledDateTime.getTime() <= Date.now()) {
+      toast.error("Scheduled time must be in the future.");
+      return;
+    }
+    const isoString = scheduledDateTime.toISOString();
+    setIsScheduleModalOpen(false);
+    handleSave("scheduled", isoString);
   };
 
   return (
@@ -766,26 +796,23 @@ function NewsDrawerFormInner({
           )}
         >
           {previewImage ? (
-            <>
+            <div className="relative w-full h-36 rounded-xl overflow-hidden group">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewImage}
                 alt="Preview"
-                className="absolute inset-0 w-full h-full object-cover"
+                className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity gap-2">
-                <span className="text-white text-xs font-bold bg-brand-pink px-3 py-1.5 rounded-lg shadow-md">
-                  Change Photo
-                </span>
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                 <button
                   type="button"
                   onClick={handleClearImage}
-                  className="text-white text-xs font-bold bg-rose-600 hover:bg-rose-700 px-3 py-1.5 rounded-lg shadow-md cursor-pointer"
+                  className="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors shadow-sm"
                 >
-                  Remove
+                  Remove Photo
                 </button>
               </div>
-            </>
+            </div>
           ) : (
             <>
               <div
@@ -842,45 +869,10 @@ function NewsDrawerFormInner({
             className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium text-[#1a1a2e]"
           />
         </div>
-
-        {/* Status Radio Toggles */}
-        <div className="flex flex-col gap-2">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
-            Status
-          </label>
-          <div className="flex gap-4">
-            <button
-              type="button"
-              onClick={() => setStatus("draft")}
-              className={cn(
-                "flex-1 h-10 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold transition-all cursor-pointer",
-                status === "draft"
-                  ? "border-[#d97706] bg-[#fffbeb] text-[#d97706]"
-                  : "border-[#e8e6f0] bg-white text-[#7a7a9a] hover:bg-[#faf9fc]",
-              )}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-[#d97706]" />
-              Draft
-            </button>
-            <button
-              type="button"
-              onClick={() => setStatus("published")}
-              className={cn(
-                "flex-1 h-10 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold transition-all cursor-pointer",
-                status === "published"
-                  ? "border-[#16a34a] bg-[#f0fdf4] text-[#16a34a]"
-                  : "border-[#e8e6f0] bg-white text-[#7a7a9a] hover:bg-[#faf9fc]",
-              )}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a]" />
-              Publish Immediately
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Action Buttons Sticky Footer */}
-      <div className="border-t border-[#e8e6f0]/60 p-6 flex gap-4 bg-white shrink-0">
+      <div className="border-t border-[#e8e6f0]/60 p-6 flex gap-3 bg-white shrink-0">
         <button
           type="button"
           onClick={() => handleSave("draft")}
@@ -891,6 +883,14 @@ function NewsDrawerFormInner({
         </button>
         <button
           type="button"
+          onClick={handleOpenScheduleModal}
+          disabled={isSaving}
+          className="flex-1 h-11 border border-[#e8e6f0] bg-[#f4f3f6] text-[#1a1a2e] hover:bg-[#e8e6f0] text-xs font-bold rounded-xl transition-all cursor-pointer text-center disabled:opacity-50"
+        >
+          Schedule
+        </button>
+        <button
+          type="button"
           onClick={() => handleSave("published")}
           disabled={isSaving}
           className="flex-1 h-11 bg-brand-pink hover:opacity-90 text-white text-xs font-bold rounded-xl transition-all cursor-pointer text-center disabled:opacity-50"
@@ -898,6 +898,84 @@ function NewsDrawerFormInner({
           {isSaving ? "Saving..." : "Publish Article"}
         </button>
       </div>
+
+      {/* Schedule Article Modal */}
+      {isScheduleModalOpen && (
+        <Portal>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
+              onClick={() => setIsScheduleModalOpen(false)}
+            />
+
+            {/* Modal Card */}
+            <div className="relative z-10 w-full max-w-[420px] bg-white rounded-3xl p-6 shadow-2xl flex flex-col gap-5 text-left">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-[#1a1a2e]">
+                  Schedule Article
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsScheduleModalOpen(false)}
+                  className="p-1.5 rounded-full hover:bg-[#f4f3f6] text-[#7a7a9a] transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Date & Time Selectors */}
+              <div className="flex flex-col gap-4">
+                {/* Date */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[#1a1a2e]">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={scheduleDate}
+                    onChange={(e) => setScheduleDate(e.target.value)}
+                    min={new Date().toISOString().split("T")[0]}
+                    className="h-11 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs font-medium text-[#1a1a2e] focus:outline-none focus:border-brand-pink cursor-pointer"
+                  />
+                </div>
+
+                {/* Time */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[#1a1a2e]">
+                    Time
+                  </label>
+                  <input
+                    type="time"
+                    value={scheduleTime}
+                    onChange={(e) => setScheduleTime(e.target.value)}
+                    className="h-11 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs font-medium text-[#1a1a2e] focus:outline-none focus:border-brand-pink cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsScheduleModalOpen(false)}
+                  className="h-10 px-5 border border-[#e8e6f0] rounded-xl text-xs font-bold text-[#5a5a7a] hover:bg-[#faf9fc] transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmSchedule}
+                  className="h-10 px-6 bg-brand-pink text-white rounded-xl text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+                >
+                  Schedule
+                </button>
+              </div>
+            </div>
+          </div>
+        </Portal>
+      )}
     </div>
   );
 }
