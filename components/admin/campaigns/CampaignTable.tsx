@@ -1,14 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import {
   Search,
-  Eye,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  SlidersHorizontal,
+  Download,
+  RotateCcw,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -16,6 +16,9 @@ import {
   useAdminCampaignsSummary,
 } from "@/hooks/useAdminCampaigns";
 import type { CampaignListQueryParams } from "@/types/adminCampaigns";
+import CampaignDetailDrawer from "./CampaignDetailDrawer";
+import { CardFilterHeaderControls } from "../creators/CardFilterHeaderControls";
+import { CardDateRangeBar } from "../creators/CardDateRangeBar";
 
 type DisplayStatus = "Live" | "Active" | "Completed" | "Draft" | "Cancelled";
 type DisplayEscrow = "Funded" | "Released" | "Not Funded" | "Refunded";
@@ -78,11 +81,14 @@ export default function CampaignTable({
   onSelectStatus,
 }: CampaignTableProps) {
   const [search, setSearch] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
   const [selectedTier, setSelectedTier] = useState("");
   const [selectedPlatform, setSelectedPlatform] = useState("");
   const [selectedEscrow, setSelectedEscrow] = useState("");
   const [page, setPage] = useState(1);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(
+    null,
+  );
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const { data: summary } = useAdminCampaignsSummary();
 
@@ -163,46 +169,158 @@ export default function CampaignTable({
     );
   };
 
-  const COLUMN_COUNT = 8;
+  const handleExportCSV = () => {
+    if (campaigns.length === 0) return;
+    const headers = [
+      "Campaign ID",
+      "Title",
+      "Brand",
+      "Budget",
+      "Applications",
+      "Status",
+      "Escrow Status",
+      "End Date",
+      "Date Created",
+    ];
+
+    const rows = campaigns.map((c) => {
+      const status = normalizeStatus(c.status);
+      const escrow = normalizeEscrow(c.escrowStatus);
+      return [
+        c.id,
+        `"${c.title.replace(/"/g, '""')}"`,
+        `"${(c.brand?.name || "").replace(/"/g, '""')}"`,
+        `"₦${c.budget.toLocaleString()}"`,
+        c.applicationsCount,
+        status,
+        escrow,
+        formatDate(c.endDate),
+        formatDate(c.createdAt),
+      ];
+    });
+
+    const csvString = [headers.join(","), ...rows.map((e) => e.join(","))].join(
+      "\n",
+    );
+
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `campaigns_export_${new Date().toISOString().split("T")[0]}.csv`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const hasActiveFilters =
+    search !== "" ||
+    selectedTier !== "" ||
+    selectedPlatform !== "" ||
+    selectedEscrow !== "" ||
+    selectedStatus !== "All";
+
+  const clearAllFilters = () => {
+    setSearch("");
+    setSelectedTier("");
+    setSelectedPlatform("");
+    setSelectedEscrow("");
+    onSelectStatus("All");
+    setPage(1);
+  };
 
   return (
-    <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-4 sm:p-6 flex flex-col gap-5">
-      {/* Top Search bar & Filters toggle */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5">
-        <div className="relative flex items-center w-full sm:min-w-[280px] flex-1 max-w-md">
-          <Search size={14} className="absolute left-3.5 text-[#9a99b0]" />
-          <input
-            type="text"
-            placeholder="Search by Campaign Title, ID or Brand Name..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            className="h-9.5 w-full bg-white border border-[#e8e6f0] rounded-xl pl-9 pr-4 text-xs text-[#1a1a2e] placeholder-[#9a99b0] focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium"
-          />
+    <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5 shadow-sm">
+      {/* Status Filter Tabs (Left) & Frequency Controls + Export (Right) */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        {/* Left: Status Filter Tabs */}
+        <div className="flex items-center gap-1.5 bg-[#f4f3f6] border border-[#e8e6f0]/80 p-1 rounded-xl max-w-2xl overflow-x-auto no-scrollbar">
+          {STATUS_TABS.map((label) => {
+            const active = selectedStatus === label;
+            return (
+              <button
+                key={label}
+                onClick={() => {
+                  onSelectStatus(label);
+                  setPage(1);
+                }}
+                className={cn(
+                  "px-3.5 sm:px-4.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0",
+                  active
+                    ? "bg-brand-pink text-white shadow-sm"
+                    : "bg-transparent text-[#5a5a7a] hover:text-[#1a1a2e]",
+                )}
+              >
+                {label} ({statusCounts[label] ?? 0})
+              </button>
+            );
+          })}
         </div>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className={cn(
-            "h-9.5 px-4 rounded-xl border text-xs font-bold cursor-pointer transition-colors flex items-center gap-2",
-            showFilters
-              ? "bg-brand-pink-light border-[#fae2ec] text-brand-pink"
-              : "border-[#e8e6f0] text-[#5a5a7a] hover:bg-[#faf9fc]",
+
+        {/* Right: Time Controls, Clear Filters & Export */}
+        <div className="flex items-center gap-3 flex-wrap shrink-0">
+          <CardFilterHeaderControls />
+
+          {/* Clear All Filters Button */}
+          {hasActiveFilters && (
+            <button
+              onClick={clearAllFilters}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-600 hover:text-rose-700 cursor-pointer bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-xl transition-colors"
+            >
+              <RotateCcw size={12} /> Clear all filters
+            </button>
           )}
-        >
-          <SlidersHorizontal size={13} /> Filters
-        </button>
+
+          {/* Export CSV Button */}
+          <button
+            onClick={handleExportCSV}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-[#e8e6f0] text-[#1a1a2e] hover:bg-[#faf9fc] text-xs font-bold shadow-2xs transition-all cursor-pointer shrink-0"
+          >
+            <Download size={13} className="text-brand-pink" />
+            <span>Export CSV</span>
+          </button>
+        </div>
       </div>
 
-      {/* Dropdown filters */}
-      {showFilters && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-b border-[#e8e6f0]/40 py-4.5 animate-fade-in-up">
+      {/* Controls Bar */}
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
+          {/* Search */}
+          <div className="relative flex items-center w-full sm:w-[260px] flex-1 max-w-sm">
+            <Search size={14} className="absolute left-3.5 text-[#9a99b0]" />
+            <input
+              type="text"
+              placeholder="Search by Campaign Title, ID or Brand..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="h-9 w-full bg-white border border-[#e8e6f0] rounded-xl pl-9 pr-8 text-xs text-[#1a1a2e] placeholder-[#9a99b0] focus:outline-none focus:ring-1 focus:ring-brand-pink/30"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-3 text-[#9a99b0] hover:text-[#1a1a2e]"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+
+          {/* Unique Campaign Dropdown Filters */}
           {[
             {
-              label: "Creator Tier",
               value: selectedTier,
-              onChange: setSelectedTier,
+              onChange: (val: string) => {
+                setSelectedTier(val);
+                setPage(1);
+              },
+              label: "Tier",
               options: [
                 { value: "nano", label: "Nano" },
                 { value: "micro", label: "Micro" },
@@ -211,9 +329,12 @@ export default function CampaignTable({
               ],
             },
             {
-              label: "Platform",
               value: selectedPlatform,
-              onChange: setSelectedPlatform,
+              onChange: (val: string) => {
+                setSelectedPlatform(val);
+                setPage(1);
+              },
+              label: "Platform",
               options: [
                 { value: "instagram", label: "Instagram" },
                 { value: "tiktok", label: "TikTok" },
@@ -222,9 +343,12 @@ export default function CampaignTable({
               ],
             },
             {
-              label: "Escrow Status",
               value: selectedEscrow,
-              onChange: setSelectedEscrow,
+              onChange: (val: string) => {
+                setSelectedEscrow(val);
+                setPage(1);
+              },
+              label: "Escrow",
               options: [
                 { value: "funded", label: "Funded" },
                 { value: "released", label: "Released" },
@@ -232,60 +356,109 @@ export default function CampaignTable({
                 { value: "refunded", label: "Refunded" },
               ],
             },
-          ].map((f) => (
-            <div key={f.label} className="flex flex-col gap-1.5 text-left">
-              <span className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
-                {f.label}
-              </span>
-              <div className="relative">
-                <select
-                  value={f.value}
-                  onChange={(e) => {
-                    f.onChange(e.target.value);
-                    setPage(1);
-                  }}
-                  className="h-9.5 w-full pl-4 pr-10 rounded-xl border border-[#e8e6f0] bg-white text-xs font-semibold text-[#1a1a2e] appearance-none cursor-pointer focus:outline-none"
-                >
-                  <option value="">All</option>
-                  {f.options.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  size={14}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9a99b0] pointer-events-none"
-                />
-              </div>
+          ].map(({ value, onChange, label, options }) => (
+            <div key={label} className="relative">
+              <select
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className={cn(
+                  "h-9 pl-4 pr-9 rounded-xl bg-white border text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-brand-pink/30 cursor-pointer appearance-none transition-all",
+                  value
+                    ? "border-brand-pink text-brand-pink bg-rose-50/20"
+                    : "border-[#e8e6f0] text-[#1a1a2e]",
+                )}
+              >
+                <option value="">{label}</option>
+                {options.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                size={13}
+                className={cn(
+                  "absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none",
+                  value ? "text-brand-pink" : "text-[#9a99b0]",
+                )}
+              />
             </div>
           ))}
         </div>
-      )}
 
-      {/* Status tab pills row */}
-      <div className="flex items-center gap-1.5 border-[#e8e6f0]/80 p-1 rounded-xl w-full max-w-full overflow-x-auto scrollbar-none">
-        {STATUS_TABS.map((label) => {
-          const active = selectedStatus === label;
-          return (
-            <button
-              key={label}
-              onClick={() => {
-                onSelectStatus(label);
-                setPage(1);
-              }}
-              className={cn(
-                "px-3.5 sm:px-4.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0",
-                active
-                  ? "bg-brand-pink text-white shadow-sm"
-                  : "bg-transparent text-[#5a5a7a] hover:text-[#1a1a2e]",
-              )}
-            >
-              {label} ({statusCounts[label] ?? 0})
-            </button>
-          );
-        })}
+        {/* Date Range Selector */}
+        <CardDateRangeBar />
       </div>
+
+      {/* Active Filter Badges */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[#e8e6f0]/40">
+          <span className="text-[11px] font-bold text-[#9a99b0] uppercase tracking-wider">
+            Active Filters:
+          </span>
+          {selectedStatus !== "All" && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 text-brand-pink text-xs font-bold border border-rose-100">
+              Status: {selectedStatus}
+              <button
+                onClick={() => onSelectStatus("All")}
+                className="hover:text-rose-800 cursor-pointer"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+          {search && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 text-brand-pink text-xs font-bold border border-rose-100">
+              Search: "{search}"
+              <button
+                onClick={() => setSearch("")}
+                className="hover:text-rose-800 cursor-pointer"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+          {selectedTier && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 text-brand-pink text-xs font-bold border border-rose-100">
+              Tier: {selectedTier}
+              <button
+                onClick={() => setSelectedTier("")}
+                className="hover:text-rose-800 cursor-pointer"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+          {selectedPlatform && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 text-brand-pink text-xs font-bold border border-rose-100">
+              Platform: {selectedPlatform}
+              <button
+                onClick={() => setSelectedPlatform("")}
+                className="hover:text-rose-800 cursor-pointer"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+          {selectedEscrow && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 text-brand-pink text-xs font-bold border border-rose-100">
+              Escrow: {selectedEscrow}
+              <button
+                onClick={() => setSelectedEscrow("")}
+                className="hover:text-rose-800 cursor-pointer"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+          <button
+            onClick={clearAllFilters}
+            className="text-xs font-bold text-[#7a7a9a] hover:text-[#1a1a2e] underline cursor-pointer ml-1"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
 
       {/* Campaigns Table */}
       <div className="w-full overflow-x-auto no-scrollbar">
@@ -313,11 +486,8 @@ export default function CampaignTable({
               <th className="pb-3.5 pt-1 px-3 min-w-[100px] whitespace-nowrap">
                 End Date
               </th>
-              <th className="pb-3.5 pt-1 px-3 min-w-[100px] whitespace-nowrap">
+              <th className="pb-3.5 pt-1 pr-3 px-3 min-w-[100px] whitespace-nowrap">
                 Created
-              </th>
-              <th className="pb-3.5 pt-1 pr-2 pl-3 text-right whitespace-nowrap">
-                Actions
               </th>
             </tr>
           </thead>
@@ -325,7 +495,7 @@ export default function CampaignTable({
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <tr key={i} className="animate-pulse">
-                  <td className="py-3.5 pl-2" colSpan={COLUMN_COUNT + 1}>
+                  <td className="py-3.5 pl-2" colSpan={8}>
                     <div className="w-full h-4 bg-[#e8e6f0]/50 rounded-md" />
                   </td>
                 </tr>
@@ -333,7 +503,7 @@ export default function CampaignTable({
             ) : campaigns.length === 0 ? (
               <tr>
                 <td
-                  colSpan={COLUMN_COUNT + 1}
+                  colSpan={8}
                   className="py-10 text-center text-[#9a99b0] text-xs"
                 >
                   No campaigns found matching your criteria.
@@ -346,7 +516,11 @@ export default function CampaignTable({
                 return (
                   <tr
                     key={c.id}
-                    className="hover:bg-[#faf9fc]/40 transition-colors"
+                    onClick={() => {
+                      setSelectedCampaignId(c.id);
+                      setIsDrawerOpen(true);
+                    }}
+                    className="hover:bg-[#faf9fc] cursor-pointer transition-colors"
                   >
                     <td
                       className="py-3.5 pl-2 pr-3 font-bold text-[#1a1a2e] whitespace-nowrap"
@@ -375,18 +549,8 @@ export default function CampaignTable({
                     <td className="py-3.5 px-3 text-[#5a5a7a] whitespace-nowrap">
                       {formatDate(c.endDate)}
                     </td>
-                    <td className="py-3.5 px-3 text-[#9a99b0] whitespace-nowrap">
+                    <td className="py-3.5 pr-3 px-3 text-[#9a99b0] whitespace-nowrap">
                       {formatDate(c.createdAt)}
-                    </td>
-                    <td className="py-3.5 pr-2 pl-3 text-right whitespace-nowrap">
-                      <Link
-                        href={`/admin/campaigns/${c.id}`}
-                        aria-label={`View campaign ${c.title}`}
-                        title="View campaign"
-                        className="h-8 w-8 bg-[#eff6ff] text-[#2563eb] rounded-xl hover:bg-[#dbeafe] transition-all cursor-pointer inline-flex items-center justify-center shrink-0"
-                      >
-                        <Eye size={14} />
-                      </Link>
                     </td>
                   </tr>
                 );
@@ -440,6 +604,13 @@ export default function CampaignTable({
           </div>
         </div>
       )}
+
+      {/* Campaign Detail Drawer */}
+      <CampaignDetailDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        campaignId={selectedCampaignId}
+      />
     </section>
   );
 }
