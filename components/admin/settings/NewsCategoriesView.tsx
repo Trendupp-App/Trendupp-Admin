@@ -21,13 +21,6 @@ import {
 import type { NewsCategory } from "@/types/adminSettings";
 import { toast } from "sonner";
 
-const DEFAULT_SAMPLE_CATEGORIES: NewsCategory[] = [
-  { id: "749dc76f-2ae5-4518-b205-80ff3af1e12a", name: "Industry" },
-  { id: "cat-2", name: "Platform Update" },
-  { id: "cat-3", name: "Advertiser" },
-  { id: "cat-4", name: "Creators" },
-];
-
 function NewsCategoryFormInner({
   category,
   onClose,
@@ -105,8 +98,7 @@ export default function NewsCategoriesView() {
   const deleteMutation = useDeleteNewsCategory();
 
   const displayCategories = useMemo(() => {
-    if (categories && categories.length > 0) return categories;
-    return process.env.NODE_ENV === "development" ? DEFAULT_SAMPLE_CATEGORIES : [];
+    return Array.isArray(categories) ? categories : [];
   }, [categories]);
 
   const filteredCategories = useMemo(() => {

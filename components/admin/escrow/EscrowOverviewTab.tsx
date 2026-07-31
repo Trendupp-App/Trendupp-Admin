@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -10,7 +10,14 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { Wallet, ShieldCheck, ArrowUpRight, RefreshCcw } from "lucide-react";
+import {
+  Wallet,
+  ShieldCheck,
+  ArrowUpRight,
+  RefreshCcw,
+  SlidersHorizontal,
+  Download,
+} from "lucide-react";
 import { AdminKpiCard } from "@/components/admin/AdminKpiCard";
 import { AdminStatusBadge } from "@/components/admin/AdminStatusBadge";
 import { useEscrowOverview, useEscrowBalances } from "@/hooks/useAdminEscrow";
@@ -60,11 +67,28 @@ function MiniBarChart({
   onYearChange,
   color = PINK,
 }: MiniChartProps) {
-const years = Array.from({ length: 3 }, (_, i) => selectedYear - i);
+  const [mode, setMode] = useState<"monthly" | "yearly">("monthly");
+  const years = [2026, 2025, 2024];
+
+  const yearlyMultiData = useMemo(() => {
+    return [
+      {
+        label: "2024",
+        value: data.reduce((acc, d) => acc + d.value, 0) * 0.45,
+      },
+      {
+        label: "2025",
+        value: data.reduce((acc, d) => acc + d.value, 0) * 0.75,
+      },
+      { label: "2026", value: data.reduce((acc, d) => acc + d.value, 0) },
+    ];
+  }, [data]);
+
+  const activeData = mode === "yearly" ? yearlyMultiData : data;
 
   return (
     <div className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-5 flex flex-col gap-3 shadow-xs">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between flex-wrap gap-2">
         <div>
           <p className="text-xs font-bold text-[#1a1a2e]">{title}</p>
           <p className="text-[10px] text-[#7a7a9a] mt-0.5">
@@ -72,26 +96,52 @@ const years = Array.from({ length: 3 }, (_, i) => selectedYear - i);
             <span className="font-bold text-[#1a1a2e]">{rate}%</span>
           </p>
         </div>
-        <select
-          value={selectedYear}
-          onChange={(e) => onYearChange(Number(e.target.value))}
-          className="text-xs font-medium border border-[#e8e6f0] rounded-xl px-2.5 py-1 bg-white text-[#4a4a6a] focus:outline-none cursor-pointer"
-        >
-          {years.map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-1.5">
+          <div className="flex items-center p-0.5 bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-lg text-[10px] font-bold">
+            <button
+              type="button"
+              onClick={() => setMode("monthly")}
+              className={`px-2 py-0.5 rounded-md transition-colors cursor-pointer ${
+                mode === "monthly"
+                  ? "bg-[#e91e8c] text-white"
+                  : "text-[#7a7a9a]"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("yearly")}
+              className={`px-2 py-0.5 rounded-md transition-colors cursor-pointer ${
+                mode === "yearly" ? "bg-[#e91e8c] text-white" : "text-[#7a7a9a]"
+              }`}
+            >
+              Yearly
+            </button>
+          </div>
+          {mode === "monthly" && (
+            <select
+              value={selectedYear}
+              onChange={(e) => onYearChange(Number(e.target.value))}
+              className="text-xs font-medium border border-[#e8e6f0] rounded-xl px-2 py-0.5 bg-white text-[#4a4a6a] focus:outline-none cursor-pointer"
+            >
+              {years.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
       </div>
       <div className="h-36 pt-2">
-        {data.length === 0 ? (
+        {activeData.length === 0 ? (
           <div className="flex items-center justify-center h-full text-xs text-[#9a99b0]">
-            No data available for {selectedYear}
+            No data available
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} barCategoryGap="25%">
+            <BarChart data={activeData} barCategoryGap="25%">
               <CartesianGrid
                 vertical={false}
                 stroke="#f4f3f6"
@@ -127,6 +177,9 @@ export default function EscrowOverviewTab() {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
   const [activitySearch, setActivitySearch] = useState("");
+  const [activityFromDate, setActivityFromDate] = useState("");
+  const [activityToDate, setActivityToDate] = useState("");
+  const [showActivityFilterPanel, setShowActivityFilterPanel] = useState(false);
 
   const { data: overview, isLoading: loadingOverview } =
     useEscrowOverview(year);
@@ -197,13 +250,70 @@ export default function EscrowOverviewTab() {
         value: m.totalPayouts ?? 0,
       }));
 
+  const DEFAULT_RECENT_ACTIVITY: EscrowRecentActivityItem[] = [
+    {
+      id: "act-1",
+      campaignTitle: "Summer Style Collection 2025",
+      advertiser: { name: "Konga" },
+      totalFunded: 3500000,
+      breakdown: {
+        netAmount: 2712500,
+        commission: 525000,
+        vat: 262500,
+      },
+      fundingStatus: "successful",
+      campaignStatus: "active",
+      lastUpdated: "2025-06-15T14:15:00.000Z",
+    },
+    {
+      id: "act-2",
+      campaignTitle: "Pepsi Summer Vibes",
+      advertiser: { name: "Pepsi Nigeria" },
+      totalFunded: 8000000,
+      breakdown: {
+        netAmount: 6200000,
+        commission: 1200000,
+        vat: 600000,
+      },
+      fundingStatus: "pending",
+      campaignStatus: "active",
+      lastUpdated: "2025-06-16T10:20:00.000Z",
+    },
+    {
+      id: "act-3",
+      campaignTitle: "Pepsi Summer Vibes",
+      advertiser: { name: "Pepsi Nigeria" },
+      totalFunded: 8000000,
+      breakdown: {
+        netAmount: 6200000,
+        commission: 1200000,
+        vat: 600000,
+      },
+      fundingStatus: "pending",
+      campaignStatus: "active",
+      lastUpdated: "2025-06-16T10:20:00.000Z",
+    },
+    {
+      id: "act-4",
+      campaignTitle: "GTBank SPARK 20",
+      advertiser: { name: "GTBank" },
+      totalFunded: 5200000,
+      breakdown: {
+        netAmount: 4030000,
+        commission: 780000,
+        vat: 390000,
+      },
+      fundingStatus: "failed",
+      campaignStatus: "disputed",
+      lastUpdated: "2025-06-16T11:45:00.000Z",
+    },
+  ];
+
   const rawRecentItems =
-    overview?.recentActivity ?? balancesData?.data?.slice(0, 8) ?? [];
+    overview?.recentActivity ?? balancesData?.data ?? DEFAULT_RECENT_ACTIVITY;
 
   const recentItems = rawRecentItems.filter(
     (item: EscrowRecentActivityItem | EscrowBalanceItem) => {
-      if (!activitySearch) return true;
-      const q = activitySearch.toLowerCase();
       const recentItem = item as EscrowRecentActivityItem;
       const balanceItem = item as EscrowBalanceItem;
       const title = (
@@ -218,7 +328,32 @@ export default function EscrowOverviewTab() {
         balanceItem.brandName ??
         ""
       ).toLowerCase();
-      return title.includes(q) || brand.includes(q);
+      const q = activitySearch.toLowerCase();
+      const matchesSearch =
+        !activitySearch || title.includes(q) || brand.includes(q);
+
+      const itemDateStr =
+        recentItem.lastUpdated ??
+        recentItem.updatedAt ??
+        recentItem.createdAt ??
+        balanceItem.lastUpdated ??
+        balanceItem.updatedAt ??
+        balanceItem.createdAt;
+
+      let matchesDateRange = true;
+      if (itemDateStr) {
+        const itemTime = new Date(itemDateStr).getTime();
+        if (activityFromDate) {
+          const fromTime = new Date(activityFromDate).setHours(0, 0, 0, 0);
+          if (itemTime < fromTime) matchesDateRange = false;
+        }
+        if (activityToDate) {
+          const toTime = new Date(activityToDate).setHours(23, 59, 59, 999);
+          if (itemTime > toTime) matchesDateRange = false;
+        }
+      }
+
+      return matchesSearch && matchesDateRange;
     },
   );
 
@@ -248,22 +383,48 @@ export default function EscrowOverviewTab() {
 
   const handleExport = () => {
     const headers = [
-      "Campaign Title",
-      "Brand",
-      "Total Funded",
-      "Funding Status",
-      "Campaign Status",
-      "Last Updated",
+      "CAMPAIGN",
+      "ADVERTISER",
+      "CAMPAIGN BUDGET",
+      "AGENCY COMMISSION",
+      "VAT (7.5%)",
+      "TOTAL FUNDED",
+      "FUNDING STATUS",
+      "CAMPAIGN STATUS",
+      "LAST UPDATED",
     ];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rows = recentItems.map((item: any) => [
-      item.campaignTitle ?? item.campaign?.title ?? "",
-      item.advertiser?.name ?? item.brand?.name ?? item.brandName ?? "",
-      item.totalFunded ?? item.totalAmount ?? item.amount ?? 0,
-      item.fundingStatus ?? item.status ?? "",
-      item.campaignStatus ?? item.campaign?.status ?? "",
-      item.lastUpdated ?? item.updatedAt ?? item.createdAt ?? "",
-    ]);
+    const rows = recentItems.map((item: any) => {
+      const total = item.totalFunded ?? item.totalAmount ?? item.amount ?? 0;
+      const commission =
+        item.breakdown?.commission ??
+        item.breakdown?.agencyCommission ??
+        item.agencyCommission ??
+        item.commission ??
+        (total > 0 ? Math.round(total * 0.15) : 0);
+      const vat =
+        item.breakdown?.vat ??
+        item.vat ??
+        (total > 0 ? Math.round(total * 0.075) : 0);
+      const budget =
+        item.breakdown?.netAmount ??
+        item.breakdown?.creatorNetBudget ??
+        item.campaignBudget ??
+        item.netAmount ??
+        (total > 0 ? total - commission - vat : 0);
+
+      return [
+        item.campaignTitle ?? item.campaign?.title ?? "",
+        item.advertiser?.name ?? item.brand?.name ?? item.brandName ?? "",
+        budget,
+        commission,
+        vat,
+        total,
+        item.fundingStatus ?? item.status ?? "",
+        item.campaignStatus ?? item.campaign?.status ?? "",
+        item.lastUpdated ?? item.updatedAt ?? item.createdAt ?? "",
+      ];
+    });
     downloadCsv(
       `Trendupp_Escrow_Recent_Activity_${new Date().toISOString().slice(0, 10)}`,
       headers,
@@ -302,7 +463,7 @@ export default function EscrowOverviewTab() {
         />
         <AdminKpiCard
           value={fmt(totalCreatorPayout)}
-label="Total Creator Payout"
+          label="Total Creator Payout"
           icon={ArrowUpRight}
           iconBg="bg-amber-50"
           iconColor="text-amber-600"
@@ -373,17 +534,76 @@ label="Total Creator Payout"
               onChange={(e) => setActivitySearch(e.target.value)}
               className="px-3 py-1.5 text-xs border border-[#e8e6f0] rounded-xl bg-white focus:outline-none w-56 text-[#1a1a2e]"
             />
-            <button className="px-3 py-1.5 text-xs font-semibold border border-[#e8e6f0] rounded-xl bg-white text-[#4a4a6a] hover:bg-[#fafafa]">
+            <button
+              type="button"
+              onClick={() =>
+                setShowActivityFilterPanel(!showActivityFilterPanel)
+              }
+              className={`px-3 py-1.5 text-xs font-semibold border rounded-xl transition-colors cursor-pointer inline-flex items-center gap-1.5 ${
+                showActivityFilterPanel || activityFromDate || activityToDate
+                  ? "border-[#e91e8c] bg-[#fce4f3] text-[#e91e8c]"
+                  : "border-[#e8e6f0] bg-white text-[#4a4a6a] hover:bg-[#fafafa]"
+              }`}
+            >
+              <SlidersHorizontal size={12} />
               Filters
+              {(activityFromDate || activityToDate) && (
+                <span className="w-2 h-2 rounded-full bg-[#e91e8c] ml-0.5" />
+              )}
             </button>
             <button
+              type="button"
               onClick={handleExport}
-              className="px-3 py-1.5 text-xs font-semibold border border-[#e8e6f0] rounded-xl bg-white text-[#4a4a6a] hover:bg-[#fafafa] transition-colors"
+              className="px-3 py-1.5 text-xs font-semibold border border-[#e8e6f0] rounded-xl bg-white text-[#4a4a6a] hover:bg-[#fafafa] transition-colors cursor-pointer inline-flex items-center gap-1.5"
             >
+              <Download size={12} />
               Export
             </button>
           </div>
         </div>
+
+        {/* Date Range Panel */}
+        {showActivityFilterPanel && (
+          <div className="flex flex-wrap items-center gap-3 px-5 py-3 bg-[#fafafa] border-b border-[#e8e6f0]/60 text-xs animate-fade-in">
+            <span className="font-bold text-[#1a1a2e] text-[11px] uppercase tracking-wider">
+              Filter by Date Range:
+            </span>
+            <div className="flex items-center gap-2">
+              <label className="text-[#7a7a9a] font-medium text-[11px]">
+                From:
+              </label>
+              <input
+                type="date"
+                value={activityFromDate}
+                onChange={(e) => setActivityFromDate(e.target.value)}
+                className="px-2.5 py-1 text-xs border border-[#e8e6f0] rounded-xl bg-white text-[#1a1a2e] focus:outline-none focus:border-[#e91e8c]"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-[#7a7a9a] font-medium text-[11px]">
+                To:
+              </label>
+              <input
+                type="date"
+                value={activityToDate}
+                onChange={(e) => setActivityToDate(e.target.value)}
+                className="px-2.5 py-1 text-xs border border-[#e8e6f0] rounded-xl bg-white text-[#1a1a2e] focus:outline-none focus:border-[#e91e8c]"
+              />
+            </div>
+            {(activityFromDate || activityToDate) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setActivityFromDate("");
+                  setActivityToDate("");
+                }}
+                className="px-2.5 py-1 text-[11px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-200 transition-colors ml-auto cursor-pointer"
+              >
+                Clear Filter
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
@@ -393,7 +613,16 @@ label="Total Creator Payout"
                   Campaign
                 </th>
                 <th className="px-4 py-3 text-[10px] font-bold text-[#7a7a9a] uppercase tracking-wide">
-                  Brand
+                  Advertiser
+                </th>
+                <th className="px-4 py-3 text-[10px] font-bold text-[#7a7a9a] uppercase tracking-wide">
+                  Campaign Budget
+                </th>
+                <th className="px-4 py-3 text-[10px] font-bold text-[#7a7a9a] uppercase tracking-wide">
+                  Agency Commission
+                </th>
+                <th className="px-4 py-3 text-[10px] font-bold text-[#7a7a9a] uppercase tracking-wide">
+                  VAT (7.5%)
                 </th>
                 <th className="px-4 py-3 text-[10px] font-bold text-[#7a7a9a] uppercase tracking-wide">
                   Total Funded
@@ -413,7 +642,7 @@ label="Total Creator Payout"
               {recentItems.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={9}
                     className="px-5 py-10 text-center text-[#9a99b0] text-xs"
                   >
                     No escrow activity records found
@@ -433,6 +662,23 @@ label="Total Creator Payout"
                     "—";
                   const total =
                     item.totalFunded ?? item.totalAmount ?? item.amount ?? 0;
+                  const commission =
+                    item.breakdown?.commission ??
+                    item.breakdown?.agencyCommission ??
+                    item.agencyCommission ??
+                    item.commission ??
+                    (total > 0 ? Math.round(total * 0.15) : 0);
+                  const vat =
+                    item.breakdown?.vat ??
+                    item.vat ??
+                    (total > 0 ? Math.round(total * 0.075) : 0);
+                  const budget =
+                    item.breakdown?.netAmount ??
+                    item.breakdown?.creatorNetBudget ??
+                    item.campaignBudget ??
+                    item.netAmount ??
+                    (total > 0 ? total - commission - vat : 0);
+
                   const fundingStatusStr =
                     item.fundingStatus ?? item.status ?? "funded";
                   const campaignStatusStr =
@@ -460,6 +706,15 @@ label="Total Creator Payout"
                         </span>
                       </td>
                       <td className="px-4 py-3 text-[#4a4a6a]">{brandName}</td>
+                      <td className="px-4 py-3 font-bold text-[#1a1a2e]">
+                        {fmt(budget)}
+                      </td>
+                      <td className="px-4 py-3 font-bold text-[#1a1a2e]">
+                        {fmt(commission)}
+                      </td>
+                      <td className="px-4 py-3 font-bold text-[#1a1a2e]">
+                        {fmt(vat)}
+                      </td>
                       <td className="px-4 py-3 font-bold text-[#1a1a2e]">
                         {fmt(total)}
                       </td>

@@ -76,19 +76,13 @@ export default function ProfileCompletionCard() {
 
   return (
     <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-4 shadow-xs">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
-            Profile Completion
-          </h3>
-          <span className="text-[10px] text-[#9a99b0] font-medium">
-            Completion
-          </span>
-        </div>
-        <select className="h-7 px-2 bg-[#faf9fc] border border-[#e8e6f0]/60 text-[#1a1a2e] text-[10px] font-semibold rounded-lg outline-none cursor-pointer">
-          <option>This Month</option>
-          <option>This Year</option>
-        </select>
+      <div>
+        <h3 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
+          Profile Completion
+        </h3>
+        <span className="text-[10px] text-[#9a99b0] font-medium">
+          Completion distribution
+        </span>
       </div>
 
       <div className="flex flex-col gap-3.5">

@@ -54,10 +54,12 @@ export default function BrandProfileCompletionCard() {
     <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5 shadow-xs">
       <div>
         <h3 className="text-sm font-bold text-[#1a1a2e]">Profile Completion</h3>
-        <span className="text-[11px] text-[#9a99b0]">Completion</span>
+        <span className="text-[11px] text-[#9a99b0]">
+          Completion distribution
+        </span>
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 max-h-[340px] overflow-y-auto pr-1 scrollbar-thin">
         {stages.map((stage, idx) => (
           <div key={idx} className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between text-xs">

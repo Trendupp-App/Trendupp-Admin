@@ -52,7 +52,7 @@ export default function CampaignAnalyticsTab({
   }
 
   return (
-    <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5 text-left">
+    <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-4 sm:p-6 flex flex-col gap-5 text-left">
       <div className="flex flex-col gap-1">
         <span className="text-[9px] font-bold text-[#9a99b0] uppercase tracking-wider">
           LIVE POSTS
@@ -79,7 +79,7 @@ export default function CampaignAnalyticsTab({
         ))}
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         {METRICS.map((m, i) => (
           <div
             key={i}

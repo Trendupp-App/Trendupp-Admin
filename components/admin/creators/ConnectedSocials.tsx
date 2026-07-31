@@ -1,6 +1,8 @@
 "use client";
 
 import { useCreatorSummary } from "@/hooks/useAdminCreators";
+import { CardFilterHeaderControls } from "./CardFilterHeaderControls";
+import { CardDateRangeBar } from "./CardDateRangeBar";
 
 interface SocialItem {
   platform: string;
@@ -46,7 +48,7 @@ export default function ConnectedSocials() {
 
   return (
     <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-4 shadow-xs">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3">
         <div>
           <h3 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
             Connected socials
@@ -55,10 +57,15 @@ export default function ConnectedSocials() {
             5 connected socials
           </span>
         </div>
-        <select className="h-7 px-2 bg-[#faf9fc] border border-[#e8e6f0]/60 text-[#1a1a2e] text-[10px] font-semibold rounded-lg outline-none cursor-pointer">
-          <option>This Month</option>
-          <option>This Year</option>
-        </select>
+
+        <div className="pt-0.5">
+          <CardFilterHeaderControls />
+        </div>
+
+        {/* Date Range Selector Toolbar (From, To) */}
+        <div className="pt-2 border-t border-[#f4f3f6] flex justify-start">
+          <CardDateRangeBar />
+        </div>
       </div>
 
       <div className="flex flex-col gap-3.5">

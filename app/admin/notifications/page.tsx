@@ -1,8 +1,14 @@
 "use client";
 
 import BroadcastList from "@/components/admin/notifications/BroadcastList";
+import AccessDenied from "@/components/admin/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 
 export default function NotificationsPage() {
+  const canAccess = usePermission("page.notifications");
+
+  if (!canAccess) return <AccessDenied />;
+
   return (
     <div className="flex flex-col gap-6 p-6 md:p-8 animate-fade-in-up">
       <div>

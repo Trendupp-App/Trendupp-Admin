@@ -126,9 +126,9 @@ export default function PaidCampaignsAnalyticsView() {
       </div>
 
       {/* Top 5 Stat Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {/* Total Campaigns */}
-        <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-1 shadow-xs">
+        <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-4 sm:p-5 flex flex-col gap-1 shadow-xs">
           <span className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
             Total Campaigns
           </span>
@@ -142,7 +142,7 @@ export default function PaidCampaignsAnalyticsView() {
         </div>
 
         {/* Avg. Applicants / Campaign */}
-        <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-1 shadow-xs">
+        <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-4 sm:p-5 flex flex-col gap-1 shadow-xs">
           <span className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
             Avg. Applicants / Campaign
           </span>
@@ -156,7 +156,7 @@ export default function PaidCampaignsAnalyticsView() {
         </div>
 
         {/* Creators Selected Rate */}
-        <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-1 shadow-xs">
+        <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-4 sm:p-5 flex flex-col gap-1 shadow-xs">
           <span className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
             Creators Selected Rate
           </span>
@@ -170,7 +170,7 @@ export default function PaidCampaignsAnalyticsView() {
         </div>
 
         {/* Total Completed */}
-        <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-1 shadow-xs">
+        <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-4 sm:p-5 flex flex-col gap-1 shadow-xs">
           <span className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
             Total Completed
           </span>
@@ -184,7 +184,7 @@ export default function PaidCampaignsAnalyticsView() {
         </div>
 
         {/* Campaign Completion Rate */}
-        <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-1 shadow-xs">
+        <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-4 sm:p-5 flex flex-col gap-1 shadow-xs">
           <span className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
             Campaign Completion Rate
           </span>

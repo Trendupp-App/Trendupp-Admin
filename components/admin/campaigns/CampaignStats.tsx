@@ -48,8 +48,8 @@ export default function CampaignStats({
   ];
 
   return (
-    <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-4">
-      <div className="flex justify-between items-center">
+    <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-4 sm:p-6 flex flex-col gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-4">
         <h2 className="text-sm font-semibold text-[#1a1a2e]">
           Paid Campaigns Overview
         </h2>
@@ -58,7 +58,7 @@ export default function CampaignStats({
         </span>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {isLoading
           ? Array.from({ length: 5 }).map((_, i) => (
               <div

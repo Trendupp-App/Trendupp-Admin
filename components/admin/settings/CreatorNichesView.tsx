@@ -120,7 +120,7 @@ export default function CreatorNichesView() {
       </div>
 
       {/* Niches Card Container */}
-      <div className="bg-white border border-[#f0f0f5] rounded-2xl p-7 flex flex-col gap-6 shadow-xs">
+      <div className="bg-white border border-[#f0f0f5] rounded-2xl p-4 sm:p-7 flex flex-col gap-6 shadow-xs">
         <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#7a7a9a]">
           ALL NICHES ({filteredNiches.length})
         </span>

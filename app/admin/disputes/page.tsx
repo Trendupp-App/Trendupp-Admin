@@ -6,6 +6,7 @@ import {
   useDisputeDetails,
   useActivateDispute,
   useResolveDispute,
+  useRejectDispute,
 } from "@/hooks/useDisputes";
 import { useUserById } from "@/hooks/useUsers";
 import { useStreamChat } from "@/lib/providers/StreamChatProvider";
@@ -15,12 +16,12 @@ import DisputeToolbar, {
 } from "@/components/admin/disputes/DisputeToolbar";
 import PendingRequestsList from "@/components/admin/disputes/PendingRequestsList";
 import ActivateChatModal from "@/components/admin/disputes/ActivateChatModal";
+import DeclineDisputeModal from "@/components/admin/disputes/DeclineDisputeModal";
 import ActiveChatsGrid from "@/components/admin/disputes/ActiveChatsGrid";
 import ClosedDisputesTable from "@/components/admin/disputes/ClosedDisputesTable";
 import DisputeDetailView from "@/components/admin/disputes/DisputeDetailView";
 import DisputeSkeleton from "@/components/admin/disputes/DisputeSkeleton";
 import { Dispute, ResolveDisputePayload } from "@/types/dispute";
-import { toast } from "sonner";
 
 import { useAuthStore } from "@/store/authStore";
 
@@ -64,6 +65,10 @@ export default function AdminDisputesPage() {
   const [activateDisputeTarget, setActivateDisputeTarget] =
     useState<Dispute | null>(null);
 
+  // Decline Request Modal State
+  const [declineDisputeTarget, setDeclineDisputeTarget] =
+    useState<Dispute | null>(null);
+
   // Queries
   const { data: disputesList = [], isLoading: isListLoading } = useDisputes();
   const { data: disputeDetail } = useDisputeDetails(selectedDisputeId);
@@ -72,6 +77,12 @@ export default function AdminDisputesPage() {
   );
   const { data: activateCreatorUser } = useUserById(
     activateDisputeTarget?.creatorId ?? null,
+  );
+  const { data: declineBrandUser } = useUserById(
+    declineDisputeTarget?.brandId ?? null,
+  );
+  const { data: declineCreatorUser } = useUserById(
+    declineDisputeTarget?.creatorId ?? null,
   );
 
   // Stream Chat integration
@@ -87,13 +98,18 @@ export default function AdminDisputesPage() {
   const resolveMutation = useResolveDispute(() => {
     setSelectedDisputeId(null);
   });
+  const rejectMutation = useRejectDispute(() => {
+    setDeclineDisputeTarget(null);
+  });
 
   // Filtered lists
   const pendingRequests = disputesList.filter(
     (d) => d.status === "raised" || !d.status,
   );
   const activeChats = disputesList.filter((d) => d.status === "under_review");
-  const closedDisputes = disputesList.filter((d) => d.status === "resolved");
+  const closedDisputes = disputesList.filter(
+    (d) => d.status === "resolved" || d.status === "rejected",
+  );
 
   // Stream Chat Channel Subscriptions
   useEffect(() => {
@@ -194,12 +210,29 @@ export default function AdminDisputesPage() {
     });
   };
 
+  const handleConfirmDecline = (reason: string) => {
+    if (!declineDisputeTarget) return;
+    rejectMutation.mutate({
+      id: declineDisputeTarget.id,
+      payload: { reason },
+    });
+  };
+
   const activateBrandName = activateDisputeTarget
     ? `${activateBrandUser?.firstName ?? ""} ${activateBrandUser?.lastName ?? ""}`.trim() ||
       "Brand"
     : "Brand";
   const activateCreatorName = activateDisputeTarget
     ? `${activateCreatorUser?.firstName ?? ""} ${activateCreatorUser?.lastName ?? ""}`.trim() ||
+      "Creator"
+    : "Creator";
+
+  const declineBrandName = declineDisputeTarget
+    ? `${declineBrandUser?.firstName ?? ""} ${declineBrandUser?.lastName ?? ""}`.trim() ||
+      "Brand"
+    : "Brand";
+  const declineCreatorName = declineDisputeTarget
+    ? `${declineCreatorUser?.firstName ?? ""} ${declineCreatorUser?.lastName ?? ""}`.trim() ||
       "Creator"
     : "Creator";
 
@@ -254,9 +287,7 @@ export default function AdminDisputesPage() {
         <PendingRequestsList
           disputes={pendingRequests}
           onActivateClick={(dispute) => setActivateDisputeTarget(dispute)}
-          onDeclineClick={(dispute) =>
-            toast.info(`Declining request ${dispute.id}`)
-          }
+          onDeclineClick={(dispute) => setDeclineDisputeTarget(dispute)}
         />
       )}
 
@@ -279,6 +310,16 @@ export default function AdminDisputesPage() {
         brandName={activateBrandName}
         creatorName={activateCreatorName}
         isLoading={activateMutation.isPending}
+      />
+
+      {/* Decline Request Confirmation Modal */}
+      <DeclineDisputeModal
+        isOpen={!!declineDisputeTarget}
+        onClose={() => setDeclineDisputeTarget(null)}
+        onConfirm={handleConfirmDecline}
+        brandName={declineBrandName}
+        creatorName={declineCreatorName}
+        isLoading={rejectMutation.isPending}
       />
     </div>
   );

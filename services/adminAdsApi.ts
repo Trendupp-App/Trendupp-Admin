@@ -10,8 +10,7 @@ import type {
 
 export const adminAdsApi = {
   // 1. Get Summary Metrics
-  getSummary: () =>
-    apiClient.get<AdSummaryDto | { data: AdSummaryDto }>("/admin/ads/summary"),
+  getSummary: () => apiClient.get<AdSummaryDto>("/admin/ads/summary"),
 
   // 2. Get Ads List (Paginated & Filtered)
   getAds: (params?: AdListQueryParams) =>

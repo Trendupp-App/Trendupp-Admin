@@ -271,7 +271,7 @@ export default function CampaignApplicationsTab({
             return (
               <div
                 key={app.id}
-                className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5.5 flex flex-col md:flex-row justify-between gap-4.5 items-start md:items-center"
+                className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-4 sm:p-5.5 flex flex-col md:flex-row justify-between gap-4.5 items-start md:items-center"
               >
                 <div className="flex gap-4 items-start flex-1 min-w-0">
                   <UserAvatar

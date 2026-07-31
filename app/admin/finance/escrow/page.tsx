@@ -4,6 +4,8 @@ import { useState } from "react";
 import EscrowOverviewTab from "@/components/admin/escrow/EscrowOverviewTab";
 import EscrowBalancesTab from "@/components/admin/escrow/EscrowBalancesTab";
 import EscrowPayoutsTab from "@/components/admin/escrow/EscrowPayoutsTab";
+import AccessDenied from "@/components/admin/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 
 type EscrowTab = "overview" | "escrow" | "payouts";
 
@@ -14,7 +16,10 @@ const TABS: { id: EscrowTab; label: string }[] = [
 ];
 
 export default function EscrowPage() {
+  const canAccess = usePermission("page.finance");
   const [activeTab, setActiveTab] = useState<EscrowTab>("overview");
+
+  if (!canAccess) return <AccessDenied />;
 
   return (
     <div className="flex flex-col gap-6 p-6 md:p-8 animate-fade-in-up text-left">
