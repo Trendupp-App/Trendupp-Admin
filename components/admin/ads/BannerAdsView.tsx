@@ -28,6 +28,7 @@ import BannerAdCard from "./BannerAdCard";
 import AddEditAdSheet from "./AddEditAdSheet";
 import DeleteAdModal from "./DeleteAdModal";
 import { Skeleton } from "@/components/ui/skeleton";
+import { usePermission } from "@/hooks/usePermission";
 import {
   useAdSummary,
   useAdminAds,
@@ -77,6 +78,7 @@ function SortableBannerAdCard({
 }
 
 export default function BannerAdsView() {
+  const canCreate = usePermission("ads.create");
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingAd, setEditingAd] = useState<BannerAdItem | null>(null);
   const [deletingAd, setDeletingAd] = useState<BannerAdItem | null>(null);
@@ -273,13 +275,15 @@ export default function BannerAdsView() {
           </span>
         </div>
 
-        <button
-          onClick={handleOpenAddSheet}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-pink hover:bg-brand-pink/90 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
-        >
-          <Plus size={16} />
-          Create New Ad
-        </button>
+        {canCreate && (
+          <button
+            onClick={handleOpenAddSheet}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-pink hover:bg-brand-pink/90 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+          >
+            <Plus size={16} />
+            <span>Add New Banner</span>
+          </button>
+        )}
       </div>
 
       {/* Top 4 KPI Metrics */}

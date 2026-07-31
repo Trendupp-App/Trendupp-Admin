@@ -11,10 +11,17 @@ import NewsCategoriesView from "@/components/admin/settings/NewsCategoriesView";
 import ContactInfoView from "@/components/admin/settings/ContactInfoView";
 import ExternalLinksView from "@/components/admin/settings/ExternalLinksView";
 import ChangeLoginView from "@/components/admin/settings/ChangeLoginView";
+import AccessDenied from "@/components/admin/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 import type { SettingsTab } from "@/types/adminSettings";
 
 export default function SettingsPage() {
+  const canAccess = usePermission("page.settings");
+  const canEditContactInfo = usePermission("settings.contact_info");
+  const canEditCommission = usePermission("settings.commission");
   const [activeTab, setActiveTab] = useState<SettingsTab>("commission");
+
+  if (!canAccess) return <AccessDenied />;
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6 min-h-screen bg-[#fafafa] w-full max-w-full overflow-x-hidden">
@@ -31,7 +38,11 @@ export default function SettingsPage() {
 
         <main className="flex-1 w-full min-w-0">
           {activeTab === "commission" ? (
-            <CommissionSettingsView />
+            canEditCommission ? (
+              <CommissionSettingsView />
+            ) : (
+              <AccessDenied />
+            )
           ) : activeTab === "creator-niches" ? (
             <CreatorNichesView />
           ) : activeTab === "brand-industries" ? (
@@ -43,7 +54,11 @@ export default function SettingsPage() {
           ) : activeTab === "news-categories" ? (
             <NewsCategoriesView />
           ) : activeTab === "contact-info" ? (
-            <ContactInfoView />
+            canEditContactInfo ? (
+              <ContactInfoView />
+            ) : (
+              <AccessDenied />
+            )
           ) : activeTab === "external-links" ? (
             <ExternalLinksView />
           ) : (

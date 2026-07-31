@@ -13,7 +13,7 @@ import {
   TrendingUp,
   Megaphone,
   MessageSquare,
-  // Headphones,
+  Headphones,
   Wallet,
   BarChart2,
   ClipboardList,
@@ -27,16 +27,20 @@ import {
 import { cn } from "@/lib/utils";
 import UserAvatar from "@/shared/UserAvatar";
 import { useAuthStore } from "@/store/authStore";
+import type { AdminRole } from "@/lib/permissions";
 
 interface NavItem {
   label: string;
   href: string;
   icon: React.ElementType;
+  roles?: AdminRole[];
 }
 interface NavGroup {
   section: string;
   items: NavItem[];
 }
+
+const SUPER: AdminRole[] = ["super_admin", "owner"];
 
 const NAV: NavGroup[] = [
   {
@@ -74,12 +78,24 @@ const NAV: NavGroup[] = [
         href: "/admin/disputes",
         icon: MessageSquare,
       },
-      // { label: "Support Tickets", href: "/admin/support", icon: Headphones },
+      {
+        label: "Support Tickets",
+        href: "/admin/support",
+        icon: Headphones,
+        roles: [...SUPER, "support_agent"],
+      },
     ],
   },
   {
     section: "FINANCE",
-    items: [{ label: "Escrow", href: "/admin/finance/escrow", icon: Wallet }],
+    items: [
+      {
+        label: "Escrow",
+        href: "/admin/finance/escrow",
+        icon: Wallet,
+        roles: [...SUPER, "finance_admin"],
+      },
+    ],
   },
   {
     section: "REPORTS",
@@ -95,9 +111,24 @@ const NAV: NavGroup[] = [
   {
     section: "SYSTEM",
     items: [
-      { label: "Notifications", href: "/admin/notifications", icon: Bell },
-      { label: "Team Management", href: "/admin/team", icon: Users2 },
-      { label: "Settings", href: "/admin/settings", icon: Settings },
+      {
+        label: "Notifications",
+        href: "/admin/notifications",
+        icon: Bell,
+        roles: [...SUPER, "moderator"],
+      },
+      {
+        label: "Team Management",
+        href: "/admin/team",
+        icon: Users2,
+        roles: SUPER,
+      },
+      {
+        label: "Settings",
+        href: "/admin/settings",
+        icon: Settings,
+        roles: [...SUPER, "moderator"],
+      },
     ],
   },
 ];
@@ -239,54 +270,63 @@ export default function AdminSidebar() {
 
         {/* Navigation Groups */}
         <nav className="flex flex-col">
-          {NAV.map(({ section, items }) => (
-            <div key={section} className="mb-1">
-              {!isCollapsed ? (
-                <p className="text-[9px] font-bold uppercase tracking-widest text-[#b0aec8] px-3 mt-3 mb-1">
-                  {section}
-                </p>
-              ) : (
-                <div className="h-px bg-[#fae2ec]/60 my-2 mx-1" />
-              )}
-              {items.map(({ label, href, icon: Icon }) => {
-                const active =
-                  href === "/admin/campaigns"
-                    ? pathname === href ||
-                      (pathname.startsWith(href + "/") &&
-                        !pathname.startsWith("/admin/campaigns/social"))
-                    : href === "/admin/reports"
+          {NAV.map(({ section, items }) => {
+            const visibleItems = items.filter(
+              (item) =>
+                !item.roles || item.roles.includes(user?.role as AdminRole),
+            );
+            if (visibleItems.length === 0) return null;
+            return (
+              <div key={section} className="mb-1">
+                {!isCollapsed ? (
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-[#b0aec8] px-3 mt-3 mb-1">
+                    {section}
+                  </p>
+                ) : (
+                  <div className="h-px bg-[#fae2ec]/60 my-2 mx-1" />
+                )}
+                {visibleItems.map(({ label, href, icon: Icon }) => {
+                  const active =
+                    href === "/admin/campaigns"
                       ? pathname === href ||
                         (pathname.startsWith(href + "/") &&
-                          !pathname.startsWith("/admin/reports/audit"))
-                      : pathname === href || pathname.startsWith(href + "/");
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    title={isCollapsed ? label : undefined}
-                    className={cn(
-                      "flex items-center gap-3 py-2.5 rounded-xl text-sm transition-all duration-200 group",
-                      isCollapsed ? "justify-center px-0" : "px-3",
-                      active
-                        ? "bg-brand-pink-light text-brand-pink font-medium"
-                        : "text-[#1a1a2e] hover:bg-white/70 hover:text-brand-pink",
-                    )}
-                  >
-                    <Icon
-                      size={18}
+                          !pathname.startsWith("/admin/campaigns/social"))
+                      : href === "/admin/reports"
+                        ? pathname === href ||
+                          (pathname.startsWith(href + "/") &&
+                            !pathname.startsWith("/admin/reports/audit"))
+                        : pathname === href || pathname.startsWith(href + "/");
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      title={isCollapsed ? label : undefined}
                       className={cn(
-                        "shrink-0 transition-colors",
+                        "flex items-center gap-3 py-2.5 rounded-xl text-sm transition-all duration-200 group",
+                        isCollapsed ? "justify-center px-0" : "px-3",
                         active
-                          ? "text-brand-pink"
-                          : "text-[#9a99b0] group-hover:text-brand-pink",
+                          ? "bg-brand-pink-light text-brand-pink font-medium"
+                          : "text-[#1a1a2e] hover:bg-white/70 hover:text-brand-pink",
                       )}
-                    />
-                    {!isCollapsed && <span className="truncate">{label}</span>}
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
+                    >
+                      <Icon
+                        size={18}
+                        className={cn(
+                          "shrink-0 transition-colors",
+                          active
+                            ? "text-brand-pink"
+                            : "text-[#9a99b0] group-hover:text-brand-pink",
+                        )}
+                      />
+                      {!isCollapsed && (
+                        <span className="truncate">{label}</span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            );
+          })}
         </nav>
       </div>
 

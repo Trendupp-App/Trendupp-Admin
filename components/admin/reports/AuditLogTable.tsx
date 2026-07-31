@@ -23,6 +23,7 @@ import {
   parseAuditDiff,
   exportAuditLogsToCSV,
 } from "@/lib/adminAuditUtils";
+import { usePermission } from "@/hooks/usePermission";
 
 const PAGE_SIZE = 10;
 
@@ -79,6 +80,7 @@ function isSuccessStatus(log: AuditLogItem): boolean {
 }
 
 export default function AuditLogTable() {
+  const canExport = usePermission("audit.export");
   const [search, setSearch] = useState("");
   const [selectedAction, setSelectedAction] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -249,14 +251,16 @@ export default function AuditLogTable() {
             )}
 
             {/* Export CSV Button */}
-            <button
-              onClick={handleExport}
-              disabled={rows.length === 0}
-              title="Export Audit Log CSV"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1a1a2e] hover:text-brand-pink bg-[#f4f3f6] hover:bg-[#fdf2f6] border border-[#e8e6f0] px-3.5 py-1.5 rounded-xl transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Download size={13} /> Export CSV
-            </button>
+            {canExport && (
+              <button
+                onClick={handleExport}
+                disabled={rows.length === 0}
+                title="Export Audit Log CSV"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1a1a2e] hover:text-brand-pink bg-[#f4f3f6] hover:bg-[#fdf2f6] border border-[#e8e6f0] px-3.5 py-1.5 rounded-xl transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Download size={13} /> Export CSV
+              </button>
+            )}
           </div>
         </div>
 

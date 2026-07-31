@@ -84,7 +84,7 @@ function CreatorPayoutsView() {
 
   const { data, isLoading, isFetching } = useCreatorPayouts(page, LIMIT);
 
-  const items = data?.data ?? [];
+  const items = Array.isArray(data) ? data : (data?.data ?? []);
   const total = data?.meta?.total ?? data?.total ?? items.length;
   const totalPages = data?.meta?.totalPages ?? Math.ceil(total / LIMIT);
 
@@ -92,6 +92,9 @@ function CreatorPayoutsView() {
   const filtered = items.filter((item) => {
     const creator = (
       item.creator?.name ??
+      (item.creator?.firstName
+        ? `${item.creator.firstName} ${item.creator.lastName ?? ""}`
+        : undefined) ??
       item.creatorName ??
       ""
     ).toLowerCase();
@@ -290,7 +293,12 @@ function CreatorPayoutsView() {
               ) : (
                 filtered.map((item, idx) => {
                   const creatorName =
-                    item.creator?.name ?? item.creatorName ?? "—";
+                    item.creator?.name ??
+                    (item.creator?.firstName
+                      ? `${item.creator.firstName} ${item.creator.lastName ?? ""}`.trim()
+                      : undefined) ??
+                    item.creatorName ??
+                    "—";
                   const brandName = item.brand?.name ?? item.brandName ?? "—";
                   const account =
                     item.account ??
