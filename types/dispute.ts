@@ -1,6 +1,6 @@
 import type { Campaign } from "@/types/campaign";
 
-export type DisputeStatus = "raised" | "under_review" | "resolved";
+export type DisputeStatus = "raised" | "under_review" | "resolved" | "rejected";
 
 export type EscrowActionType =
   | "release_to_creator"
@@ -51,6 +51,10 @@ export interface ResolveDisputePayload {
   action: EscrowActionType;
   resolutionNotes: string;
   splitCreatorAmount?: number;
+}
+
+export interface RejectDisputePayload {
+  reason: string;
 }
 
 export interface StreamTokenResponse {

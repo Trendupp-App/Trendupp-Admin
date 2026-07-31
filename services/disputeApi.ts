@@ -2,6 +2,7 @@ import apiClient from "@/lib/apiClient";
 import type {
   Dispute,
   RaiseDisputePayload,
+  RejectDisputePayload,
   ResolveDisputePayload,
   StreamTokenResponse,
 } from "@/types/dispute";
@@ -22,6 +23,9 @@ export const disputeApi = {
 
   resolveDispute: (id: string, payload: ResolveDisputePayload) =>
     apiClient.post<Dispute>(`/disputes/${id}/resolve`, payload),
+
+  rejectDispute: (id: string, payload: RejectDisputePayload) =>
+    apiClient.post<Dispute>(`/disputes/${id}/reject`, payload),
 
   updateDisputeNotes: (id: string, notes: string) =>
     apiClient.patch<Dispute>(`/disputes/${id}`, { notes }),

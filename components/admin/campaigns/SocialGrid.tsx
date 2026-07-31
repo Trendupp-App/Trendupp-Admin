@@ -21,6 +21,7 @@ import {
   useDeleteSocialImpactCampaign,
 } from "@/hooks/useAdminSocialImpact";
 import type { SocialImpactCampaign } from "@/types/adminSocialImpact";
+import SocialEmptyState from "@/components/admin/campaigns/SocialEmptyState";
 
 interface SocialGridProps {
   searchQuery?: string;
@@ -134,6 +135,7 @@ export default function SocialGrid({ searchQuery = "" }: SocialGridProps) {
         </div>
       ) : activeTab === "Draft" ? (
         <div className="flex flex-col gap-4">
+          {displayItems.length === 0 && <SocialEmptyState tab="Draft" />}
           {displayItems.map((c) => (
             <div
               key={c.id}
@@ -193,6 +195,7 @@ export default function SocialGrid({ searchQuery = "" }: SocialGridProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {displayItems.length === 0 && <SocialEmptyState tab={activeTab} />}
           {displayItems.map((c) => {
             const rawObj = c as unknown as Record<string, unknown>;
 
