@@ -51,11 +51,15 @@ export const adminCreatorsApi = {
     period?: string;
     year?: number;
   }) => {
-    const queryParams = {
-      ...params,
-      startDate: params?.startDate || params?.fromDate,
-      endDate: params?.endDate || params?.toDate,
-    };
+    const startDate = params?.startDate || params?.fromDate;
+    const endDate = params?.endDate || params?.toDate;
+    const queryParams: Record<string, unknown> = {};
+    if (params?.limit) queryParams.limit = params.limit;
+    if (params?.period) queryParams.period = params.period;
+    if (params?.year) queryParams.year = params.year;
+    if (startDate && startDate.trim() !== "") queryParams.startDate = startDate;
+    if (endDate && endDate.trim() !== "") queryParams.endDate = endDate;
+
     return apiClient.get<TopCreatorDto[]>("/admin/creators/top-creators", {
       params: queryParams,
     });
@@ -109,8 +113,19 @@ export const adminCreatorsApi = {
   getAnalytics: () => apiClient.get("/admin/creators/analytics"),
 
   // 10. Paginated Creators Directory
-  getCreators: (params?: CreatorListQueryParams) =>
-    apiClient.get<PaginatedCreatorsResponse>("/admin/creators", { params }),
+  getCreators: (params?: CreatorListQueryParams) => {
+    const cleanParams: Record<string, unknown> = {};
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          cleanParams[key] = value;
+        }
+      });
+    }
+    return apiClient.get<PaginatedCreatorsResponse>("/admin/creators", {
+      params: cleanParams,
+    });
+  },
 
   // 11. Single Creator Details
   getCreatorDetails: (id: string) =>

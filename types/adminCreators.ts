@@ -83,6 +83,10 @@ export interface CreatorListQueryParams {
   q?: string;
   page?: number;
   limit?: number;
+  startDate?: string;
+  endDate?: string;
+  fromDate?: string;
+  toDate?: string;
 }
 
 export interface AdminCreatorListItem {

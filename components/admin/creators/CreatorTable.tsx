@@ -75,6 +75,8 @@ export default function CreatorTable() {
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [selectedCreatorId, setSelectedCreatorId] = useState<string | null>(
     null,
   );
@@ -92,6 +94,10 @@ export default function CreatorTable() {
     status: apiStatus,
     tier: selectedTier || undefined,
     niche: selectedNiche || undefined,
+    startDate: fromDate || undefined,
+    endDate: toDate || undefined,
+    fromDate: fromDate || undefined,
+    toDate: toDate || undefined,
     page,
     limit: 10,
   });
@@ -541,7 +547,13 @@ export default function CreatorTable() {
         </div>
 
         {/* Date Range Selector */}
-        <CardDateRangeBar />
+        <CardDateRangeBar
+          onDateChange={(from, to) => {
+            setFromDate(from);
+            setToDate(to);
+            setPage(1);
+          }}
+        />
       </div>
 
       {/* Active Filter Badges */}

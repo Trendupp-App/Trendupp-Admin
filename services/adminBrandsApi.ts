@@ -39,23 +39,71 @@ export const adminBrandsApi = {
     }),
 
   // 4. Top Brands
-  getTopBrands: () => apiClient.get<TopBrandDto[]>("/admin/brands/top-brands"),
+  getTopBrands: (params?: {
+    startDate?: string;
+    endDate?: string;
+    fromDate?: string;
+    toDate?: string;
+    limit?: number;
+    period?: string;
+    year?: number;
+  }) => {
+    const startDate = params?.startDate || params?.fromDate;
+    const endDate = params?.endDate || params?.toDate;
+    const queryParams: Record<string, unknown> = {};
+    if (params?.limit) queryParams.limit = params.limit;
+    if (params?.period) queryParams.period = params.period;
+    if (params?.year) queryParams.year = params.year;
+    if (startDate && startDate.trim() !== "") queryParams.startDate = startDate;
+    if (endDate && endDate.trim() !== "") queryParams.endDate = endDate;
+
+    return apiClient.get<TopBrandDto[]>("/admin/brands/top-brands", {
+      params: queryParams,
+    });
+  },
 
   // 5. Industry Breakdown
-  getIndustryBreakdown: () =>
-    apiClient.get<IndustryBreakdownDto[]>("/admin/brands/industry-breakdown"),
+  getIndustryBreakdown: (params?: {
+    period?: string;
+    year?: number;
+    month?: number;
+    startDate?: string;
+    endDate?: string;
+  }) =>
+    apiClient.get<IndustryBreakdownDto[]>("/admin/brands/industry-breakdown", {
+      params,
+    }),
 
   // 6. Country Breakdown
-  getCountryBreakdown: () =>
-    apiClient.get<CountryBreakdownDto[]>("/admin/brands/country-breakdown"),
+  getCountryBreakdown: (params?: {
+    period?: string;
+    year?: number;
+    month?: number;
+    startDate?: string;
+    endDate?: string;
+  }) =>
+    apiClient.get<CountryBreakdownDto[]>("/admin/brands/country-breakdown", {
+      params,
+    }),
 
   // 7. Analytics Combined Summary
   getAnalytics: () =>
     apiClient.get<Record<string, unknown>>("/admin/brands/analytics"),
 
   // 8. Brand Directory List with Filters & Pagination
-  getBrands: (params?: BrandListQueryParams) =>
-    apiClient.get<PaginatedBrandsResponse>("/admin/brands", { params }),
+  getBrands: (params?: BrandListQueryParams) => {
+    const cleanParams: Record<string, unknown> = {};
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          cleanParams[key] = value;
+        }
+      });
+    }
+    return apiClient.get<PaginatedBrandsResponse>("/admin/brands", {
+      params: cleanParams,
+    });
+  },
 
   // 9. Single Brand Profile Details & Metrics
   getBrandById: (id: string) =>

@@ -18,6 +18,8 @@ export default function BrandTable() {
   const [selectedCompletion, setSelectedCompletion] = useState<string>("All");
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
   const [selectedCountry, setSelectedCountry] = useState<string>("All");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
@@ -33,8 +35,7 @@ export default function BrandTable() {
 
   const queryCompletion = useMemo(() => {
     if (selectedCompletion !== "All") {
-      const num = parseInt(selectedCompletion.replace("%", ""), 10);
-      return !isNaN(num) ? num : undefined;
+      return selectedCompletion;
     }
     return undefined;
   }, [selectedCompletion]);
@@ -44,6 +45,10 @@ export default function BrandTable() {
     status: queryStatus,
     completion: queryCompletion,
     country: selectedCountry !== "All" ? selectedCountry : undefined,
+    startDate: fromDate || undefined,
+    endDate: toDate || undefined,
+    fromDate: fromDate || undefined,
+    toDate: toDate || undefined,
     page: currentPage,
     limit: 10,
   });
@@ -327,7 +332,13 @@ export default function BrandTable() {
             <option value="Kenya">Kenya</option>
           </select>
 
-          <CardDateRangeBar />
+          <CardDateRangeBar
+            onDateChange={(from, to) => {
+              setFromDate(from);
+              setToDate(to);
+              setCurrentPage(1);
+            }}
+          />
         </div>
       </div>
 

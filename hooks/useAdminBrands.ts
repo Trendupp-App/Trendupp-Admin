@@ -67,28 +67,92 @@ export function useBrandActiveUsers(
   });
 }
 
-export function useTopBrands(enabled: boolean = true) {
+export function useTopBrands(
+  params?: {
+    startDate?: string;
+    endDate?: string;
+    fromDate?: string;
+    toDate?: string;
+    limit?: number;
+    period?: string;
+    year?: number;
+  },
+  enabled: boolean = true,
+) {
+  const startDate = params?.startDate || params?.fromDate;
+  const endDate = params?.endDate || params?.toDate;
+
   return useQuery({
-    queryKey: ["admin-top-brands"],
-    queryFn: () => adminBrandsApi.getTopBrands().then((r) => r.data),
+    queryKey: [
+      "admin-top-brands",
+      startDate,
+      endDate,
+      params?.limit,
+      params?.period,
+      params?.year,
+    ],
+    queryFn: () =>
+      adminBrandsApi
+        .getTopBrands({
+          startDate,
+          endDate,
+          limit: params?.limit,
+          period: params?.period,
+          year: params?.year,
+        })
+        .then((r) => r.data),
     staleTime: 1000 * 60 * 2,
     enabled,
   });
 }
 
-export function useBrandIndustryBreakdown(enabled: boolean = true) {
+export function useBrandIndustryBreakdown(
+  params?: {
+    period?: string;
+    year?: number;
+    month?: number;
+    startDate?: string;
+    endDate?: string;
+  },
+  enabled: boolean = true,
+) {
   return useQuery({
-    queryKey: ["admin-brand-industry-breakdown"],
-    queryFn: () => adminBrandsApi.getIndustryBreakdown().then((r) => r.data),
+    queryKey: [
+      "admin-brand-industry-breakdown",
+      params?.period,
+      params?.year,
+      params?.month,
+      params?.startDate,
+      params?.endDate,
+    ],
+    queryFn: () =>
+      adminBrandsApi.getIndustryBreakdown(params).then((r) => r.data),
     staleTime: 1000 * 60 * 5,
     enabled,
   });
 }
 
-export function useBrandCountryBreakdown(enabled: boolean = true) {
+export function useBrandCountryBreakdown(
+  params?: {
+    period?: string;
+    year?: number;
+    month?: number;
+    startDate?: string;
+    endDate?: string;
+  },
+  enabled: boolean = true,
+) {
   return useQuery({
-    queryKey: ["admin-brand-country-breakdown"],
-    queryFn: () => adminBrandsApi.getCountryBreakdown().then((r) => r.data),
+    queryKey: [
+      "admin-brand-country-breakdown",
+      params?.period,
+      params?.year,
+      params?.month,
+      params?.startDate,
+      params?.endDate,
+    ],
+    queryFn: () =>
+      adminBrandsApi.getCountryBreakdown(params).then((r) => r.data),
     staleTime: 1000 * 60 * 5,
     enabled,
   });

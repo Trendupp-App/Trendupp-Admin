@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import { ChevronRight } from "lucide-react";
 import { useTopBrands } from "@/hooks/useAdminBrands";
 import UserAvatar from "@/shared/UserAvatar";
 
-import { CardFilterHeaderControls } from "../creators/CardFilterHeaderControls";
 import { CardDateRangeBar } from "../creators/CardDateRangeBar";
 
 const PepsiLogo = () => (
@@ -29,7 +28,14 @@ const PepsiLogo = () => (
 );
 
 export default function TopBrands({ onViewAll }: { onViewAll?: () => void }) {
-  const { data: apiData, isLoading } = useTopBrands();
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
+  const { data: apiData, isLoading } = useTopBrands({
+    startDate: fromDate || undefined,
+    endDate: toDate || undefined,
+    limit: 5,
+  });
 
   const brands = useMemo(() => {
     if (apiData && Array.isArray(apiData) && apiData.length > 0) {
@@ -54,33 +60,6 @@ export default function TopBrands({ onViewAll }: { onViewAll?: () => void }) {
     return [];
   }, [apiData]);
 
-  if (isLoading) {
-    return (
-      <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-4 animate-pulse">
-        <div className="flex justify-between items-center">
-          <div className="w-28 h-4 bg-[#e8e6f0]/60 rounded-md" />
-          <div className="w-32 h-7 bg-[#e8e6f0]/60 rounded-xl" />
-        </div>
-        <div className="flex flex-col gap-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-3 py-2 border-b border-[#e8e6f0]/30"
-            >
-              <div className="w-5 h-5 rounded-full bg-[#e8e6f0]/60" />
-              <div className="w-9 h-9 rounded-full bg-[#e8e6f0]/60 shrink-0" />
-              <div className="flex flex-col gap-1.5 flex-1">
-                <div className="w-24 h-3.5 bg-[#e8e6f0]/60 rounded-md" />
-                <div className="w-20 h-2.5 bg-[#e8e6f0]/40 rounded-md" />
-              </div>
-              <div className="w-14 h-4 bg-[#e8e6f0]/60 rounded-md" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   const getRankBadgeClass = (rank: number) => {
     switch (rank) {
       case 1:
@@ -97,64 +76,90 @@ export default function TopBrands({ onViewAll }: { onViewAll?: () => void }) {
   return (
     <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col justify-between gap-5 shadow-xs">
       <div className="flex flex-col gap-3">
-        <div>
-          <h3 className="text-sm font-bold text-[#1a1a2e]">Top Advertisers</h3>
-          <span className="text-[11px] text-[#9a99b0]">By total spend</span>
-        </div>
-
-        <div className="pt-0.5">
-          <CardFilterHeaderControls />
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-[#1a1a2e]">
+              Top Advertisers
+            </h3>
+            <span className="text-[11px] text-[#9a99b0]">By total spend</span>
+          </div>
         </div>
 
         {/* Date Range Toolbar */}
         <div className="pt-2 border-t border-[#f4f3f6] flex justify-start">
-          <CardDateRangeBar />
+          <CardDateRangeBar
+            onDateChange={(from, to) => {
+              setFromDate(from);
+              setToDate(to);
+            }}
+          />
         </div>
       </div>
 
       <div className="flex flex-col gap-3 max-h-[340px] overflow-y-auto pr-1 scrollbar-thin">
-        {brands.map((b) => (
-          <div
-            key={b.rank}
-            className="flex items-center justify-between py-2 border-b border-[#e8e6f0]/30 last:border-0 text-xs hover:bg-[#faf9fc] rounded-xl px-2 transition-colors"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <span
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold shrink-0 ${getRankBadgeClass(b.rank)}`}
-              >
-                {b.rank}
-              </span>
-
-              {b.name === "Pepsi" ? (
-                <PepsiLogo />
-              ) : (
-                <UserAvatar
-                  avatarUrl={b.logoUrl || undefined}
-                  initials={b.name.slice(0, 2)}
-                  size={36}
-                />
-              )}
-
-              <div className="flex flex-col min-w-0">
-                <span className="font-bold text-[#1a1a2e] truncate">
-                  {b.name}
+        {isLoading ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-3 py-2 border-b border-[#e8e6f0]/30 animate-pulse"
+            >
+              <div className="w-5 h-5 rounded-full bg-[#e8e6f0]/60" />
+              <div className="w-9 h-9 rounded-full bg-[#e8e6f0]/60 shrink-0" />
+              <div className="flex flex-col gap-1.5 flex-1">
+                <div className="w-24 h-3.5 bg-[#e8e6f0]/60 rounded-md" />
+                <div className="w-20 h-2.5 bg-[#e8e6f0]/40 rounded-md" />
+              </div>
+              <div className="w-14 h-4 bg-[#e8e6f0]/60 rounded-md" />
+            </div>
+          ))
+        ) : brands.length === 0 ? (
+          <div className="py-8 text-center text-xs text-[#9a99b0]">
+            No top advertisers data available for the selected period.
+          </div>
+        ) : (
+          brands.map((b) => (
+            <div
+              key={b.rank}
+              className="flex items-center justify-between py-2 border-b border-[#e8e6f0]/30 last:border-0 text-xs hover:bg-[#faf9fc] rounded-xl px-2 transition-colors"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <span
+                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold shrink-0 ${getRankBadgeClass(b.rank)}`}
+                >
+                  {b.rank}
                 </span>
-                <span className="text-[10px] text-[#9a99b0] truncate">
-                  {b.web}
+
+                {b.name === "Pepsi" ? (
+                  <PepsiLogo />
+                ) : (
+                  <UserAvatar
+                    avatarUrl={b.logoUrl || undefined}
+                    initials={b.name.slice(0, 2)}
+                    size={36}
+                  />
+                )}
+
+                <div className="flex flex-col min-w-0">
+                  <span className="font-bold text-[#1a1a2e] truncate">
+                    {b.name}
+                  </span>
+                  <span className="text-[10px] text-[#9a99b0] truncate">
+                    {b.web}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-end shrink-0 pl-2">
+                <span className="font-bold text-brand-pink text-xs">
+                  {b.spend}
+                </span>
+                <span className="text-[10px] text-[#9a99b0]">
+                  {b.campaigns} campaigns
                 </span>
               </div>
             </div>
-
-            <div className="flex flex-col items-end shrink-0 pl-2">
-              <span className="font-bold text-brand-pink text-xs">
-                {b.spend}
-              </span>
-              <span className="text-[10px] text-[#9a99b0]">
-                {b.campaigns} campaigns
-              </span>
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {onViewAll && (

@@ -3,9 +3,6 @@
 import { useMemo } from "react";
 import { useBrandSummary } from "@/hooks/useAdminBrands";
 
-import { CardFilterHeaderControls } from "../creators/CardFilterHeaderControls";
-import { CardDateRangeBar } from "../creators/CardDateRangeBar";
-
 export default function BrandProfileCompletionCard() {
   const { data: apiData, isLoading } = useBrandSummary();
 
@@ -55,24 +52,11 @@ export default function BrandProfileCompletionCard() {
 
   return (
     <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5 shadow-xs">
-      <div className="flex flex-col gap-3">
-        <div>
-          <h3 className="text-sm font-bold text-[#1a1a2e]">
-            Profile Completion
-          </h3>
-          <span className="text-[11px] text-[#9a99b0]">
-            Completion distribution
-          </span>
-        </div>
-
-        <div className="pt-0.5">
-          <CardFilterHeaderControls />
-        </div>
-
-        {/* Date Range Toolbar */}
-        <div className="pt-2 border-t border-[#f4f3f6] flex justify-start">
-          <CardDateRangeBar />
-        </div>
+      <div>
+        <h3 className="text-sm font-bold text-[#1a1a2e]">Profile Completion</h3>
+        <span className="text-[11px] text-[#9a99b0]">
+          Completion distribution
+        </span>
       </div>
 
       <div className="flex flex-col gap-4 max-h-[340px] overflow-y-auto pr-1 scrollbar-thin">
