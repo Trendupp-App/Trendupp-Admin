@@ -21,6 +21,10 @@ import {
   usePublishSocialImpactCampaign,
   useAdminSocialImpactDetails,
 } from "@/hooks/useAdminSocialImpact";
+import type {
+  CreateSocialImpactCampaignDto,
+  UpdateSocialImpactCampaignDto,
+} from "@/types/adminSocialImpact";
 
 interface BrandOption {
   id: string;
@@ -357,51 +361,59 @@ export default function CreateCampaignPage() {
   }, [editingDraftId, existingDraft]);
 
   // Clean POST payload (omits contentLink, platforms, deadline per NestJS DTO whitelist)
-  const buildPayload = (isDraft: boolean) => ({
-    title: title || "Untitled Campaign Draft",
-    goal: goal || "Amplify Content",
-    brandId:
-      selectedAdvertisers[0] ||
-      liveBrands[0]?.id ||
-      "2be03919-825f-430f-8e30-aa4cea473c7d",
-    creatorTiers: tier
-      ? tier
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean)
-      : ["Micro", "Nano"],
-    coverImageUrl: preview || undefined,
-    campaignBrief: desc || undefined,
-    deliverables: deliverables.filter(Boolean),
-    contentDirection: directions.filter(Boolean),
-    dos: dos.filter(Boolean),
-    donts: donts.filter(Boolean),
-    currentStep: step,
-    isDraft,
-  });
+  const firstRealBrandId =
+    brandsData?.data &&
+    Array.isArray(brandsData.data) &&
+    brandsData.data.length > 0
+      ? brandsData.data[0].id
+      : "";
+
+  const activeBrandId =
+    selectedAdvertisers.find((id) => id && id.length > 20) || firstRealBrandId;
+
+  const buildPayload = (isDraft: boolean): CreateSocialImpactCampaignDto => {
+    return {
+      title: title || "Untitled Campaign Draft",
+      goal: goal || "Amplify Content",
+      brandId: activeBrandId || "2be03919-825f-430f-8e30-aa4cea473c7d",
+      creatorTiers: tier
+        ? tier
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : ["Micro", "Nano"],
+      coverImageUrl: preview || undefined,
+      campaignBrief: desc || undefined,
+      deliverables: deliverables.filter(Boolean),
+      contentDirection: directions.filter(Boolean),
+      dos: dos.filter(Boolean),
+      donts: donts.filter(Boolean),
+      currentStep: step,
+      isDraft,
+    };
+  };
 
   // Clean PATCH payload (omits isDraft, contentLink, platforms, deadline per NestJS DTO whitelist)
-  const buildUpdatePayload = () => ({
-    title: title || "Untitled Campaign Draft",
-    goal: goal || "Amplify Content",
-    brandId:
-      selectedAdvertisers[0] ||
-      liveBrands[0]?.id ||
-      "2be03919-825f-430f-8e30-aa4cea473c7d",
-    creatorTiers: tier
-      ? tier
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean)
-      : ["Micro", "Nano"],
-    coverImageUrl: preview || undefined,
-    campaignBrief: desc || undefined,
-    deliverables: deliverables.filter(Boolean),
-    contentDirection: directions.filter(Boolean),
-    dos: dos.filter(Boolean),
-    donts: donts.filter(Boolean),
-    currentStep: step,
-  });
+  const buildUpdatePayload = (): UpdateSocialImpactCampaignDto => {
+    return {
+      title: title || "Untitled Campaign Draft",
+      goal: goal || "Amplify Content",
+      brandId: activeBrandId || undefined,
+      creatorTiers: tier
+        ? tier
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : ["Micro", "Nano"],
+      coverImageUrl: preview || undefined,
+      campaignBrief: desc || undefined,
+      deliverables: deliverables.filter(Boolean),
+      contentDirection: directions.filter(Boolean),
+      dos: dos.filter(Boolean),
+      donts: donts.filter(Boolean),
+      currentStep: step,
+    };
+  };
 
   const handleSaveAsDraft = async () => {
     try {

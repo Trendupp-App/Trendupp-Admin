@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import Image from "next/image";
 import {
   Pencil,
@@ -10,6 +11,7 @@ import {
   Users,
   Layout,
   Calendar,
+  Megaphone,
 } from "lucide-react";
 import type { BannerAdItem } from "@/types/adminAds";
 import { cn } from "@/lib/utils";
@@ -84,6 +86,20 @@ export default function BannerAdCard({
   const clicks = ad.clicks !== undefined ? ad.clicks : 3100;
   const ctr = ad.ctr !== undefined ? ad.ctr : "6.5%";
 
+  const [imgError, setImgError] = useState(false);
+
+  const displayImageUrl = useMemo(() => {
+    if (typeof window !== "undefined" && ad.id) {
+      try {
+        const customImg = localStorage.getItem(`trendupp_ad_img_${ad.id}`);
+        if (customImg) return customImg;
+      } catch {
+        // ignore
+      }
+    }
+    return ad.adImageUrl;
+  }, [ad.id, ad.adImageUrl]);
+
   return (
     <div
       className={cn(
@@ -105,17 +121,28 @@ export default function BannerAdCard({
           </div>
         )}
 
-        {ad.adImageUrl ? (
+        {!imgError && displayImageUrl ? (
           <Image
-            src={ad.adImageUrl}
+            src={
+              displayImageUrl.startsWith("data:") ||
+              displayImageUrl.startsWith("http")
+                ? displayImageUrl
+                : `https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&auto=format&fit=crop&q=80`
+            }
             alt={ad.title}
             fill
             className="object-cover"
             unoptimized
+            onError={() => setImgError(true)}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-xs text-[#9a99b0]">
-            No image preview
+          <div className="w-full h-full bg-gradient-to-r from-brand-pink/15 via-[#eff6ff] to-[#f5f3ff] flex flex-col items-center justify-center p-4 text-center">
+            <div className="w-10 h-10 rounded-2xl bg-white border border-[#e8e6f0] flex items-center justify-center text-brand-pink shadow-2xs mb-1.5">
+              <Megaphone size={18} />
+            </div>
+            <span className="text-xs font-bold text-[#1a1a2e] max-w-[85%] truncate">
+              {ad.title}
+            </span>
           </div>
         )}
 

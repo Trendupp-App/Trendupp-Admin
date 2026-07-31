@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
-  SlidersHorizontal,
   Clock,
   CheckCircle,
   XCircle,
@@ -230,9 +229,6 @@ function CreatorPayoutsView() {
           </select>
         </div>
         <div className="flex items-center gap-2">
-          <button className="inline-flex items-center gap-1.5 text-xs border border-[#e8e6f0] rounded-lg px-3 py-1.5 bg-white text-[#4a4a6a] hover:bg-[#f4f3f6] transition-colors">
-            <SlidersHorizontal size={12} /> Filters
-          </button>
           <button
             onClick={handleExport}
             className="inline-flex items-center gap-1.5 text-xs border border-[#e8e6f0] rounded-lg px-3 py-1.5 bg-white text-[#4a4a6a] hover:bg-[#f4f3f6] transition-colors"
@@ -449,22 +445,18 @@ function AdvertiserRefundsView() {
 
   const handleExport = () => {
     const headers = [
-      "Advertiser",
       "Campaign",
       "Amount",
       "Account",
       "Transaction Trigger",
       "Status",
-      "Date Initiated",
     ];
     const rows = filtered.map((item) => [
-      item.advertiser?.name ?? item.advertiserName ?? item.brand?.name ?? "",
       item.campaign?.title ?? item.campaignTitle ?? "",
       item.amount ?? 0,
       item.account ?? "—",
       item.transactionTrigger ?? "—",
       item.status,
-      item.refundedAt ?? item.createdAt ?? item.dateInitiated ?? "",
     ]);
     downloadCsv(
       `Trendupp_Advertiser_Refunds_${new Date().toISOString().slice(0, 10)}`,
@@ -518,7 +510,7 @@ function AdvertiserRefundsView() {
             />
             <input
               type="text"
-              placeholder="Search advertiser, campaign..."
+              placeholder="Search campaign..."
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -552,9 +544,6 @@ function AdvertiserRefundsView() {
           </select>
         </div>
         <div className="flex items-center gap-2">
-          <button className="inline-flex items-center gap-1.5 text-xs border border-[#e8e6f0] rounded-lg px-3 py-1.5 bg-white text-[#4a4a6a] hover:bg-[#f4f3f6] transition-colors">
-            <SlidersHorizontal size={12} /> Filters
-          </button>
           <button
             onClick={handleExport}
             className="inline-flex items-center gap-1.5 text-xs border border-[#e8e6f0] rounded-lg px-3 py-1.5 bg-white text-[#4a4a6a] hover:bg-[#f4f3f6] transition-colors"
@@ -571,9 +560,6 @@ function AdvertiserRefundsView() {
             <thead>
               <tr className="border-b border-[#f4f3f6] bg-[#fafafa]">
                 <th className="px-5 py-3 text-[10px] font-semibold text-[#7a7a9a] uppercase tracking-wide">
-                  Advertiser
-                </th>
-                <th className="px-4 py-3 text-[10px] font-semibold text-[#7a7a9a] uppercase tracking-wide">
                   Campaign
                 </th>
                 <th className="px-4 py-3 text-[10px] font-semibold text-[#7a7a9a] uppercase tracking-wide">
@@ -588,16 +574,13 @@ function AdvertiserRefundsView() {
                 <th className="px-4 py-3 text-[10px] font-semibold text-[#7a7a9a] uppercase tracking-wide">
                   Status
                 </th>
-                <th className="px-4 py-3 text-[10px] font-semibold text-[#7a7a9a] uppercase tracking-wide">
-                  Date Initiated
-                </th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b border-[#f4f3f6]">
-                    {Array.from({ length: 7 }).map((_, j) => (
+                    {Array.from({ length: 5 }).map((_, j) => (
                       <td key={j} className="px-4 py-3">
                         <div className="h-3 bg-[#f4f3f6] rounded animate-pulse w-full" />
                       </td>
@@ -607,7 +590,7 @@ function AdvertiserRefundsView() {
               ) : filtered.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={5}
                     className="px-5 py-10 text-center text-[#9a99b0] text-xs"
                   >
                     No refund records found
@@ -615,34 +598,17 @@ function AdvertiserRefundsView() {
                 </tr>
               ) : (
                 filtered.map((item, idx) => {
-                  const advertiserName =
-                    item.advertiser?.name ??
-                    item.advertiserName ??
-                    item.brand?.name ??
-                    "—";
                   const campaignTitle =
                     item.campaign?.title ?? item.campaignTitle ?? "—";
                   const account = item.account ?? "—";
                   const trigger = item.transactionTrigger ?? "—";
-                  const dateStr =
-                    item.refundedAt ?? item.createdAt ?? item.dateInitiated;
 
                   return (
                     <tr
                       key={item.id ?? idx}
                       className={`border-b border-[#f4f3f6] hover:bg-[#fafafa] transition-colors ${isFetching ? "opacity-60" : ""}`}
                     >
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-blue-50 text-blue-600 text-[9px] font-bold flex items-center justify-center">
-                            {advertiserName.charAt(0).toUpperCase()}
-                          </div>
-                          <span className="font-semibold text-[#1a1a2e]">
-                            {advertiserName}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-[#4a4a6a] line-clamp-1 max-w-[160px]">
+                      <td className="px-5 py-3 text-[#4a4a6a] font-medium line-clamp-1 max-w-[180px]">
                         {campaignTitle}
                       </td>
                       <td className="px-4 py-3 font-semibold text-[#1a1a2e]">
@@ -652,9 +618,6 @@ function AdvertiserRefundsView() {
                       <td className="px-4 py-3 text-[#4a4a6a]">{trigger}</td>
                       <td className="px-4 py-3">
                         <AdminStatusBadge status={item.status ?? "pending"} />
-                      </td>
-                      <td className="px-4 py-3 text-[#7a7a9a]">
-                        {fmtDate(dateStr)}
                       </td>
                     </tr>
                   );

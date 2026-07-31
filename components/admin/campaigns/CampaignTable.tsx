@@ -17,8 +17,6 @@ import {
 } from "@/hooks/useAdminCampaigns";
 import type { CampaignListQueryParams } from "@/types/adminCampaigns";
 import CampaignDetailDrawer from "./CampaignDetailDrawer";
-import { CardFilterHeaderControls } from "../creators/CardFilterHeaderControls";
-import { CardDateRangeBar } from "../creators/CardDateRangeBar";
 
 type DisplayStatus = "Live" | "Active" | "Completed" | "Draft" | "Cancelled";
 type DisplayEscrow = "Funded" | "Released" | "Not Funded" | "Refunded";
@@ -261,10 +259,8 @@ export default function CampaignTable({
           })}
         </div>
 
-        {/* Right: Time Controls, Clear Filters & Export */}
+        {/* Right: Clear Filters & Export */}
         <div className="flex items-center gap-3 flex-wrap shrink-0">
-          <CardFilterHeaderControls />
-
           {/* Clear All Filters Button */}
           {hasActiveFilters && (
             <button
@@ -385,9 +381,6 @@ export default function CampaignTable({
             </div>
           ))}
         </div>
-
-        {/* Date Range Selector */}
-        <CardDateRangeBar />
       </div>
 
       {/* Active Filter Badges */}

@@ -11,73 +11,49 @@ import {
   Cell,
 } from "recharts";
 import { useCreatorActiveUsers } from "@/hooks/useAdminCreators";
-import {
-  CardFilterHeaderControls,
-  type CardPeriod,
-} from "./CardFilterHeaderControls";
-import { ScrollableBarChart } from "./ScrollableBarChart";
+import { CardFilterHeaderControls } from "./CardFilterHeaderControls";
 
 export default function ActiveUsersChart() {
-  const [period, setPeriod] = useState<CardPeriod>("monthly");
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-
-  const apiPeriod = period === "yearly" ? "yearly" : period;
-
-  const currentMonth = useMemo(() => new Date().getMonth() + 1, []);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
 
   const { data: apiData, isFetching } = useCreatorActiveUsers(
-    apiPeriod,
-    period === "yearly" ? undefined : selectedYear,
-    period === "daily" || period === "weekly" ? currentMonth : undefined,
+    "weekly",
+    selectedYear,
+    selectedMonth,
   );
 
   const chartData = useMemo(() => {
     if (!apiData || apiData.length === 0) return [];
-
-    return apiData.map((d: { label: string; count: number }) => {
-      let label = d.label;
-
-      // API returns "Day 1", "Day 10" etc. — remap to real calendar dates
-      if (period === "daily") {
-        const dayNum = label.match(/^Day\s*(\d+)$/i)?.[1];
-        if (dayNum) {
-          const monthIdx = currentMonth - 1;
-          const date = new Date(selectedYear, monthIdx, parseInt(dayNum, 10));
-          label = date.toLocaleDateString("en-GB", {
-            day: "numeric",
-            month: "short",
-          });
-        }
-      }
-
-      return { label, count: d.count };
-    });
-  }, [apiData, period, selectedYear, currentMonth]);
-
-  // Gap for non-daily views (daily uses ScrollableBarChart which has its own gap)
-  const barGap = period === "yearly" ? "40%" : "25%";
+    return apiData.map((d: { label: string; count: number }) => ({
+      label: d.label,
+      count: d.count,
+    }));
+  }, [apiData]);
 
   return (
     <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5 shadow-xs">
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h3 className="text-sm font-bold text-[#1a1a2e]">Active Users</h3>
           <span className="text-[11px] text-[#9a99b0]">
-            Active creators count
+            Weekly active creators breakdown
           </span>
         </div>
 
-        <div className="pt-0.5">
+        <div>
           <CardFilterHeaderControls
-            period={period}
+            period="weekly"
+            availablePeriods={["weekly"]}
             selectedYear={selectedYear}
-            onPeriodChange={setPeriod}
+            selectedMonth={selectedMonth}
             onYearChange={setSelectedYear}
+            onMonthChange={setSelectedMonth}
           />
         </div>
       </div>
 
-      {/* Fixed-height chart area — skeleton overlays in-place, no layout shift */}
+      {/* Chart Area */}
       <div className="w-full pt-2 relative" style={{ height: 256 }}>
         {isFetching && (
           <div className="absolute inset-0 rounded-2xl bg-[#faf9fc] animate-pulse z-10" />
@@ -86,15 +62,9 @@ export default function ActiveUsersChart() {
           <div className="flex items-center justify-center h-full text-xs text-[#9a99b0]">
             No data available
           </div>
-        ) : period === "daily" ? (
-          /* Daily: each bar gets a fixed px width; chart scrolls horizontally */
-          <ScrollableBarChart
-            data={chartData}
-            accentIndex={chartData.length - 1}
-          />
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} barCategoryGap={barGap}>
+            <BarChart data={chartData} barCategoryGap="30%">
               <XAxis
                 dataKey="label"
                 axisLine={false}
