@@ -197,9 +197,49 @@ export default function SocialGrid({ searchQuery = "" }: SocialGridProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {displayItems.length === 0 && <SocialEmptyState tab={activeTab} />}
           {displayItems.map((c) => {
+            const rawObj = c as unknown as Record<string, unknown>;
+
             const daysLeftVal = c.deadline || "Open";
-            const participantsVal = (c.participantsCount ?? 0).toLocaleString();
-            const tokensVal = (c.tokensReward ?? 0).toLocaleString();
+
+            const categoryVal = String(
+              c.category ??
+                c.niche ??
+                rawObj.category ??
+                rawObj.niche ??
+                c.brandName ??
+                rawObj.brandName ??
+                rawObj.brand_name ??
+                "Trendupp",
+            );
+
+            const tokenRewardNum = Number(
+              c.tokenReward ??
+                c.tokensReward ??
+                c.tokens ??
+                rawObj.tokenReward ??
+                rawObj.token_reward ??
+                rawObj.tokensReward ??
+                rawObj.tokens_reward ??
+                rawObj.rewardTokens ??
+                rawObj.reward_tokens ??
+                0,
+            );
+
+            const appliedCountNum = Number(
+              c.appliedCount ??
+                c.applicationsCount ??
+                c.participantsCount ??
+                rawObj.appliedCount ??
+                rawObj.applied_count ??
+                rawObj.applicationsCount ??
+                rawObj.applications_count ??
+                rawObj.participantsCount ??
+                rawObj.participants_count ??
+                0,
+            );
+
+            const tokensVal = tokenRewardNum.toLocaleString();
+            const participantsVal = appliedCountNum.toLocaleString();
 
             return (
               <div
@@ -253,7 +293,7 @@ export default function SocialGrid({ searchQuery = "" }: SocialGridProps) {
                     {c.title}
                   </h4>
                   <span className="text-[10px] text-[#9a99b0] font-bold">
-                    {c.niche || c.brandName || "Trendupp"}
+                    {categoryVal}
                   </span>
 
                   {/* Stats Row */}

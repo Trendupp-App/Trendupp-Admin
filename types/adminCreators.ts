@@ -83,20 +83,36 @@ export interface CreatorListQueryParams {
   q?: string;
   page?: number;
   limit?: number;
+  startDate?: string;
+  endDate?: string;
+  fromDate?: string;
+  toDate?: string;
 }
 
 export interface AdminCreatorListItem {
   id: string;
-  name: string;
-  handle: string;
-  email: string;
+  name?: string;
+  handle?: string;
+  email?: string;
   avatarUrl?: string | null;
-  tier: string;
+  tier?: string;
   niche?: string | null;
-  status: string;
-  completedCampaigns: number;
-  totalEarnings: number;
-  joinedAt: string;
+  status?: string;
+  completedCampaigns?: number;
+  campaignsCount?: number;
+  totalEarnings?: number;
+  earningsStatus?: string;
+  profileCompletion?: number | string;
+  platformsConnected?: string[] | Record<string, unknown>;
+  platforms?: string[] | Record<string, unknown>;
+  connectedSocials?: ConnectedSocialsDto | ConnectedSocialsCountsDto;
+  socialAccounts?: CreatorSocialAccountDto[];
+  revisionCount?: number;
+  revisionsCount?: number;
+  revisions?: number;
+  joinedAt?: string;
+  createdAt?: string;
+  dateJoined?: string;
 }
 
 export interface PaginatedCreatorsResponse {

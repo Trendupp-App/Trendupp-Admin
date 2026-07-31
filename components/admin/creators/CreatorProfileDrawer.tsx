@@ -8,7 +8,6 @@ import {
   TrendingUp,
   CheckCircle,
   Wallet,
-  Award,
   Star,
   Pencil,
   Trash2,
@@ -19,7 +18,10 @@ import {
   ShieldCheck,
   CheckCircle2,
   Layers,
+  Download,
+  Zap,
 } from "lucide-react";
+import { toast } from "sonner";
 import { FaTiktok, FaInstagram, FaYoutube } from "react-icons/fa";
 import { cn } from "@/lib/utils";
 import UserAvatar from "@/shared/UserAvatar";
@@ -503,31 +505,17 @@ export default function CreatorProfileDrawer({
 
   const metrics = [
     {
-      label: "Followers",
-      value: formatFollowerCount(totalFollowersCount),
-      icon: Users,
-      bg: "bg-[#fdf2f6] text-[#d7176f]",
-    },
-    {
-      label: "Engagement",
-      value:
-        metricsData?.onTimeSubmissionRate !== undefined
-          ? `${metricsData.onTimeSubmissionRate}%`
-          : "0%",
-      icon: TrendingUp,
-      bg: "bg-[#edf2fe] text-[#2f63eb]",
-    },
-    {
-      label: "Campaigns",
+      label: "Completed Campaigns",
       value:
         metricsData?.completedCampaigns !== undefined
           ? String(metricsData.completedCampaigns)
           : String(displayCampaigns.length),
-      icon: CheckCircle,
-      bg: "bg-[#f0fdf4] text-[#16a34a]",
+      icon: CheckCircle2,
+      color: "text-[#16a34a]",
+      bg: "bg-[#f0fdf4]",
     },
     {
-      label: "Earnings",
+      label: "Total Earnings",
       value:
         metricsData?.totalEarnings !== undefined
           ? `₦${
@@ -537,18 +525,67 @@ export default function CreatorProfileDrawer({
             }`
           : "₦0",
       icon: Wallet,
-      bg: "bg-[#fff7ed] text-[#ea580c]",
+      color: "text-[#d97706]",
+      bg: "bg-[#fffbeb]",
     },
     {
-      label: "Tokens",
+      label: "On-Time Submission rate",
+      value:
+        metricsData?.onTimeSubmissionRate !== undefined
+          ? `${metricsData.onTimeSubmissionRate}%`
+          : "0%",
+      icon: TrendingUp,
+      color: "text-[#2563eb]",
+      bg: "bg-[#eff6ff]",
+    },
+    {
+      label: "Total Followers",
+      value: formatFollowerCount(totalFollowersCount),
+      icon: Users,
+      color: "text-[#d7176f]",
+      bg: "bg-[#fdf2f6]",
+    },
+    {
+      label: "Total Tokens",
       value:
         metricsData?.totalTokens !== undefined
           ? String(metricsData.totalTokens)
           : "0",
-      icon: Award,
-      bg: "bg-[#f5f3ff] text-[#7c3aed]",
+      icon: Zap,
+      color: "text-[#7c3aed]",
+      bg: "bg-[#f5f3ff]",
     },
   ];
+
+  const handleExportMetrics = () => {
+    const csvRows = [
+      ["Metric", "Value"],
+      ["Creator Name", creatorName],
+      ["Username", creatorHandle],
+      ["Completed Campaigns", metrics[0].value],
+      ["Total Earnings", metrics[1].value],
+      ["On-Time Submission rate", metrics[2].value],
+      ["Total Followers", metrics[3].value],
+      ["Total Tokens", metrics[4].value],
+    ];
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      csvRows.map((e) => e.map((cell) => `"${cell}"`).join(",")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `${creatorName.toLowerCase().replace(/\s+/g, "_")}_metrics.csv`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success("Metrics exported successfully");
+  };
 
   if (!isOpen || !creatorId) return null;
 
@@ -630,6 +667,52 @@ export default function CreatorProfileDrawer({
                 {/* OVERVIEW TAB */}
                 {activeTab === "Overview" && (
                   <>
+                    {/* METRICS CARDS MATRIX (POSITIONED AT TOP WITH EXPORT OPTION) */}
+                    <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-4 shadow-xs">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-extrabold text-[#1a1a2e] uppercase tracking-wider">
+                          METRICS
+                        </h4>
+                        <button
+                          type="button"
+                          onClick={handleExportMetrics}
+                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white border border-[#e8e6f0] hover:bg-[#faf9fc] text-[#1a1a2e] text-xs font-bold rounded-xl transition-all shadow-2xs cursor-pointer hover:border-[#d0ceeb]"
+                        >
+                          <Download size={13} className="text-[#5a5a7a]" />
+                          <span>Export</span>
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                        {metrics.map((m, i) => {
+                          const Icon = m.icon;
+                          return (
+                            <div
+                              key={i}
+                              className="bg-[#faf9fc]/80 border border-[#e8e6f0]/80 rounded-2xl p-4 flex flex-col items-center text-center justify-center gap-1.5 shadow-2xs transition-all hover:bg-white hover:shadow-xs"
+                            >
+                              <div
+                                className={cn(
+                                  "w-7 h-7 rounded-full flex items-center justify-center shrink-0",
+                                  m.bg,
+                                  m.color,
+                                )}
+                              >
+                                <Icon size={14} />
+                              </div>
+                              <span className="text-base font-bold text-[#1a1a2e] tracking-tight mt-0.5">
+                                {m.value}
+                              </span>
+                              <span className="text-[11px] text-[#7a7a9a] font-medium leading-tight text-center">
+                                {m.label}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Profile Details */}
                     <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-4">
                       <h4 className="text-sm font-bold text-[#1a1a2e]">
                         Profile Details
@@ -782,39 +865,6 @@ export default function CreatorProfileDrawer({
                             )}
                           </div>
                         ))}
-                      </div>
-                    </div>
-
-                    {/* Metrics Cards Grid Under Overview */}
-                    <div className="flex flex-col gap-3">
-                      <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
-                        Metrics
-                      </h4>
-                      <div className="grid grid-cols-5 gap-3">
-                        {metrics.map((m, i) => {
-                          const Icon = m.icon;
-                          return (
-                            <div
-                              key={i}
-                              className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-3.5 flex flex-col items-center text-center gap-1 shadow-xs"
-                            >
-                              <div
-                                className={cn(
-                                  "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-                                  m.bg,
-                                )}
-                              >
-                                <Icon size={14} />
-                              </div>
-                              <span className="text-sm font-bold text-[#1a1a2e] mt-1">
-                                {m.value}
-                              </span>
-                              <span className="text-[9px] text-[#9a99b0] font-medium uppercase tracking-wider">
-                                {m.label}
-                              </span>
-                            </div>
-                          );
-                        })}
                       </div>
                     </div>
 

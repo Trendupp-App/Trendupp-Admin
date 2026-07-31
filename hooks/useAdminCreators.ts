@@ -17,10 +17,40 @@ export function useCreatorSummary(enabled: boolean = true) {
   });
 }
 
-export function useTopCreators(enabled: boolean = true) {
+export function useTopCreators(
+  params?: {
+    startDate?: string;
+    endDate?: string;
+    fromDate?: string;
+    toDate?: string;
+    limit?: number;
+    period?: string;
+    year?: number;
+  },
+  enabled: boolean = true,
+) {
+  const startDate = params?.startDate || params?.fromDate;
+  const endDate = params?.endDate || params?.toDate;
+
   return useQuery({
-    queryKey: ["admin-top-creators"],
-    queryFn: () => adminCreatorsApi.getTopCreators().then((r) => r.data),
+    queryKey: [
+      "admin-top-creators",
+      startDate,
+      endDate,
+      params?.limit,
+      params?.period,
+      params?.year,
+    ],
+    queryFn: () =>
+      adminCreatorsApi
+        .getTopCreators({
+          startDate,
+          endDate,
+          limit: params?.limit,
+          period: params?.period,
+          year: params?.year,
+        })
+        .then((r) => r.data),
     staleTime: 1000 * 60 * 2,
     enabled,
   });
@@ -88,28 +118,79 @@ export function useCreatorActiveUsers(
   });
 }
 
-export function useCreatorTierDistribution(enabled: boolean = true) {
+export function useCreatorTierDistribution(
+  params?: {
+    period?: string;
+    year?: number;
+    month?: number;
+    startDate?: string;
+    endDate?: string;
+  },
+  enabled: boolean = true,
+) {
   return useQuery({
-    queryKey: ["admin-creator-tier-distribution"],
-    queryFn: () => adminCreatorsApi.getTierDistribution().then((r) => r.data),
+    queryKey: [
+      "admin-creator-tier-distribution",
+      params?.period,
+      params?.year,
+      params?.month,
+      params?.startDate,
+      params?.endDate,
+    ],
+    queryFn: () =>
+      adminCreatorsApi.getTierDistribution(params).then((r) => r.data),
     staleTime: 1000 * 60 * 5,
     enabled,
   });
 }
 
-export function useCreatorGenderDistribution(enabled: boolean = true) {
+export function useCreatorGenderDistribution(
+  params?: {
+    period?: string;
+    year?: number;
+    month?: number;
+    startDate?: string;
+    endDate?: string;
+  },
+  enabled: boolean = true,
+) {
   return useQuery({
-    queryKey: ["admin-creator-gender-distribution"],
-    queryFn: () => adminCreatorsApi.getGenderDistribution().then((r) => r.data),
+    queryKey: [
+      "admin-creator-gender-distribution",
+      params?.period,
+      params?.year,
+      params?.month,
+      params?.startDate,
+      params?.endDate,
+    ],
+    queryFn: () =>
+      adminCreatorsApi.getGenderDistribution(params).then((r) => r.data),
     staleTime: 1000 * 60 * 5,
     enabled,
   });
 }
 
-export function useCreatorNicheBreakdown(enabled: boolean = true) {
+export function useCreatorNicheBreakdown(
+  params?: {
+    period?: string;
+    year?: number;
+    month?: number;
+    startDate?: string;
+    endDate?: string;
+  },
+  enabled: boolean = true,
+) {
   return useQuery({
-    queryKey: ["admin-creator-niche-breakdown"],
-    queryFn: () => adminCreatorsApi.getNicheBreakdown().then((r) => r.data),
+    queryKey: [
+      "admin-creator-niche-breakdown",
+      params?.period,
+      params?.year,
+      params?.month,
+      params?.startDate,
+      params?.endDate,
+    ],
+    queryFn: () =>
+      adminCreatorsApi.getNicheBreakdown(params).then((r) => r.data),
     staleTime: 1000 * 60 * 5,
     enabled,
   });

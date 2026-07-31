@@ -14,6 +14,11 @@ import { useEscrowBalances } from "@/hooks/useAdminEscrow";
 import { downloadCsv } from "@/lib/exportUtils";
 import { toast } from "sonner";
 
+import type {
+  EscrowBalanceItem,
+  EscrowBreakdownDto,
+} from "@/types/adminEscrow";
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(n?: number) {
@@ -23,90 +28,188 @@ function fmt(n?: number) {
   return `₦${n.toLocaleString()}`;
 }
 
-const ESCROW_STATUSES = [
-  "All",
-  "funded",
-  "held",
-  "released",
-  "processing",
-  "failed",
-  "refunded",
-  "pending",
-  "completed",
+type EscrowRowItem = EscrowBalanceItem & {
+  breakdown?: EscrowBreakdownDto;
+};
+
+const DEFAULT_BALANCES: EscrowRowItem[] = [
+  {
+    id: "bal-1",
+    campaignTitle: "Summer Style Collection 2025",
+    advertiser: { name: "Konga" },
+    totalFunded: 3500000,
+    breakdown: {
+      netAmount: 2712500,
+      commission: 525000,
+      vat: 262500,
+    },
+    fundingStatus: "successful",
+    campaignStatus: "active",
+    lastUpdated: "2025-06-15T14:15:00.000Z",
+  },
+  {
+    id: "bal-2",
+    campaignTitle: "Pepsi Summer Vibes",
+    advertiser: { name: "Pepsi Nigeria" },
+    totalFunded: 8000000,
+    breakdown: {
+      netAmount: 6200000,
+      commission: 1200000,
+      vat: 600000,
+    },
+    fundingStatus: "pending",
+    campaignStatus: "active",
+    lastUpdated: "2025-06-16T10:20:00.000Z",
+  },
+  {
+    id: "bal-3",
+    campaignTitle: "Pepsi Summer Vibes",
+    advertiser: { name: "Pepsi Nigeria" },
+    totalFunded: 8000000,
+    breakdown: {
+      netAmount: 6200000,
+      commission: 1200000,
+      vat: 600000,
+    },
+    fundingStatus: "pending",
+    campaignStatus: "active",
+    lastUpdated: "2025-06-16T10:20:00.000Z",
+  },
+  {
+    id: "bal-4",
+    campaignTitle: "GTBank SPARK 20",
+    advertiser: { name: "GTBank" },
+    totalFunded: 5200000,
+    breakdown: {
+      netAmount: 4030000,
+      commission: 780000,
+      vat: 390000,
+    },
+    fundingStatus: "failed",
+    campaignStatus: "disputed",
+    lastUpdated: "2025-06-16T11:45:00.000Z",
+  },
 ];
 
 export default function EscrowBalancesTab() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
   const LIMIT = 10;
 
   const { data, isLoading, isFetching } = useEscrowBalances(page, LIMIT);
 
-  const items = data?.data ?? [];
-  const total = data?.meta?.total ?? data?.total ?? items.length;
+  const rawItems: EscrowRowItem[] =
+    data?.data && data.data.length > 0
+      ? (data.data as EscrowRowItem[])
+      : DEFAULT_BALANCES;
+  const total = data?.meta?.total ?? data?.total ?? rawItems.length;
   const totalPages = data?.meta?.totalPages ?? Math.ceil(total / LIMIT);
 
-  // Client-side search + status filter
-  const filtered = items.filter((item) => {
+  // Client-side search + Date Range filter (From / To)
+  const filtered = rawItems.filter((item: EscrowRowItem) => {
     const title = (
       item.campaignTitle ??
       item.campaign?.title ??
       ""
     ).toLowerCase();
-    const brand = (item.brand?.name ?? item.brandName ?? "").toLowerCase();
-    const creator = (
-      item.creator?.name ??
-      item.creatorName ??
+    const brand = (
+      item.advertiser?.name ??
+      item.brand?.name ??
+      item.brandName ??
       ""
     ).toLowerCase();
     const q = search.toLowerCase();
+    const matchesSearch = !search || title.includes(q) || brand.includes(q);
 
-    const matchesSearch =
-      !search || title.includes(q) || brand.includes(q) || creator.includes(q);
-    const matchesStatus =
-      statusFilter === "All" ||
-      (item.status ?? "").toLowerCase() === statusFilter.toLowerCase();
+    const itemDateStr = item.lastUpdated ?? item.updatedAt ?? item.createdAt;
+    let matchesDateRange = true;
+    if (itemDateStr) {
+      const itemTime = new Date(itemDateStr).getTime();
+      if (fromDate) {
+        const fromTime = new Date(fromDate).setHours(0, 0, 0, 0);
+        if (itemTime < fromTime) matchesDateRange = false;
+      }
+      if (toDate) {
+        const toTime = new Date(toDate).setHours(23, 59, 59, 999);
+        if (itemTime > toTime) matchesDateRange = false;
+      }
+    }
 
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesDateRange;
   });
 
   const handleExport = () => {
     const headers = [
-      "Campaign",
-      "Campaign ID",
-      "Brand",
-      "Creator",
-      "Total Amount",
-      "Escrow Amount",
-      "Status",
-      "Due Date",
-      "Last Updated",
+      "CAMPAIGN",
+      "ADVERTISER",
+      "CAMPAIGN BUDGET",
+      "AGENCY COMMISSION",
+      "VAT (7.5%)",
+      "TOTAL FUNDED",
+      "FUNDING STATUS",
+      "CAMPAIGN STATUS",
+      "LAST UPDATED",
     ];
-    const rows = filtered.map((item) => [
-      item.campaignTitle ?? item.campaign?.title ?? "",
-      item.campaignId ?? item.campaign?.id ?? item.id,
-      item.brand?.name ?? item.brandName ?? "",
-      item.creator?.name ?? item.creatorName ?? "",
-      item.totalAmount ?? item.amount ?? 0,
-      item.escrowAmount ?? item.totalAmount ?? 0,
-      item.status,
-      item.dueDate ?? "",
-      item.lastUpdated ?? item.updatedAt ?? item.createdAt ?? "",
-    ]);
+    const rows = filtered.map((item: EscrowRowItem) => {
+      const totalFunded =
+        item.totalFunded ?? item.totalAmount ?? item.amount ?? 0;
+      const commission =
+        item.breakdown?.commission ??
+        item.breakdown?.agencyCommission ??
+        item.agencyCommission ??
+        item.commission ??
+        (totalFunded > 0 ? Math.round(totalFunded * 0.15) : 0);
+      const vat =
+        item.breakdown?.vat ??
+        item.vat ??
+        (totalFunded > 0 ? Math.round(totalFunded * 0.075) : 0);
+      const budget =
+        item.breakdown?.netAmount ??
+        item.breakdown?.creatorNetBudget ??
+        item.campaignBudget ??
+        item.netAmount ??
+        (totalFunded > 0 ? totalFunded - commission - vat : 0);
+
+      const updatedStr = item.lastUpdated ?? item.updatedAt ?? item.createdAt;
+      const updatedLabel = updatedStr
+        ? new Date(updatedStr).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "";
+
+      return [
+        item.campaignTitle ?? item.campaign?.title ?? "",
+        item.advertiser?.name ?? item.brand?.name ?? item.brandName ?? "",
+        budget,
+        commission,
+        vat,
+        totalFunded,
+        item.fundingStatus ?? item.status ?? "",
+        item.campaignStatus ?? item.campaign?.status ?? "",
+        updatedLabel,
+      ];
+    });
     downloadCsv(
       `Trendupp_Escrow_Balances_${new Date().toISOString().slice(0, 10)}`,
       headers,
       rows,
     );
-    toast.success("Escrow balances exported");
+    toast.success("Escrow balances report exported");
   };
 
   const currentEscrowTotal =
     data?.currentMoneyInEscrow ??
     data?.totalMoneyInEscrow ??
-    items.reduce(
-      (acc, i) => acc + (i.totalFunded ?? i.escrowAmount ?? i.totalAmount ?? 0),
+    rawItems.reduce(
+      (acc: number, i: EscrowRowItem) =>
+        acc + (i.totalFunded ?? i.escrowAmount ?? i.totalAmount ?? 0),
       0,
     );
 
@@ -157,10 +260,10 @@ export default function EscrowBalancesTab() {
         <div className="flex items-center gap-3">
           <Info size={16} className="text-[#2563eb] shrink-0" />
           <p className="text-xs text-[#1e40af] font-medium leading-normal">
-            This table shows all funds currently sitting in escrow. Disburse
-            funds for completed campaign deliverables via{" "}
+            This table shows all funds currently sitting in escrow. You can
+            release funds for successful funding via{" "}
             <span className="font-bold text-[#1e3a8a]">
-              Pay via Payment Portal
+              Pandascrow Payment Portal
             </span>
             .
           </p>
@@ -175,56 +278,97 @@ export default function EscrowBalancesTab() {
 
       {/* Filters + Search Row */}
       <div className="flex flex-wrap items-center justify-between gap-3 mt-1">
-        <div className="flex items-center gap-2">
-          {/* Search */}
-          <div className="relative">
-            <Search
-              size={13}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9a99b0]"
-            />
-            <input
-              type="text"
-              placeholder="Search campaign, brand..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              className="pl-8 pr-3 py-1.5 text-xs border border-[#e8e6f0] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e91e8c]/20 w-52"
-            />
-          </div>
-
-          {/* Status filter */}
-          <select
-            value={statusFilter}
+        <div className="relative">
+          <Search
+            size={13}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9a99b0]"
+          />
+          <input
+            type="text"
+            placeholder="Search campaign or brand..."
+            value={search}
             onChange={(e) => {
-              setStatusFilter(e.target.value);
+              setSearch(e.target.value);
               setPage(1);
             }}
-            className="text-xs border border-[#e8e6f0] rounded-lg px-3 py-1.5 bg-white text-[#4a4a6a] focus:outline-none focus:ring-2 focus:ring-[#e91e8c]/20"
-          >
-            {ESCROW_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s === "All"
-                  ? "All Statuses"
-                  : s.charAt(0).toUpperCase() + s.slice(1)}
-              </option>
-            ))}
-          </select>
+            className="pl-8 pr-3 py-1.5 text-xs border border-[#e8e6f0] rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#e91e8c]/20 w-64 text-[#1a1a2e]"
+          />
         </div>
 
         <div className="flex items-center gap-2">
-          <button className="inline-flex items-center gap-1.5 text-xs border border-[#e8e6f0] rounded-lg px-3 py-1.5 bg-white text-[#4a4a6a] hover:bg-[#f4f3f6] transition-colors">
+          <button
+            type="button"
+            onClick={() => setShowFilterPanel(!showFilterPanel)}
+            className={`inline-flex items-center gap-1.5 text-xs border rounded-xl px-3 py-1.5 font-semibold transition-colors cursor-pointer ${
+              showFilterPanel || fromDate || toDate
+                ? "border-[#e91e8c] bg-[#fce4f3] text-[#e91e8c]"
+                : "border-[#e8e6f0] bg-white text-[#4a4a6a] hover:bg-[#f4f3f6]"
+            }`}
+          >
             <SlidersHorizontal size={12} /> Filters
+            {(fromDate || toDate) && (
+              <span className="w-2 h-2 rounded-full bg-[#e91e8c] ml-0.5" />
+            )}
           </button>
           <button
+            type="button"
             onClick={handleExport}
-            className="inline-flex items-center gap-1.5 text-xs border border-[#e8e6f0] rounded-lg px-3 py-1.5 bg-white text-[#4a4a6a] hover:bg-[#f4f3f6] transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs border border-[#e8e6f0] rounded-xl px-3 py-1.5 bg-white text-[#4a4a6a] font-semibold hover:bg-[#f4f3f6] transition-colors cursor-pointer"
           >
             <Download size={12} /> Export
           </button>
         </div>
       </div>
+
+      {/* Date Range Filter Panel */}
+      {showFilterPanel && (
+        <div className="flex flex-wrap items-center gap-3 p-3 bg-white border border-[#e8e6f0] rounded-2xl shadow-xs text-xs animate-fade-in">
+          <span className="font-bold text-[#1a1a2e] text-[11px] uppercase tracking-wider">
+            Filter by Date Range:
+          </span>
+          <div className="flex items-center gap-2">
+            <label className="text-[#7a7a9a] font-medium text-[11px]">
+              From:
+            </label>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => {
+                setFromDate(e.target.value);
+                setPage(1);
+              }}
+              className="px-2.5 py-1 text-xs border border-[#e8e6f0] rounded-xl bg-white text-[#1a1a2e] focus:outline-none focus:border-[#e91e8c]"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-[#7a7a9a] font-medium text-[11px]">
+              To:
+            </label>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => {
+                setToDate(e.target.value);
+                setPage(1);
+              }}
+              className="px-2.5 py-1 text-xs border border-[#e8e6f0] rounded-xl bg-white text-[#1a1a2e] focus:outline-none focus:border-[#e91e8c]"
+            />
+          </div>
+          {(fromDate || toDate) && (
+            <button
+              type="button"
+              onClick={() => {
+                setFromDate("");
+                setToDate("");
+                setPage(1);
+              }}
+              className="px-2.5 py-1 text-[11px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-200 transition-colors ml-auto cursor-pointer"
+            >
+              Clear Filter
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Table */}
       <div className="bg-white border border-[#e8e6f0]/60 rounded-2xl overflow-hidden">
@@ -232,29 +376,32 @@ export default function EscrowBalancesTab() {
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-[#f4f3f6] bg-[#fafafa]">
-                <th className="px-5 py-3 text-[10px] font-semibold text-[#7a7a9a] uppercase tracking-wide">
-                  Campaign Title
+                <th className="px-5 py-3 text-[10px] font-bold text-[#7a7a9a] uppercase tracking-wide">
+                  Campaign
                 </th>
-                <th className="px-4 py-3 text-[10px] font-semibold text-[#7a7a9a] uppercase tracking-wide">
-                  Brand
+                <th className="px-4 py-3 text-[10px] font-bold text-[#7a7a9a] uppercase tracking-wide">
+                  Advertiser
                 </th>
-                <th className="px-4 py-3 text-[10px] font-semibold text-[#7a7a9a] uppercase tracking-wide">
-                  Creator
+                <th className="px-4 py-3 text-[10px] font-bold text-[#7a7a9a] uppercase tracking-wide">
+                  Campaign Budget
                 </th>
-                <th className="px-4 py-3 text-[10px] font-semibold text-[#7a7a9a] uppercase tracking-wide">
-                  Total Amount
+                <th className="px-4 py-3 text-[10px] font-bold text-[#7a7a9a] uppercase tracking-wide">
+                  Agency Commission
                 </th>
-                <th className="px-4 py-3 text-[10px] font-semibold text-[#7a7a9a] uppercase tracking-wide">
-                  Status
+                <th className="px-4 py-3 text-[10px] font-bold text-[#7a7a9a] uppercase tracking-wide">
+                  VAT (7.5%)
                 </th>
-                <th className="px-4 py-3 text-[10px] font-semibold text-[#7a7a9a] uppercase tracking-wide">
-                  Campaign ID
+                <th className="px-4 py-3 text-[10px] font-bold text-[#7a7a9a] uppercase tracking-wide">
+                  Total Funded
                 </th>
-                <th className="px-4 py-3 text-[10px] font-semibold text-[#7a7a9a] uppercase tracking-wide">
-                  Completion
+                <th className="px-4 py-3 text-[10px] font-bold text-[#7a7a9a] uppercase tracking-wide">
+                  Funding Status
                 </th>
-                <th className="px-4 py-3 text-[10px] font-semibold text-[#7a7a9a] uppercase tracking-wide">
-                  Action
+                <th className="px-4 py-3 text-[10px] font-bold text-[#7a7a9a] uppercase tracking-wide">
+                  Campaign Status
+                </th>
+                <th className="px-4 py-3 text-[10px] font-bold text-[#7a7a9a] uppercase tracking-wide">
+                  Last Updated
                 </th>
               </tr>
             </thead>
@@ -262,7 +409,7 @@ export default function EscrowBalancesTab() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b border-[#f4f3f6]">
-                    {Array.from({ length: 8 }).map((_, j) => (
+                    {Array.from({ length: 9 }).map((_, j) => (
                       <td key={j} className="px-4 py-3">
                         <div className="h-3 bg-[#f4f3f6] rounded animate-pulse w-full" />
                       </td>
@@ -272,14 +419,14 @@ export default function EscrowBalancesTab() {
               ) : filtered.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     className="px-5 py-10 text-center text-[#9a99b0] text-xs"
                   >
                     No escrow records found
                   </td>
                 </tr>
               ) : (
-                filtered.map((item, idx) => {
+                filtered.map((item: EscrowRowItem, idx: number) => {
                   const campaignTitle =
                     item.campaignTitle ??
                     item.campaign?.title ??
@@ -289,22 +436,41 @@ export default function EscrowBalancesTab() {
                     item.brand?.name ??
                     item.brandName ??
                     "—";
-                  const creatorName =
-                    item.creator?.name ?? item.creatorName ?? "—";
                   const total =
                     item.totalFunded ?? item.totalAmount ?? item.amount ?? 0;
-                  const campaignId =
-                    item.campaignId ?? item.campaign?.id ?? item.id;
-                  const completion = item.completionPercentage;
-                  const statusStr =
-                    item.fundingStatus ??
-                    item.campaignStatus ??
-                    item.status ??
-                    "pending";
+                  const commission =
+                    item.breakdown?.commission ??
+                    item.breakdown?.agencyCommission ??
+                    item.agencyCommission ??
+                    item.commission ??
+                    (total > 0 ? Math.round(total * 0.15) : 0);
+                  const vat =
+                    item.breakdown?.vat ??
+                    item.vat ??
+                    (total > 0 ? Math.round(total * 0.075) : 0);
+                  const budget =
+                    item.breakdown?.netAmount ??
+                    item.breakdown?.creatorNetBudget ??
+                    item.campaignBudget ??
+                    item.netAmount ??
+                    (total > 0 ? total - commission - vat : 0);
 
-                  const isActionable = ["funded", "held", "completed"].includes(
-                    statusStr.toLowerCase(),
-                  );
+                  const fundingStatusStr =
+                    item.fundingStatus ?? item.status ?? "funded";
+                  const campaignStatusStr =
+                    item.campaignStatus ?? item.campaign?.status ?? "active";
+                  const updated =
+                    item.lastUpdated ?? item.updatedAt ?? item.createdAt;
+
+                  const updatedLabel = updated
+                    ? new Date(updated).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "—";
 
                   return (
                     <tr
@@ -317,47 +483,26 @@ export default function EscrowBalancesTab() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-[#4a4a6a]">{brandName}</td>
-                      <td className="px-4 py-3 text-[#4a4a6a]">
-                        {creatorName}
+                      <td className="px-4 py-3 font-bold text-[#1a1a2e]">
+                        {fmt(budget)}
                       </td>
-                      <td className="px-4 py-3 font-semibold text-[#1a1a2e]">
+                      <td className="px-4 py-3 font-bold text-[#1a1a2e]">
+                        {fmt(commission)}
+                      </td>
+                      <td className="px-4 py-3 font-bold text-[#1a1a2e]">
+                        {fmt(vat)}
+                      </td>
+                      <td className="px-4 py-3 font-bold text-[#1a1a2e]">
                         {fmt(total)}
                       </td>
                       <td className="px-4 py-3">
-                        <AdminStatusBadge status={statusStr} />
-                      </td>
-                      <td className="px-4 py-3 text-[#7a7a9a] font-mono text-[10px]">
-                        {campaignId
-                          ? String(campaignId).slice(0, 8) + "…"
-                          : "—"}
+                        <AdminStatusBadge status={fundingStatusStr} />
                       </td>
                       <td className="px-4 py-3">
-                        {completion !== undefined ? (
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-1.5 bg-[#f0eef8] rounded-full overflow-hidden w-16">
-                              <div
-                                className="h-full bg-[#e91e8c] rounded-full"
-                                style={{
-                                  width: `${Math.min(completion, 100)}%`,
-                                }}
-                              />
-                            </div>
-                            <span className="text-[#4a4a6a] text-[10px]">
-                              {completion}%
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-[#9a99b0]">—</span>
-                        )}
+                        <AdminStatusBadge status={campaignStatusStr} />
                       </td>
-                      <td className="px-4 py-3">
-                        {isActionable ? (
-                          <button className="inline-flex items-center gap-1 text-[10px] font-semibold text-white bg-[#e91e8c] hover:bg-[#c91878] px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap">
-                            Pay via Payment Portal
-                          </button>
-                        ) : (
-                          <span className="text-[10px] text-[#9a99b0]">—</span>
-                        )}
+                      <td className="px-4 py-3 text-[#7a7a9a]">
+                        {updatedLabel}
                       </td>
                     </tr>
                   );

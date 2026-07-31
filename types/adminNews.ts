@@ -13,9 +13,11 @@ export interface AdminNewsItem {
   status:
     | "draft"
     | "published"
+    | "scheduled"
     | "archived"
     | "Draft"
     | "Published"
+    | "Scheduled"
     | "Archived"
     | string;
   coverImage?: string;
@@ -29,6 +31,7 @@ export interface AdminNewsItem {
   tags?: string[];
   views?: number;
   authorName?: string;
+  scheduledAt?: string;
   publishedAt?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -47,6 +50,7 @@ export interface CreateNewsDto {
   brand?: string;
   authorName?: string;
   tags?: string[];
+  scheduledAt?: string;
 }
 
 export interface UpdateNewsDto {
@@ -62,6 +66,7 @@ export interface UpdateNewsDto {
   brand?: string;
   authorName?: string;
   tags?: string[];
+  scheduledAt?: string;
 }
 
 export interface NewsQueryParams {

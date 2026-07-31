@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CampaignOverviewDto } from "@/types/adminOverview";
 
@@ -77,9 +79,13 @@ export function AdminCampaignOverview({
             Click any status to filter campaigns
           </p>
         </div>
-        <button className="text-[10px] text-brand-pink font-semibold hover:underline flex items-center gap-0.5 cursor-pointer">
-          View All ›
-        </button>
+        <Link
+          href="/admin/campaigns"
+          className="h-7 px-3 bg-[#edf3ff] hover:bg-[#dbe9ff] text-[#2f63eb] text-xs font-bold rounded-xl flex items-center gap-1 transition-colors cursor-pointer"
+        >
+          <span>View All</span>
+          <ChevronRight size={13} className="stroke-[2.5]" />
+        </Link>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">

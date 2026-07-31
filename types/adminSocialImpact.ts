@@ -23,9 +23,13 @@ export interface SocialImpactCampaign {
   isDraft?: boolean;
   status: "Draft" | "Live" | "Active" | "Completed" | "Paused" | "Cancelled";
   niche?: string | null;
+  category?: string | null;
   tokensReward?: number | null;
+  tokenReward?: number | null;
+  tokens?: number | null;
   participantsCount?: number;
   applicationsCount?: number;
+  appliedCount?: number;
   deadline?: string | null;
   lastEditedAt?: string | null;
   createdAt?: string | null;

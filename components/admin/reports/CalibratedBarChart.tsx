@@ -14,8 +14,8 @@ interface CalibratedBarChartProps {
   subtitle: string;
   data?: ChartDataItem[];
   isLoading?: boolean;
-  period?: "Daily" | "Weekly" | "Monthly";
-  onPeriodChange?: (period: "Daily" | "Weekly" | "Monthly") => void;
+  period?: "Daily" | "Weekly" | "Monthly" | "Yearly";
+  onPeriodChange?: (period: "Daily" | "Weekly" | "Monthly" | "Yearly") => void;
   year?: string;
   onYearChange?: (year: string) => void;
   month?: string;
@@ -37,21 +37,6 @@ const MONTH_NAMES = [
   "November",
   "December",
 ];
-
-const DAYS_IN_MONTH: Record<string, number> = {
-  January: 31,
-  February: 28,
-  March: 31,
-  April: 30,
-  May: 31,
-  June: 30,
-  July: 31,
-  August: 31,
-  September: 30,
-  October: 31,
-  November: 30,
-  December: 31,
-};
 
 /**
  * Dynamic Y-axis tick calculation based on max data count
@@ -173,10 +158,14 @@ export default function CalibratedBarChart({
   highlightIndex,
 }: CalibratedBarChartProps) {
   const [internalPeriod, setInternalPeriod] = useState<
-    "Daily" | "Weekly" | "Monthly"
+    "Daily" | "Weekly" | "Monthly" | "Yearly"
   >("Monthly");
-  const [internalYear, setInternalYear] = useState("2026");
-  const [internalMonth, setInternalMonth] = useState("July");
+  const [internalYear, setInternalYear] = useState(
+    String(new Date().getFullYear()),
+  );
+  const [internalMonth, setInternalMonth] = useState(
+    new Date().toLocaleString("default", { month: "long" }),
+  );
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -185,7 +174,7 @@ export default function CalibratedBarChart({
   const year = controlledYear ?? internalYear;
   const month = controlledMonth ?? internalMonth;
 
-  const handlePeriodClick = (p: "Daily" | "Weekly" | "Monthly") => {
+  const handlePeriodClick = (p: "Daily" | "Weekly" | "Monthly" | "Yearly") => {
     setSelectedIndex(null);
     setHoveredIndex(null);
     if (onPeriodChange) onPeriodChange(p);
@@ -206,46 +195,35 @@ export default function CalibratedBarChart({
     else setInternalMonth(m);
   };
 
-  // Generate fallback period items if empty
-  let displayData: ChartDataItem[] = data;
-  if (displayData.length === 0) {
+  // Remap API "Day N" labels to real calendar dates when in Daily mode
+  const displayData: ChartDataItem[] = data.map((d) => {
     if (period === "Daily") {
-      const daysCount = DAYS_IN_MONTH[month] || 30;
-      displayData = Array.from({ length: daysCount }).map((_, i) => ({
-        label: `Day ${i + 1}`,
-        count: 0,
-      }));
-    } else if (period === "Weekly") {
-      displayData = [
-        { label: "Week 1", count: 15 },
-        { label: "Week 2", count: 45 },
-        { label: "Week 3", count: 0 },
-        { label: "Week 4", count: 0 },
-      ];
-    } else {
-      displayData = [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ].map((m, idx) => ({
-        label: m,
-        count: idx === 5 ? 200 : 0,
-      }));
+      const dayNum = d.label.match(/^Day\s*(\d+)$/i)?.[1];
+      if (dayNum) {
+        const monthIdx = MONTH_NAMES.indexOf(month);
+        const yr = parseInt(year, 10) || new Date().getFullYear();
+        const date = new Date(
+          yr,
+          monthIdx >= 0 ? monthIdx : new Date().getMonth(),
+          parseInt(dayNum, 10),
+        );
+        return {
+          label: date.toLocaleDateString("en-GB", {
+            day: "numeric",
+            month: "short",
+          }),
+          count: d.count,
+        };
+      }
     }
-  }
+    return d;
+  });
+
+  const isEmpty = !isLoading && displayData.length === 0;
 
   // Calculate dynamic ticks based on highest value
   const maxCount = displayData.reduce((max, d) => Math.max(max, d.count), 0);
-  const yCalibrations = getDynamicYCalibrations(maxCount);
+  const yCalibrations = getDynamicYCalibrations(isEmpty ? 50 : maxCount);
 
   // Default active highlight index
   const defaultHighlightIdx =
@@ -266,7 +244,7 @@ export default function CalibratedBarChart({
         <div className="flex items-center gap-2 flex-wrap">
           {/* Period Pills */}
           <div className="flex items-center bg-white border border-[#e8e6f0] p-0.5 rounded-full">
-            {(["Daily", "Weekly", "Monthly"] as const).map((p) => (
+            {(["Daily", "Weekly", "Monthly", "Yearly"] as const).map((p) => (
               <button
                 key={p}
                 type="button"
@@ -304,24 +282,26 @@ export default function CalibratedBarChart({
             />
           </div>
 
-          {/* Month Dropdown */}
-          <div className="relative">
-            <select
-              value={month}
-              onChange={(e) => handleMonthSelect(e.target.value)}
-              className="h-8 px-3 pr-7 bg-white border border-[#e8e6f0] rounded-xl text-xs font-semibold text-[#5a5a7a] appearance-none focus:outline-none cursor-pointer"
-            >
-              {MONTH_NAMES.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              size={12}
-              className="absolute right-2.5 top-2.5 text-[#9a99b0] pointer-events-none"
-            />
-          </div>
+          {/* Month Dropdown — hidden in Yearly mode */}
+          {period !== "Yearly" && (
+            <div className="relative">
+              <select
+                value={month}
+                onChange={(e) => handleMonthSelect(e.target.value)}
+                className="h-8 px-3 pr-7 bg-white border border-[#e8e6f0] rounded-xl text-xs font-semibold text-[#5a5a7a] appearance-none focus:outline-none cursor-pointer"
+              >
+                {MONTH_NAMES.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                size={12}
+                className="absolute right-2.5 top-2.5 text-[#9a99b0] pointer-events-none"
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -355,123 +335,133 @@ export default function CalibratedBarChart({
           <div
             className={`flex flex-col ${period === "Daily" ? "min-w-[1350px] px-4" : "min-w-full px-2"}`}
           >
+            {/* Empty state */}
+            {isEmpty && (
+              <div className="h-48 flex items-center justify-center text-xs text-[#9a99b0] font-medium">
+                No data available for this period
+              </div>
+            )}
             {/* Bars Row (Sits directly on bottom-0 baseline line) */}
-            <div className="h-48 flex items-end justify-between gap-3 relative z-10">
-              {isLoading
-                ? Array.from({ length: period === "Daily" ? 15 : 7 }).map(
-                    (_, idx) => (
-                      <div
-                        key={idx}
-                        className="flex-1 flex flex-col items-center h-full justify-end"
-                      >
-                        <Skeleton className="w-full max-w-[28px] h-36 rounded-t-sm" />
-                      </div>
-                    ),
-                  )
-                : displayData.map((item, idx) => {
-                    const heightPct = getBarHeightPct(
-                      item.count,
-                      yCalibrations,
-                    );
-                    const isHovered = hoveredIndex === idx;
-                    const isSelected = selectedIndex === idx;
-                    const isDefaultHighlight =
-                      selectedIndex === null &&
-                      hoveredIndex === null &&
-                      (defaultHighlightIdx >= 0
-                        ? idx === defaultHighlightIdx
-                        : idx === 0);
-                    const isActive =
-                      isHovered || isSelected || isDefaultHighlight;
-
-                    return (
-                      <div
-                        key={idx}
-                        onClick={() =>
-                          setSelectedIndex(idx === selectedIndex ? null : idx)
-                        }
-                        onMouseEnter={() => setHoveredIndex(idx)}
-                        onMouseLeave={() => setHoveredIndex(null)}
-                        className="flex-1 min-w-[32px] h-full flex items-end justify-center group cursor-pointer relative"
-                      >
-                        {/* Bar Fill */}
+            {!isEmpty && (
+              <div className="h-48 flex items-end justify-between gap-3 relative z-10">
+                {isLoading
+                  ? Array.from({ length: period === "Daily" ? 15 : 7 }).map(
+                      (_, idx) => (
                         <div
-                          className="relative w-full max-w-[38px] flex flex-col justify-end"
-                          style={{ height: `${heightPct}%` }}
+                          key={idx}
+                          className="flex-1 flex flex-col items-center h-full justify-end"
                         >
-                          {/* Floating Tooltip directly above bar */}
-                          {(isHovered || isSelected) && (
-                            <div className="absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-30 flex flex-col items-center animate-fade-in pointer-events-none">
-                              <div className="bg-[#1a1a2e] text-white text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-xl whitespace-nowrap flex items-center gap-1.5 border border-white/10">
-                                <span className="text-[#9a99b0]">
-                                  {item.label}:
-                                </span>
-                                <span className="text-[#f472b6] font-extrabold">
-                                  {item.count.toLocaleString()}
-                                </span>
-                              </div>
-                              <div className="w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-[#1a1a2e]" />
-                            </div>
-                          )}
-
-                          <div
-                            className={`w-full h-full rounded-t-sm transition-all duration-200 ${
-                              isActive
-                                ? "bg-[#d92662] shadow-md"
-                                : item.count > 0
-                                  ? "bg-[#fce7f3] hover:bg-[#fbcfe8]"
-                                  : "bg-[#fce7f3]/50 hover:bg-[#fce7f3]"
-                            }`}
-                          />
+                          <Skeleton className="w-full max-w-[28px] h-36 rounded-t-sm" />
                         </div>
-                      </div>
-                    );
-                  })}
-            </div>
+                      ),
+                    )
+                  : displayData.map((item, idx) => {
+                      const heightPct = getBarHeightPct(
+                        item.count,
+                        yCalibrations,
+                      );
+                      const isHovered = hoveredIndex === idx;
+                      const isSelected = selectedIndex === idx;
+                      const isDefaultHighlight =
+                        selectedIndex === null &&
+                        hoveredIndex === null &&
+                        (defaultHighlightIdx >= 0
+                          ? idx === defaultHighlightIdx
+                          : idx === 0);
+                      const isActive =
+                        isHovered || isSelected || isDefaultHighlight;
 
-            {/* X-Axis Labels Row (Sits directly BELOW the h-48 baseline line) */}
-            <div className="h-8 pt-2.5 flex items-center justify-between gap-3 relative z-10">
-              {isLoading
-                ? Array.from({ length: period === "Daily" ? 15 : 7 }).map(
-                    (_, idx) => (
-                      <div
-                        key={idx}
-                        className="flex-1 min-w-[32px] flex justify-center"
-                      >
-                        <Skeleton className="h-3 w-6" />
-                      </div>
-                    ),
-                  )
-                : displayData.map((item, idx) => {
-                    const isHovered = hoveredIndex === idx;
-                    const isSelected = selectedIndex === idx;
-                    const isDefaultHighlight =
-                      selectedIndex === null &&
-                      hoveredIndex === null &&
-                      (defaultHighlightIdx >= 0
-                        ? idx === defaultHighlightIdx
-                        : idx === 0);
-                    const isActive =
-                      isHovered || isSelected || isDefaultHighlight;
-
-                    return (
-                      <div
-                        key={idx}
-                        className="flex-1 min-w-[32px] text-center"
-                      >
-                        <span
-                          className={`text-[10px] whitespace-nowrap transition-colors tracking-tight ${
-                            isActive
-                              ? "font-bold text-[#d92662]"
-                              : "font-medium text-[#9a99b0] group-hover:text-[#1a1a2e]"
-                          }`}
+                      return (
+                        <div
+                          key={idx}
+                          onClick={() =>
+                            setSelectedIndex(idx === selectedIndex ? null : idx)
+                          }
+                          onMouseEnter={() => setHoveredIndex(idx)}
+                          onMouseLeave={() => setHoveredIndex(null)}
+                          className="flex-1 min-w-[32px] h-full flex items-end justify-center group cursor-pointer relative"
                         >
-                          {item.label}
-                        </span>
-                      </div>
-                    );
-                  })}
-            </div>
+                          {/* Bar Fill */}
+                          <div
+                            className="relative w-full max-w-[38px] flex flex-col justify-end"
+                            style={{ height: `${heightPct}%` }}
+                          >
+                            {/* Floating Tooltip directly above bar */}
+                            {(isHovered || isSelected) && (
+                              <div className="absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-30 flex flex-col items-center animate-fade-in pointer-events-none">
+                                <div className="bg-[#1a1a2e] text-white text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-xl whitespace-nowrap flex items-center gap-1.5 border border-white/10">
+                                  <span className="text-[#9a99b0]">
+                                    {item.label}:
+                                  </span>
+                                  <span className="text-[#f472b6] font-extrabold">
+                                    {item.count.toLocaleString()}
+                                  </span>
+                                </div>
+                                <div className="w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-[#1a1a2e]" />
+                              </div>
+                            )}
+
+                            <div
+                              className={`w-full h-full rounded-t-sm transition-all duration-200 ${
+                                isActive
+                                  ? "bg-[#d92662] shadow-md"
+                                  : item.count > 0
+                                    ? "bg-[#fce7f3] hover:bg-[#fbcfe8]"
+                                    : "bg-[#fce7f3]/50 hover:bg-[#fce7f3]"
+                              }`}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+              </div>
+            )}
+
+            {/* X-Axis Labels Row — only shown when there is data */}
+            {!isEmpty && (
+              <div className="h-8 pt-2.5 flex items-center justify-between gap-3 relative z-10">
+                {isLoading
+                  ? Array.from({ length: period === "Daily" ? 15 : 7 }).map(
+                      (_, idx) => (
+                        <div
+                          key={idx}
+                          className="flex-1 min-w-[32px] flex justify-center"
+                        >
+                          <Skeleton className="h-3 w-6" />
+                        </div>
+                      ),
+                    )
+                  : displayData.map((item, idx) => {
+                      const isHovered = hoveredIndex === idx;
+                      const isSelected = selectedIndex === idx;
+                      const isDefaultHighlight =
+                        selectedIndex === null &&
+                        hoveredIndex === null &&
+                        (defaultHighlightIdx >= 0
+                          ? idx === defaultHighlightIdx
+                          : idx === 0);
+                      const isActive =
+                        isHovered || isSelected || isDefaultHighlight;
+
+                      return (
+                        <div
+                          key={idx}
+                          className="flex-1 min-w-[32px] text-center"
+                        >
+                          <span
+                            className={`text-[10px] whitespace-nowrap transition-colors tracking-tight ${
+                              isActive
+                                ? "font-bold text-[#d92662]"
+                                : "font-medium text-[#9a99b0] group-hover:text-[#1a1a2e]"
+                            }`}
+                          >
+                            {item.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+              </div>
+            )}
           </div>
         </div>
       </div>

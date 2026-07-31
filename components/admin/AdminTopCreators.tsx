@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import UserAvatar from "@/shared/UserAvatar";
 
 interface Creator {
@@ -50,9 +52,13 @@ export function AdminTopCreators({ creators }: AdminTopCreatorsProps) {
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6">
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-sm font-semibold text-[#1a1a2e]">Top Creators</h2>
-        <button className="text-[10px] text-brand-pink font-semibold hover:underline">
-          View All ›
-        </button>
+        <Link
+          href="/admin/users/creators"
+          className="h-7 px-3 bg-[#edf3ff] hover:bg-[#dbe9ff] text-[#2f63eb] text-xs font-bold rounded-xl flex items-center gap-1 transition-colors cursor-pointer"
+        >
+          <span>View All</span>
+          <ChevronRight size={13} className="stroke-[2.5]" />
+        </Link>
       </div>
 
       {creatorsList.length === 0 && (

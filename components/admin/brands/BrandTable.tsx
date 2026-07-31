@@ -1,22 +1,25 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search } from "lucide-react";
+import { Search, Download, RotateCcw, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdminStatusBadge } from "../AdminStatusBadge";
 import UserAvatar from "@/shared/UserAvatar";
 import { useAdminBrandsList } from "@/hooks/useAdminBrands";
 import BrandProfileDrawer from "./BrandProfileDrawer";
+import { CardFilterHeaderControls } from "../creators/CardFilterHeaderControls";
+import { CardDateRangeBar } from "../creators/CardDateRangeBar";
 
 export default function BrandTable() {
   const [activeTab, setActiveTab] = useState<
     "All" | "Onboarded" | "Suspended" | "Pending"
   >("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedIndustry, setSelectedIndustry] = useState<string>("All");
   const [selectedCompletion, setSelectedCompletion] = useState<string>("All");
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
   const [selectedCountry, setSelectedCountry] = useState<string>("All");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
@@ -32,8 +35,7 @@ export default function BrandTable() {
 
   const queryCompletion = useMemo(() => {
     if (selectedCompletion !== "All") {
-      const num = parseInt(selectedCompletion.replace("%", ""), 10);
-      return !isNaN(num) ? num : undefined;
+      return selectedCompletion;
     }
     return undefined;
   }, [selectedCompletion]);
@@ -41,9 +43,12 @@ export default function BrandTable() {
   const { data: apiData, isLoading } = useAdminBrandsList({
     search: searchQuery || undefined,
     status: queryStatus,
-    industry: selectedIndustry !== "All" ? selectedIndustry : undefined,
     completion: queryCompletion,
     country: selectedCountry !== "All" ? selectedCountry : undefined,
+    startDate: fromDate || undefined,
+    endDate: toDate || undefined,
+    fromDate: fromDate || undefined,
+    toDate: toDate || undefined,
     page: currentPage,
     limit: 10,
   });
@@ -148,27 +153,119 @@ export default function BrandTable() {
     setIsDrawerOpen(true);
   };
 
+  const handleExportCSV = () => {
+    if (brandsList.length === 0) return;
+    const headers = [
+      "Advertiser ID",
+      "Brand Name",
+      "Representative Name",
+      "Email",
+      "Industry",
+      "Location",
+      "Profile Completion",
+      "Total Spend",
+      "Status",
+      "Date Joined",
+    ];
+
+    const rows = brandsList.map((b) => [
+      b.advertiserId,
+      `"${b.name.replace(/"/g, '""')}"`,
+      `"${b.repName.replace(/"/g, '""')}"`,
+      b.repEmail,
+      b.industry,
+      `"${b.location.replace(/"/g, '""')}"`,
+      `${b.completion}%`,
+      `"₦${b.totalSpend.toLocaleString()}"`,
+      b.status,
+      b.joined,
+    ]);
+
+    const csvString = [
+      headers.join(","),
+      ...rows.map((e: (string | number)[]) => e.join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `advertisers_export_${new Date().toISOString().split("T")[0]}.csv`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const hasActiveFilters =
+    searchQuery !== "" ||
+    selectedCompletion !== "All" ||
+    selectedStatus !== "All" ||
+    selectedCountry !== "All" ||
+    activeTab !== "All";
+
+  const clearAllFilters = () => {
+    setActiveTab("All");
+    setSearchQuery("");
+    setSelectedCompletion("All");
+    setSelectedStatus("All");
+    setSelectedCountry("All");
+    setCurrentPage(1);
+  };
+
   return (
     <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5 shadow-xs">
-      {/* Filter Tabs Header */}
-      <div className="flex border-b border-[#e8e6f0]/40 gap-6">
-        {(["All", "Onboarded", "Suspended", "Pending"] as const).map((tab) => (
+      {/* Status Filter Tabs (Left) & Frequency Controls + Export (Right) */}
+      <div className="flex items-center justify-between border-b border-[#e8e6f0]/40 pb-3 gap-4 flex-wrap">
+        {/* Left: Status Filter Tabs */}
+        <div className="flex items-center gap-6">
+          {(["All", "Onboarded", "Suspended", "Pending"] as const).map(
+            (tab) => (
+              <button
+                key={tab}
+                onClick={() => {
+                  setActiveTab(tab);
+                  setCurrentPage(1);
+                }}
+                className={cn(
+                  "pb-1 text-xs font-bold border-b-2 transition-all cursor-pointer",
+                  activeTab === tab
+                    ? "border-brand-pink text-brand-pink"
+                    : "border-transparent text-[#9a99b0] hover:text-[#1a1a2e]",
+                )}
+              >
+                {tab}
+              </button>
+            ),
+          )}
+        </div>
+
+        {/* Right: Time Controls, Clear Filters & Export */}
+        <div className="flex items-center gap-3 flex-wrap shrink-0">
+          <CardFilterHeaderControls />
+
+          {/* Clear All Filters Button */}
+          {hasActiveFilters && (
+            <button
+              onClick={clearAllFilters}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-600 hover:text-rose-700 cursor-pointer bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-xl transition-colors"
+            >
+              <RotateCcw size={12} /> Clear all filters
+            </button>
+          )}
+
+          {/* Export CSV Button */}
           <button
-            key={tab}
-            onClick={() => {
-              setActiveTab(tab);
-              setCurrentPage(1);
-            }}
-            className={cn(
-              "pb-3 text-xs font-bold border-b-2 transition-all cursor-pointer",
-              activeTab === tab
-                ? "border-brand-pink text-brand-pink"
-                : "border-transparent text-[#9a99b0] hover:text-[#1a1a2e]",
-            )}
+            onClick={handleExportCSV}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-[#e8e6f0] text-[#1a1a2e] hover:bg-[#faf9fc] text-xs font-bold shadow-2xs transition-all cursor-pointer shrink-0"
           >
-            {tab}
+            <Download size={13} className="text-brand-pink" />
+            <span>Export CSV</span>
           </button>
-        ))}
+        </div>
       </div>
 
       {/* Controls Bar */}
@@ -187,25 +284,20 @@ export default function BrandTable() {
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full h-9 pl-9 pr-4 bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-xl text-xs text-[#1a1a2e] placeholder-[#9a99b0] outline-none focus:border-brand-pink transition-all"
+            className="w-full h-9 pl-9 pr-8 bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-xl text-xs text-[#1a1a2e] placeholder-[#9a99b0] outline-none focus:border-brand-pink transition-all"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9a99b0] hover:text-[#1a1a2e]"
+            >
+              <X size={12} />
+            </button>
+          )}
         </div>
 
-        {/* Dropdown Filters */}
+        {/* Unique Advertiser/Brand Dropdown Filters & Date Range Bar */}
         <div className="flex items-center gap-2 flex-wrap">
-          <select
-            value={selectedIndustry}
-            onChange={(e) => setSelectedIndustry(e.target.value)}
-            className="h-9 px-3 bg-[#faf9fc] border border-[#e8e6f0]/60 text-[#1a1a2e] text-xs font-semibold rounded-xl outline-none cursor-pointer"
-          >
-            <option value="All">Industry</option>
-            <option value="Beverages">Beverages</option>
-            <option value="Telecomm">Telecomm</option>
-            <option value="Fintech">Fintech</option>
-            <option value="E-commerce">E-commerce</option>
-            <option value="Tech">Tech</option>
-          </select>
-
           <select
             value={selectedCompletion}
             onChange={(e) => setSelectedCompletion(e.target.value)}
@@ -240,9 +332,13 @@ export default function BrandTable() {
             <option value="Kenya">Kenya</option>
           </select>
 
-          <div className="h-9 px-3 bg-[#faf9fc] border border-[#e8e6f0]/60 text-[#5a5a7a] text-xs font-semibold rounded-xl flex items-center gap-1.5 shrink-0">
-            📅 This Month
-          </div>
+          <CardDateRangeBar
+            onDateChange={(from, to) => {
+              setFromDate(from);
+              setToDate(to);
+              setCurrentPage(1);
+            }}
+          />
         </div>
       </div>
 

@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { AdminDataTable, type AdminColumn } from "./AdminDataTable";
 import { AdminStatusBadge } from "./AdminStatusBadge";
 import { RecentCampaignDto } from "@/types/adminOverview";
@@ -66,9 +68,13 @@ export function AdminRecentActivity({ activities }: AdminRecentActivityProps) {
         <h2 className="text-sm font-semibold text-[#1a1a2e]">
           Recent Campaign Activity
         </h2>
-        <button className="text-[10px] text-brand-pink font-semibold hover:underline">
-          View All ›
-        </button>
+        <Link
+          href="/admin/campaigns"
+          className="h-7 px-3 bg-[#edf3ff] hover:bg-[#dbe9ff] text-[#2f63eb] text-xs font-bold rounded-xl flex items-center gap-1 transition-colors cursor-pointer"
+        >
+          <span>View All</span>
+          <ChevronRight size={13} className="stroke-[2.5]" />
+        </Link>
       </div>
       <AdminDataTable
         columns={COLS}
