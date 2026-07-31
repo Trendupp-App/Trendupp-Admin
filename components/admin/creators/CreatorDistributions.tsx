@@ -1,17 +1,31 @@
 "use client";
 
+import { useState } from "react";
 import {
   useCreatorNicheBreakdown,
   useCreatorCountryBreakdown,
 } from "@/hooks/useAdminCreators";
-import { CardFilterHeaderControls } from "./CardFilterHeaderControls";
-import { CardDateRangeBar } from "./CardDateRangeBar";
 
 interface DistributionItem {
   label: string;
   count: number;
   pct: number;
 }
+
+const MONTHS = [
+  { label: "January", value: 1 },
+  { label: "February", value: 2 },
+  { label: "March", value: 3 },
+  { label: "April", value: 4 },
+  { label: "May", value: 5 },
+  { label: "June", value: 6 },
+  { label: "July", value: 7 },
+  { label: "August", value: 8 },
+  { label: "September", value: 9 },
+  { label: "October", value: 10 },
+  { label: "November", value: 11 },
+  { label: "December", value: 12 },
+];
 
 interface CardProps {
   title: string;
@@ -21,6 +35,8 @@ interface CardProps {
   badgeText: string;
   showPercentageText?: boolean;
   isLoading?: boolean;
+  selectedMonth?: number;
+  onMonthChange?: (month: number) => void;
 }
 
 function DistributionCard({
@@ -31,10 +47,12 @@ function DistributionCard({
   badgeText,
   showPercentageText = false,
   isLoading = false,
+  selectedMonth,
+  onMonthChange,
 }: CardProps) {
   return (
     <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-4 shadow-xs">
-      <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h3 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
             {title}
@@ -42,14 +60,19 @@ function DistributionCard({
           <span className="text-[10px] text-[#9a99b0] font-medium">{sub}</span>
         </div>
 
-        <div className="pt-0.5">
-          <CardFilterHeaderControls />
-        </div>
-
-        {/* Date Range Selector Toolbar (From, To) */}
-        <div className="pt-2 border-t border-[#f4f3f6] flex justify-start">
-          <CardDateRangeBar />
-        </div>
+        {selectedMonth !== undefined && onMonthChange && (
+          <select
+            value={selectedMonth}
+            onChange={(e) => onMonthChange(Number(e.target.value))}
+            className="h-8 px-3 bg-[#faf9fc] border border-[#e8e6f0]/80 text-[#1a1a2e] text-xs font-bold rounded-xl outline-none cursor-pointer hover:bg-white transition-all shadow-2xs"
+          >
+            {MONTHS.map((m) => (
+              <option key={m.value} value={m.value}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="flex flex-col gap-3.5 max-h-[260px] overflow-y-auto pr-1">
@@ -104,11 +127,25 @@ function DistributionCard({
   );
 }
 
-export default function CreatorDistributions() {
+export function CreatorNicheCard() {
+  const [selectedMonth, setSelectedMonth] = useState<number>(
+    new Date().getMonth() + 1,
+  );
+  const selectedYear = new Date().getFullYear();
+
+  const monthStr = String(selectedMonth).padStart(2, "0");
+  const startDate = `${selectedYear}-${monthStr}-01`;
+  const lastDay = new Date(selectedYear, selectedMonth, 0).getDate();
+  const endDate = `${selectedYear}-${monthStr}-${String(lastDay).padStart(2, "0")}`;
+
   const { data: nicheData, isLoading: isLoadingNiche } =
-    useCreatorNicheBreakdown();
-  const { data: countryData, isLoading: isLoadingCountry } =
-    useCreatorCountryBreakdown();
+    useCreatorNicheBreakdown({
+      period: "monthly",
+      year: selectedYear,
+      month: selectedMonth,
+      startDate,
+      endDate,
+    });
 
   const nichesList: DistributionItem[] = nicheData?.length
     ? nicheData.map((n) => ({
@@ -116,13 +153,26 @@ export default function CreatorDistributions() {
         count: n.count,
         pct: Math.round(n.percentage),
       }))
-    : [
-        { label: "Tech", count: 1842, pct: 48 },
-        { label: "Fashion", count: 1204, pct: 31 },
-        { label: "Beauty", count: 687, pct: 18 },
-        { label: "Food & Beverage", count: 687, pct: 18 },
-        { label: "Finance", count: 687, pct: 18 },
-      ];
+    : [];
+
+  return (
+    <DistributionCard
+      title="Niche"
+      sub="5 Total Niches"
+      items={nichesList}
+      badgeBg="bg-[#fdf2f6]"
+      badgeText="text-brand-pink"
+      showPercentageText
+      isLoading={isLoadingNiche}
+      selectedMonth={selectedMonth}
+      onMonthChange={setSelectedMonth}
+    />
+  );
+}
+
+export function CreatorCountryCard() {
+  const { data: countryData, isLoading: isLoadingCountry } =
+    useCreatorCountryBreakdown();
 
   const countriesList: DistributionItem[] = countryData?.length
     ? countryData.map((c) => ({
@@ -140,25 +190,22 @@ export default function CreatorDistributions() {
       ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <DistributionCard
-        title="Niche"
-        sub="5 Total Niches"
-        items={nichesList}
-        badgeBg="bg-[#fdf2f6]"
-        badgeText="text-brand-pink"
-        showPercentageText
-        isLoading={isLoadingNiche}
-      />
+    <DistributionCard
+      title="Country"
+      sub="5 Total Country"
+      items={countriesList}
+      badgeBg="bg-[#fdf2f6]"
+      badgeText="text-brand-pink"
+      isLoading={isLoadingCountry}
+    />
+  );
+}
 
-      <DistributionCard
-        title="Country"
-        sub="5 Total Country"
-        items={countriesList}
-        badgeBg="bg-[#fdf2f6]"
-        badgeText="text-brand-pink"
-        isLoading={isLoadingCountry}
-      />
+export default function CreatorDistributions() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <CreatorNicheCard />
+      <CreatorCountryCard />
     </div>
   );
 }

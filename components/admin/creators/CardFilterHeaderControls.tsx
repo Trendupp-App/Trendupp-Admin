@@ -3,17 +3,22 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-export type CardPeriod = "all_time" | "daily" | "weekly" | "monthly" | "yearly";
+export type CardPeriod = "daily" | "weekly" | "monthly" | "yearly";
 
 interface CardFilterHeaderControlsProps {
+  /** Controlled value — when provided the component is controlled */
+  period?: CardPeriod;
+  /** Controlled value — when provided the component is controlled */
+  selectedYear?: number;
   onPeriodChange?: (period: CardPeriod) => void;
   onYearChange?: (year: number) => void;
+  /** Uncontrolled initial value (ignored when `period` prop is supplied) */
   defaultPeriod?: CardPeriod;
+  /** Uncontrolled initial value (ignored when `selectedYear` prop is supplied) */
   defaultYear?: number;
 }
 
 const PERIOD_LABELS: Record<CardPeriod, string> = {
-  all_time: "All Time",
   daily: "Daily",
   weekly: "Weekly",
   monthly: "Monthly",
@@ -21,30 +26,37 @@ const PERIOD_LABELS: Record<CardPeriod, string> = {
 };
 
 export function CardFilterHeaderControls({
+  period: controlledPeriod,
+  selectedYear: controlledYear,
   onPeriodChange,
   onYearChange,
-  defaultPeriod = "all_time",
-  defaultYear = 2026,
+  defaultPeriod = "monthly",
+  defaultYear = new Date().getFullYear(),
 }: CardFilterHeaderControlsProps) {
-  const [period, setPeriod] = useState<CardPeriod>(defaultPeriod);
-  const [selectedYear, setSelectedYear] = useState<number>(defaultYear);
+  const [internalPeriod, setInternalPeriod] =
+    useState<CardPeriod>(defaultPeriod);
+  const [internalYear, setInternalYear] = useState<number>(defaultYear);
+
+  // Use controlled values when provided, otherwise fall back to internal state
+  const period = controlledPeriod ?? internalPeriod;
+  const selectedYear = controlledYear ?? internalYear;
 
   const handlePeriodClick = (p: CardPeriod) => {
-    setPeriod(p);
+    if (controlledPeriod === undefined) setInternalPeriod(p);
     onPeriodChange?.(p);
   };
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const yr = Number(e.target.value);
-    setSelectedYear(yr);
+    if (controlledYear === undefined) setInternalYear(yr);
     onYearChange?.(yr);
   };
 
   return (
     <div className="flex items-center gap-2.5 flex-wrap shrink-0">
-      {/* Frequency Toggle Buttons: All Time | Daily | Weekly | Monthly */}
-      <div className="flex items-center p-1 bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-xl">
-        {(["all_time", "daily", "weekly", "monthly"] as const).map((p) => (
+      {/* Period Pills */}
+      <div className="flex items-center p-1 bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-xl flex-wrap">
+        {(["daily", "weekly", "monthly", "yearly"] as const).map((p) => (
           <button
             key={p}
             type="button"
@@ -61,21 +73,23 @@ export function CardFilterHeaderControls({
         ))}
       </div>
 
-      {/* Year Filter Dropdown */}
-      <div className="flex items-center gap-1.5">
-        <span className="text-[10px] font-bold text-[#9a99b0] uppercase">
-          Year:
-        </span>
-        <select
-          value={selectedYear}
-          onChange={handleYearChange}
-          className="h-8 px-3 bg-[#faf9fc] border border-[#e8e6f0]/80 text-[#1a1a2e] text-[11px] font-bold rounded-xl outline-none cursor-pointer hover:bg-white transition-all shadow-2xs"
-        >
-          <option value={2026}>2026</option>
-          <option value={2025}>2025</option>
-          <option value={2024}>2024</option>
-        </select>
-      </div>
+      {/* Year Dropdown — hidden when yearly (all years shown on x-axis) */}
+      {period !== "yearly" && (
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-bold text-[#9a99b0] uppercase">
+            Year:
+          </span>
+          <select
+            value={selectedYear}
+            onChange={handleYearChange}
+            className="h-8 px-3 bg-[#faf9fc] border border-[#e8e6f0]/80 text-[#1a1a2e] text-[11px] font-bold rounded-xl outline-none cursor-pointer hover:bg-white transition-all shadow-2xs"
+          >
+            <option value={2026}>2026</option>
+            <option value={2025}>2025</option>
+            <option value={2024}>2024</option>
+          </select>
+        </div>
+      )}
     </div>
   );
 }

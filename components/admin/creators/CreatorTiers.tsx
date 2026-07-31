@@ -1,8 +1,7 @@
 "use client";
 
+import { useState } from "react";
 import { useCreatorTierDistribution } from "@/hooks/useAdminCreators";
-import { CardFilterHeaderControls } from "./CardFilterHeaderControls";
-import { CardDateRangeBar } from "./CardDateRangeBar";
 
 interface TierItem {
   name: string;
@@ -26,8 +25,39 @@ const TIER_COLORS: Record<string, string> = {
   Mega: "bg-[#ea580c]",
 };
 
+const MONTHS = [
+  { label: "January", value: 1 },
+  { label: "February", value: 2 },
+  { label: "March", value: 3 },
+  { label: "April", value: 4 },
+  { label: "May", value: 5 },
+  { label: "June", value: 6 },
+  { label: "July", value: 7 },
+  { label: "August", value: 8 },
+  { label: "September", value: 9 },
+  { label: "October", value: 10 },
+  { label: "November", value: 11 },
+  { label: "December", value: 12 },
+];
+
 export default function CreatorTiers() {
-  const { data: tierData, isLoading } = useCreatorTierDistribution();
+  const [selectedMonth, setSelectedMonth] = useState<number>(
+    new Date().getMonth() + 1,
+  );
+  const selectedYear = new Date().getFullYear();
+
+  const monthStr = String(selectedMonth).padStart(2, "0");
+  const startDate = `${selectedYear}-${monthStr}-01`;
+  const lastDay = new Date(selectedYear, selectedMonth, 0).getDate();
+  const endDate = `${selectedYear}-${monthStr}-${String(lastDay).padStart(2, "0")}`;
+
+  const { data: tierData, isLoading } = useCreatorTierDistribution({
+    period: "monthly",
+    year: selectedYear,
+    month: selectedMonth,
+    startDate,
+    endDate,
+  });
 
   const tiers: TierItem[] = tierData?.length
     ? tierData.map((t) => ({
@@ -41,7 +71,7 @@ export default function CreatorTiers() {
 
   return (
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5">
-      <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-[#1a1a2e]">
             Creator Tiers
@@ -51,14 +81,17 @@ export default function CreatorTiers() {
           </span>
         </div>
 
-        <div className="pt-0.5">
-          <CardFilterHeaderControls />
-        </div>
-
-        {/* Date Range Selector Toolbar (From, To) */}
-        <div className="pt-2 border-t border-[#f4f3f6] flex justify-start">
-          <CardDateRangeBar />
-        </div>
+        <select
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(Number(e.target.value))}
+          className="h-8 px-3 bg-[#faf9fc] border border-[#e8e6f0]/80 text-[#1a1a2e] text-xs font-bold rounded-xl outline-none cursor-pointer hover:bg-white transition-all shadow-2xs"
+        >
+          {MONTHS.map((m) => (
+            <option key={m.value} value={m.value}>
+              {m.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="flex flex-col gap-4">

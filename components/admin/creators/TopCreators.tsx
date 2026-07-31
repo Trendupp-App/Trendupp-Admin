@@ -1,9 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import UserAvatar from "@/shared/UserAvatar";
 import { useTopCreators } from "@/hooks/useAdminCreators";
-import { CardFilterHeaderControls } from "./CardFilterHeaderControls";
 import { CardDateRangeBar } from "./CardDateRangeBar";
 
 const TIER_BADGE_COLORS: Record<string, string> = {
@@ -14,7 +14,14 @@ const TIER_BADGE_COLORS: Record<string, string> = {
 };
 
 export default function TopCreators() {
-  const { data: topCreatorsList, isLoading } = useTopCreators();
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
+  const { data: topCreatorsList, isLoading } = useTopCreators({
+    startDate: fromDate || undefined,
+    endDate: toDate || undefined,
+    limit: 10,
+  });
 
   const creators = topCreatorsList?.length
     ? topCreatorsList.map((c, idx) => ({
@@ -66,13 +73,14 @@ export default function TopCreators() {
           </Link>
         </div>
 
-        <div className="pt-0.5">
-          <CardFilterHeaderControls />
-        </div>
-
         {/* Date Range Selector Toolbar (From, To) */}
-        <div className="pt-2 border-t border-[#f4f3f6] flex justify-start">
-          <CardDateRangeBar />
+        <div className="pt-1 flex justify-start">
+          <CardDateRangeBar
+            onDateChange={(from, to) => {
+              setFromDate(from);
+              setToDate(to);
+            }}
+          />
         </div>
       </div>
 

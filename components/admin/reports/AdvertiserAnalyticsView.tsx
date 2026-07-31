@@ -45,14 +45,14 @@ export default function AdvertiserAnalyticsView() {
 
   // Signup Growth Filters State
   const [signupPeriod, setSignupPeriod] = useState<
-    "Daily" | "Weekly" | "Monthly"
+    "Daily" | "Weekly" | "Monthly" | "Yearly"
   >("Monthly");
   const [signupYear, setSignupYear] = useState(NOW_YEAR);
   const [signupMonth, setSignupMonth] = useState(NOW_MONTH);
 
   // Active Users Filters State
   const [activePeriod, setActivePeriod] = useState<
-    "Daily" | "Weekly" | "Monthly"
+    "Daily" | "Weekly" | "Monthly" | "Yearly"
   >("Monthly");
   const [activeYear, setActiveYear] = useState(NOW_YEAR);
   const [activeMonth, setActiveMonth] = useState(NOW_MONTH);
@@ -66,15 +66,15 @@ export default function AdvertiserAnalyticsView() {
   // Pass active filters into growth hooks
   const { data: signupGrowth = [], isLoading: isLoadingSignup } =
     useBrandSignupGrowth(
-      signupPeriod.toLowerCase(),
-      parseInt(signupYear),
-      MONTH_MAP[signupMonth] || 7,
+      signupPeriod === "Yearly" ? "yearly" : signupPeriod.toLowerCase(),
+      signupPeriod === "Yearly" ? undefined : parseInt(signupYear),
+      signupPeriod === "Yearly" ? undefined : MONTH_MAP[signupMonth] || 7,
     );
   const { data: activeUsers = [], isLoading: isLoadingActive } =
     useBrandActiveUsers(
-      activePeriod.toLowerCase(),
-      parseInt(activeYear),
-      MONTH_MAP[activeMonth] || 7,
+      activePeriod === "Yearly" ? "yearly" : activePeriod.toLowerCase(),
+      activePeriod === "Yearly" ? undefined : parseInt(activeYear),
+      activePeriod === "Yearly" ? undefined : MONTH_MAP[activeMonth] || 7,
     );
 
   const { data: industryBreakdown = [], isLoading: isLoadingIndustry } =

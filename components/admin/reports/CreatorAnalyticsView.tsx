@@ -48,14 +48,14 @@ export default function CreatorAnalyticsView() {
 
   // Signup Growth Filters State
   const [signupPeriod, setSignupPeriod] = useState<
-    "Daily" | "Weekly" | "Monthly"
+    "Daily" | "Weekly" | "Monthly" | "Yearly"
   >("Monthly");
   const [signupYear, setSignupYear] = useState(NOW_YEAR);
   const [signupMonth, setSignupMonth] = useState(NOW_MONTH);
 
   // Active Users Filters State
   const [activePeriod, setActivePeriod] = useState<
-    "Daily" | "Weekly" | "Monthly"
+    "Daily" | "Weekly" | "Monthly" | "Yearly"
   >("Monthly");
   const [activeYear, setActiveYear] = useState(NOW_YEAR);
   const [activeMonth, setActiveMonth] = useState(NOW_MONTH);
@@ -75,9 +75,9 @@ export default function CreatorAnalyticsView() {
     );
   const { data: activeUsers = [], isLoading: isLoadingActive } =
     useCreatorActiveUsers(
-      activePeriod.toLowerCase(),
-      parseInt(activeYear),
-      MONTH_MAP[activeMonth] || 7,
+      activePeriod === "Yearly" ? "yearly" : activePeriod.toLowerCase(),
+      activePeriod === "Yearly" ? undefined : parseInt(activeYear),
+      activePeriod === "Yearly" ? undefined : MONTH_MAP[activeMonth] || 7,
     );
 
   const { data: tierDistribution = [], isLoading: isLoadingTiers } =

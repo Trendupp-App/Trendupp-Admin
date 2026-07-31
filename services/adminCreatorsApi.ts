@@ -42,24 +42,62 @@ export const adminCreatorsApi = {
     }),
 
   // 4. Top Creators
-  getTopCreators: () =>
-    apiClient.get<TopCreatorDto[]>("/admin/creators/top-creators"),
+  getTopCreators: (params?: {
+    startDate?: string;
+    endDate?: string;
+    fromDate?: string;
+    toDate?: string;
+    limit?: number;
+    period?: string;
+    year?: number;
+  }) => {
+    const queryParams = {
+      ...params,
+      startDate: params?.startDate || params?.fromDate,
+      endDate: params?.endDate || params?.toDate,
+    };
+    return apiClient.get<TopCreatorDto[]>("/admin/creators/top-creators", {
+      params: queryParams,
+    });
+  },
 
   // 5. Tier Distribution
-  getTierDistribution: () =>
+  getTierDistribution: (params?: {
+    period?: string;
+    year?: number;
+    month?: number;
+    startDate?: string;
+    endDate?: string;
+  }) =>
     apiClient.get<TierDistributionItemDto[]>(
       "/admin/creators/tier-distribution",
+      { params },
     ),
 
   // 6. Gender Distribution
-  getGenderDistribution: () =>
+  getGenderDistribution: (params?: {
+    period?: string;
+    year?: number;
+    month?: number;
+    startDate?: string;
+    endDate?: string;
+  }) =>
     apiClient.get<GenderDistributionItemDto[]>(
       "/admin/creators/gender-distribution",
+      { params },
     ),
 
   // 7. Niche Breakdown
-  getNicheBreakdown: () =>
-    apiClient.get<NicheBreakdownItemDto[]>("/admin/creators/niche-breakdown"),
+  getNicheBreakdown: (params?: {
+    period?: string;
+    year?: number;
+    month?: number;
+    startDate?: string;
+    endDate?: string;
+  }) =>
+    apiClient.get<NicheBreakdownItemDto[]>("/admin/creators/niche-breakdown", {
+      params,
+    }),
 
   // 8. Country Breakdown
   getCountryBreakdown: () =>

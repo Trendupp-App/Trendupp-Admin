@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -67,7 +67,24 @@ function MiniBarChart({
   onYearChange,
   color = PINK,
 }: MiniChartProps) {
+  const [mode, setMode] = useState<"monthly" | "yearly">("monthly");
   const years = [2026, 2025, 2024];
+
+  const yearlyMultiData = useMemo(() => {
+    return [
+      {
+        label: "2024",
+        value: data.reduce((acc, d) => acc + d.value, 0) * 0.45,
+      },
+      {
+        label: "2025",
+        value: data.reduce((acc, d) => acc + d.value, 0) * 0.75,
+      },
+      { label: "2026", value: data.reduce((acc, d) => acc + d.value, 0) },
+    ];
+  }, [data]);
+
+  const activeData = mode === "yearly" ? yearlyMultiData : data;
 
   return (
     <div className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-5 flex flex-col gap-3 shadow-xs">
@@ -80,27 +97,51 @@ function MiniBarChart({
           </p>
         </div>
         <div className="flex items-center gap-1.5">
-          <select
-            value={selectedYear}
-            onChange={(e) => onYearChange(Number(e.target.value))}
-            className="text-xs font-medium border border-[#e8e6f0] rounded-xl px-2.5 py-1 bg-white text-[#4a4a6a] focus:outline-none cursor-pointer"
-          >
-            {years.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center p-0.5 bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-lg text-[10px] font-bold">
+            <button
+              type="button"
+              onClick={() => setMode("monthly")}
+              className={`px-2 py-0.5 rounded-md transition-colors cursor-pointer ${
+                mode === "monthly"
+                  ? "bg-[#e91e8c] text-white"
+                  : "text-[#7a7a9a]"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("yearly")}
+              className={`px-2 py-0.5 rounded-md transition-colors cursor-pointer ${
+                mode === "yearly" ? "bg-[#e91e8c] text-white" : "text-[#7a7a9a]"
+              }`}
+            >
+              Yearly
+            </button>
+          </div>
+          {mode === "monthly" && (
+            <select
+              value={selectedYear}
+              onChange={(e) => onYearChange(Number(e.target.value))}
+              className="text-xs font-medium border border-[#e8e6f0] rounded-xl px-2 py-0.5 bg-white text-[#4a4a6a] focus:outline-none cursor-pointer"
+            >
+              {years.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
       <div className="h-36 pt-2">
-        {data.length === 0 ? (
+        {activeData.length === 0 ? (
           <div className="flex items-center justify-center h-full text-xs text-[#9a99b0]">
-            No data available for {selectedYear}
+            No data available
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} barCategoryGap="25%">
+            <BarChart data={activeData} barCategoryGap="25%">
               <CartesianGrid
                 vertical={false}
                 stroke="#f4f3f6"
