@@ -12,7 +12,6 @@ export function AdminActionsRequired({
   actionsRequired,
 }: AdminActionsRequiredProps) {
   const unresolved = actionsRequired?.unresolvedDisputes ?? 0;
-  const awaitingPayout = actionsRequired?.creatorsAwaitingPayment ?? 0;
   const failedPayouts = actionsRequired?.failedPayouts ?? 0;
 
   // Build items and filter strictly for count > 0 (omitting resolved disputes)
@@ -36,16 +35,6 @@ export function AdminActionsRequired({
       bg: "bg-rose-50/80 border-rose-100 text-rose-900",
       dotBg: "bg-rose-500",
       btnBg: "bg-rose-500 hover:bg-rose-600",
-    },
-    {
-      id: "awaiting-payouts",
-      count: awaitingPayout,
-      label: `${awaitingPayout} creator withdrawal${awaitingPayout === 1 ? "" : "s"} awaiting escrow release`,
-      href: "/admin/finance/escrow",
-      btnText: "Process →",
-      bg: "bg-amber-50/80 border-amber-100 text-amber-900",
-      dotBg: "bg-amber-500",
-      btnBg: "bg-amber-500 hover:bg-amber-600",
     },
   ];
 
