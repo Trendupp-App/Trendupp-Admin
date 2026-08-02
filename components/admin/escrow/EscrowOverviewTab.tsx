@@ -250,67 +250,7 @@ export default function EscrowOverviewTab() {
         value: m.totalPayouts ?? 0,
       }));
 
-  const DEFAULT_RECENT_ACTIVITY: EscrowRecentActivityItem[] = [
-    {
-      id: "act-1",
-      campaignTitle: "Summer Style Collection 2025",
-      advertiser: { name: "Konga" },
-      totalFunded: 3500000,
-      breakdown: {
-        netAmount: 2712500,
-        commission: 525000,
-        vat: 262500,
-      },
-      fundingStatus: "successful",
-      campaignStatus: "active",
-      lastUpdated: "2025-06-15T14:15:00.000Z",
-    },
-    {
-      id: "act-2",
-      campaignTitle: "Pepsi Summer Vibes",
-      advertiser: { name: "Pepsi Nigeria" },
-      totalFunded: 8000000,
-      breakdown: {
-        netAmount: 6200000,
-        commission: 1200000,
-        vat: 600000,
-      },
-      fundingStatus: "pending",
-      campaignStatus: "active",
-      lastUpdated: "2025-06-16T10:20:00.000Z",
-    },
-    {
-      id: "act-3",
-      campaignTitle: "Pepsi Summer Vibes",
-      advertiser: { name: "Pepsi Nigeria" },
-      totalFunded: 8000000,
-      breakdown: {
-        netAmount: 6200000,
-        commission: 1200000,
-        vat: 600000,
-      },
-      fundingStatus: "pending",
-      campaignStatus: "active",
-      lastUpdated: "2025-06-16T10:20:00.000Z",
-    },
-    {
-      id: "act-4",
-      campaignTitle: "GTBank SPARK 20",
-      advertiser: { name: "GTBank" },
-      totalFunded: 5200000,
-      breakdown: {
-        netAmount: 4030000,
-        commission: 780000,
-        vat: 390000,
-      },
-      fundingStatus: "failed",
-      campaignStatus: "disputed",
-      lastUpdated: "2025-06-16T11:45:00.000Z",
-    },
-  ];
-
-  const rawRecentItems =
-    overview?.recentActivity ?? balancesData?.data ?? DEFAULT_RECENT_ACTIVITY;
+  const rawRecentItems = overview?.recentActivity ?? balancesData?.data ?? [];
 
   const recentItems = rawRecentItems.filter(
     (item: EscrowRecentActivityItem | EscrowBalanceItem) => {
