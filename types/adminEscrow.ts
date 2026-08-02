@@ -161,6 +161,18 @@ export interface PaginatedEscrowBalances {
 
 // ── Creator Payouts ────────────────────────────────────────────────────────────
 
+export interface EscrowMetricDetail {
+  count?: number;
+  totalAmount?: number;
+}
+
+export interface EscrowMetrics {
+  pending?: EscrowMetricDetail;
+  successful?: EscrowMetricDetail;
+  failed?: EscrowMetricDetail;
+  onHold?: EscrowMetricDetail;
+}
+
 export type PayoutStatus =
   "pending" | "processing" | "successful" | "failed" | "paid" | "unpaid";
 
@@ -198,6 +210,7 @@ export interface CreatorPayoutItem {
 export interface PaginatedCreatorPayouts {
   data: CreatorPayoutItem[];
   meta: PaginationMeta;
+  metrics?: EscrowMetrics;
   total?: number;
 }
 
@@ -236,5 +249,6 @@ export interface AdvertiserRefundItem {
 export interface PaginatedAdvertiserRefunds {
   data: AdvertiserRefundItem[];
   meta: PaginationMeta;
+  metrics?: EscrowMetrics;
   total?: number;
 }

@@ -116,21 +116,32 @@ function CreatorPayoutsView() {
     return matchesSearch && matchesStatus;
   });
 
-  // Stat counts
-  const pending = items.filter((i) =>
-    ["pending"].includes((i.status ?? "").toLowerCase()),
-  ).length;
-  const successful = items.filter((i) =>
-    ["successful", "paid"].includes((i.status ?? "").toLowerCase()),
-  ).length;
-  const failed = items.filter((i) =>
-    ["failed"].includes((i.status ?? "").toLowerCase()),
-  ).length;
-  const totalPaid = items
-    .filter((i) =>
+  // Stat counts & amounts from live API metrics (with fallback to local item calculation if metrics object is missing)
+  const metrics = data?.metrics;
+
+  const pending =
+    metrics?.pending?.count ??
+    items.filter((i) => ["pending"].includes((i.status ?? "").toLowerCase()))
+      .length;
+
+  const successful =
+    metrics?.successful?.count ??
+    items.filter((i) =>
       ["successful", "paid"].includes((i.status ?? "").toLowerCase()),
-    )
-    .reduce((acc, i) => acc + (i.amount ?? 0), 0);
+    ).length;
+
+  const failed =
+    metrics?.failed?.count ??
+    items.filter((i) => ["failed"].includes((i.status ?? "").toLowerCase()))
+      .length;
+
+  const totalPaid =
+    metrics?.successful?.totalAmount ??
+    items
+      .filter((i) =>
+        ["successful", "paid"].includes((i.status ?? "").toLowerCase()),
+      )
+      .reduce((acc, i) => acc + (i.amount ?? 0), 0);
 
   const handleExport = () => {
     const headers = [
@@ -436,20 +447,32 @@ function AdvertiserRefundsView() {
     return matchesSearch && matchesStatus;
   });
 
-  const pending = items.filter((i) =>
-    ["pending"].includes((i.status ?? "").toLowerCase()),
-  ).length;
-  const successful = items.filter((i) =>
-    ["successful", "refunded"].includes((i.status ?? "").toLowerCase()),
-  ).length;
-  const failed = items.filter((i) =>
-    ["failed"].includes((i.status ?? "").toLowerCase()),
-  ).length;
-  const totalRefunded = items
-    .filter((i) =>
+  // Stat counts & amounts from live API metrics (with fallback to local item calculation if metrics object is missing)
+  const metrics = data?.metrics;
+
+  const pending =
+    metrics?.pending?.count ??
+    items.filter((i) => ["pending"].includes((i.status ?? "").toLowerCase()))
+      .length;
+
+  const successful =
+    metrics?.successful?.count ??
+    items.filter((i) =>
       ["successful", "refunded"].includes((i.status ?? "").toLowerCase()),
-    )
-    .reduce((acc, i) => acc + (i.amount ?? 0), 0);
+    ).length;
+
+  const failed =
+    metrics?.failed?.count ??
+    items.filter((i) => ["failed"].includes((i.status ?? "").toLowerCase()))
+      .length;
+
+  const totalRefunded =
+    metrics?.successful?.totalAmount ??
+    items
+      .filter((i) =>
+        ["successful", "refunded"].includes((i.status ?? "").toLowerCase()),
+      )
+      .reduce((acc, i) => acc + (i.amount ?? 0), 0);
 
   const handleExport = () => {
     const headers = [
