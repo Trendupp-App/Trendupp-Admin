@@ -100,15 +100,15 @@ export default function EscrowBalancesTab() {
       }
     }
 
-    const itemFundingStatus = (
-      item.fundingStatus ??
-      item.status ??
-      ""
-    ).toLowerCase();
+    const itemFundingStatus = (item.fundingStatus ?? item.status ?? "").toLowerCase();
+    const selectedFunding = fundingStatusFilter.toLowerCase();
     const matchesFundingStatus =
-      fundingStatusFilter === "All" ||
-      itemFundingStatus === fundingStatusFilter.toLowerCase();
-
+      selectedFunding === "all" ||
+      (selectedFunding === "successful" &&
+        ["successful", "funded"].includes(itemFundingStatus)) ||
+      (selectedFunding === "held" &&
+        ["held", "onhold", "on_hold", "on-hold"].includes(itemFundingStatus)) ||
+      itemFundingStatus === selectedFunding;
     const itemCampaignStatus = (
       item.campaignStatus ??
       item.campaign?.status ??
