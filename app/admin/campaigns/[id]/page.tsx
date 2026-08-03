@@ -21,7 +21,6 @@ import CampaignDeliverablesTab from "@/components/admin/campaigns/CampaignDelive
 import CampaignAnalyticsTab from "@/components/admin/campaigns/CampaignAnalyticsTab";
 import CampaignTimelineTab from "@/components/admin/campaigns/CampaignTimelineTab";
 import CampaignActionsTab from "@/components/admin/campaigns/CampaignActionsTab";
-import CampaignAuditLogTab from "@/components/admin/campaigns/CampaignAuditLogTab";
 import CampaignCreatorDrawer, {
   type CreatorDrawerData,
 } from "@/components/admin/campaigns/CampaignCreatorDrawer";
@@ -36,8 +35,7 @@ type TabType =
   | "Analytics"
   | "Activity Timeline"
   | "Admin Actions"
-  | "Admin Action"
-  | "Audit Log";
+  | "Admin Action";
 
 const MOCK_SOCIAL_CAMPAIGNS = [
   {
@@ -275,7 +273,6 @@ export default function CampaignDetailsPage() {
         { key: "Analytics", label: "Analytics" },
         { key: "Activity Timeline", label: "Activity Timeline" },
         { key: "Admin Actions", label: "Admin Actions" },
-        { key: "Audit Log", label: "Audit Log" },
       ];
 
   const STATUS_LABELS: Record<string, string> = {
@@ -479,7 +476,6 @@ export default function CampaignDetailsPage() {
             campaignStatus={campaign?.status}
           />
         )}
-        {activeTab === "Audit Log" && <CampaignAuditLogTab campaignId={id} />}
       </div>
 
       {/* Creator Details Drawer */}

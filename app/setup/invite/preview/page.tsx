@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { headers } from "next/headers";
 
 export const metadata: Metadata = {
   title: "You're Invited — Trendupp Admin Portal",
@@ -7,28 +8,44 @@ export const metadata: Metadata = {
 };
 
 interface PreviewPageProps {
-  searchParams: {
+  searchParams: Promise<{
     name?: string;
     role?: string;
     email?: string;
     otp?: string;
-  };
+  }>;
 }
 
-export default function InvitePreviewPage({ searchParams }: PreviewPageProps) {
-  const name = searchParams.name ?? "Team Member";
-  const role = searchParams.role ?? "Admin";
-  const email = searchParams.email ?? "";
-  const otp = searchParams.otp ?? "";
+export default async function InvitePreviewPage({
+  searchParams,
+}: PreviewPageProps) {
+  const {
+    name = "Team Member",
+    role = "Admin",
+    email = "",
+    otp = "",
+  } = await searchParams;
+
+  const headerList = await headers();
+  const host = headerList.get("host") || "localhost:3000";
+  const proto =
+    headerList.get("x-forwarded-proto") ||
+    (host.includes("localhost") ? "http" : "https");
+
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL &&
+    process.env.NEXT_PUBLIC_APP_URL.trim() !== ""
+      ? process.env.NEXT_PUBLIC_APP_URL
+      : `${proto}://${host}`;
 
   const activationUrl =
     otp && email
-      ? `${process.env.NEXT_PUBLIC_APP_URL}/setup/invite/${otp}?email=${encodeURIComponent(email)}`
+      ? `${baseUrl}/setup/invite/${otp}?email=${encodeURIComponent(email)}`
       : "#";
 
   const displayUrl =
     otp && email
-      ? `${process.env.NEXT_PUBLIC_APP_URL ?? "https://admin.trendupp.com"}/setup/invite/${otp}?email=${encodeURIComponent(email)}`
+      ? `${baseUrl}/setup/invite/${otp}?email=${encodeURIComponent(email)}`
       : "—";
 
   return (
