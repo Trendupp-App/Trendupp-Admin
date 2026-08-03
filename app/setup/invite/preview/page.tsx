@@ -32,11 +32,13 @@ export default async function InvitePreviewPage({
     headerList.get("x-forwarded-proto") ||
     (host.includes("localhost") ? "http" : "https");
 
+  const configuredBaseUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
   const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL &&
-    process.env.NEXT_PUBLIC_APP_URL.trim() !== ""
-      ? process.env.NEXT_PUBLIC_APP_URL
-      : `${proto}://${host}`;
+    configuredBaseUrl && configuredBaseUrl !== ""
+      ? configuredBaseUrl
+      : host.includes("localhost")
+        ? `${proto}://${host}`
+        : "https://admin.trendupp.com";
 
   const activationUrl =
     otp && email
