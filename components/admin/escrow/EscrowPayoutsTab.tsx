@@ -621,10 +621,17 @@ function BrandRefundsView({ exportTrigger }: { exportTrigger?: number }) {
       const matchesSearch =
         !search || brandName.includes(q) || campaign.includes(q);
 
+      const normalizedStatus = (item.status ?? "").toLowerCase();
+      const selected = statusFilter.toLowerCase();
       const matchesStatus =
-        statusFilter === "All" ||
-        (item.status ?? "").toLowerCase() === statusFilter.toLowerCase();
-
+        selected === "all" ||
+        (selected === "successful" &&
+          ["successful", "refunded"].includes(normalizedStatus)) ||
+        (selected === "pending" &&
+          ["pending", "processing"].includes(normalizedStatus)) ||
+        (selected === "on_hold" &&
+          ["onhold", "on_hold", "held"].includes(normalizedStatus)) ||
+        normalizedStatus === selected;
       const itemDateStr =
         item.lastUpdated ??
         item.updatedAt ??
