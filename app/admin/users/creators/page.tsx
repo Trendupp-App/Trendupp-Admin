@@ -2,17 +2,13 @@
 
 import { useState } from "react";
 import CreatorStats from "@/components/admin/creators/CreatorStats";
-
 import SignupGrowthChart from "@/components/admin/creators/SignupGrowthChart";
 import ActiveUsersChart from "@/components/admin/creators/ActiveUsersChart";
 import TopCreators from "@/components/admin/creators/TopCreators";
 import CreatorTiers from "@/components/admin/creators/CreatorTiers";
 import CreatorGender from "@/components/admin/creators/CreatorGender";
 import ProfileCompletionCard from "@/components/admin/creators/ProfileCompletionCard";
-import {
-  CreatorNicheCard,
-  CreatorCountryCard,
-} from "@/components/admin/creators/CreatorDistributions";
+import { CreatorCountryCard } from "@/components/admin/creators/CreatorDistributions";
 import CreatorTable from "@/components/admin/creators/CreatorTable";
 import { cn } from "@/lib/utils";
 
@@ -72,14 +68,9 @@ export default function CreatorManagementPage() {
             </div>
           </div>
 
-          {/* Row 3: Profile Completion & Niche Breakdown Side-by-Side */}
+          {/* Row 3: Profile Completion & Country Location Breakdown Side-by-Side */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <ProfileCompletionCard />
-            <CreatorNicheCard />
-          </div>
-
-          {/* Row 4: Country Location Breakdown */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <CreatorCountryCard />
           </div>
         </div>
