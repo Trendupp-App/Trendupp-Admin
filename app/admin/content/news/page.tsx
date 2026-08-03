@@ -2,6 +2,23 @@
 
 import { useState, useMemo } from "react";
 import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
   Plus,
   Search,
   GripVertical,
@@ -14,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { Portal } from "@/components/ui/portal";
 import NewsDrawer from "@/components/admin/content/NewsDrawer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CardDateRangeBar } from "@/components/admin/creators/CardDateRangeBar";
 import {
   useAdminNews,
   useCreateNews,
@@ -30,11 +48,155 @@ const CATEGORY_COLORS: Record<string, string> = {
   Announcements: "text-[#7c3aed] bg-[#f5f3ff]",
 };
 
+// ── Sortable Article Row ──────────────────────────────────────────────────────
+function SortableArticleRow({
+  article,
+  isDragEnabled,
+  formatNumber,
+  onEdit,
+  onDelete,
+}: {
+  article: AdminNewsItem;
+  isDragEnabled: boolean;
+  formatNumber: (n?: number) => string;
+  onEdit: (a: AdminNewsItem) => void;
+  onDelete: (a: AdminNewsItem) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: article.id, disabled: !isDragEnabled });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  const statusLower = (article.status || "draft").toLowerCase();
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "border border-[#e8e6f0]/60 rounded-3xl p-4 flex items-center gap-4 bg-white transition-all",
+        isDragging
+          ? "shadow-xl border-brand-pink/30 scale-[1.01]"
+          : "hover:border-brand-pink/20",
+      )}
+    >
+      {/* Drag handle */}
+      {isDragEnabled && (
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-[#c4c2d4] hover:text-brand-pink shrink-0 p-1 touch-none"
+          title="Drag to reorder"
+        >
+          <GripVertical size={16} />
+        </div>
+      )}
+
+      {/* Cover Thumbnail */}
+      <div className="w-14 h-14 rounded-2xl overflow-hidden bg-zinc-100 shrink-0 relative flex items-center justify-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={
+            article.coverImage ||
+            article.image ||
+            "/dashboard/tiktok_news_banner.png"
+          }
+          alt={article.title || "News Image"}
+          className="w-full h-full object-cover"
+        />
+      </div>
+
+      {/* Article details */}
+      <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+        <div className="flex items-center gap-2">
+          <span
+            className={cn(
+              "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0",
+              CATEGORY_COLORS[article.category] ||
+                "text-[#7a7a9a] bg-[#f4f3f6]",
+            )}
+          >
+            {article.category || "General"}
+          </span>
+          <span
+            className={cn(
+              "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1",
+              statusLower === "published"
+                ? "text-[#16a34a] bg-[#f0fdf4]"
+                : statusLower === "scheduled"
+                  ? "text-[#2563eb] bg-[#eff6ff]"
+                  : "text-[#d97706] bg-[#fffbeb]",
+            )}
+          >
+            <span
+              className={cn(
+                "w-1 h-1 rounded-full",
+                statusLower === "published"
+                  ? "bg-[#16a34a]"
+                  : statusLower === "scheduled"
+                    ? "bg-[#2563eb]"
+                    : "bg-[#d97706]",
+              )}
+            />
+            {article.status || "Draft"}
+          </span>
+        </div>
+
+        <h3 className="text-xs font-bold text-[#1a1a2e] leading-snug line-clamp-1">
+          {article.title}
+        </h3>
+
+        <div className="text-[10px] font-semibold text-[#9a99b0] flex items-center gap-1.5 flex-wrap">
+          <span>{article.brand || "Trendupp Africa"}</span>
+          <span>•</span>
+          <span>{article.publishedAt || "Recently"}</span>
+        </div>
+      </div>
+
+      {/* Views stats */}
+      <div className="hidden sm:flex items-center gap-1 text-[#9a99b0] text-[10px] font-bold shrink-0 px-4">
+        <Eye size={12} />
+        <span>{formatNumber(article.views)}</span>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-1 shrink-0">
+        <button
+          onClick={() => onEdit(article)}
+          className="p-2 text-[#7a7a9a] hover:text-[#1a1a2e] hover:bg-[#f4f3f6] rounded-xl transition-colors cursor-pointer"
+          title="Edit"
+        >
+          <Pencil size={14} />
+        </button>
+        <button
+          onClick={() => onDelete(article)}
+          className="p-2 text-[#7a7a9a] hover:text-[#dc2626] hover:bg-[#fef2f2] rounded-xl transition-colors cursor-pointer"
+          title="Delete"
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function TrenduppNewsPage() {
   const [activeTab, setActiveTab] = useState<"All" | "Published" | "Draft">(
     "All",
   );
   const [searchQuery, setSearchQuery] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   // Drawer & Modal states
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -53,6 +215,39 @@ export default function TrenduppNewsPage() {
     return Array.isArray(newsItems) ? newsItems : [];
   }, [newsItems]);
 
+  // Persistent custom drag order stored in state & localStorage
+  const [customOrderIds, setCustomOrderIds] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = localStorage.getItem("trendupp_admin_news_order");
+      return saved ? (JSON.parse(saved) as string[]) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const orderedArticles = useMemo(() => {
+    if (!articles.length) return [];
+    if (!customOrderIds.length) return articles;
+
+    return [...articles].sort((a, b) => {
+      const indexA = customOrderIds.indexOf(a.id);
+      const indexB = customOrderIds.indexOf(b.id);
+      if (indexA === -1 && indexB === -1) return 0;
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+      return indexA - indexB;
+    });
+  }, [articles, customOrderIds]);
+
+  // DnD sensors — 8px activation distance to avoid accidental drags
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+  );
+
   // Calculate totals
   const totalArticles = articles.length;
   const publishedCount = articles.filter(
@@ -62,8 +257,8 @@ export default function TrenduppNewsPage() {
     (a) => (a.status || "").toLowerCase() === "draft",
   ).length;
 
-  // Filter list
-  const filteredArticles = articles.filter((article) => {
+  // Filter list — operates on ordered array
+  const filteredArticles = orderedArticles.filter((article) => {
     const statusLower = (article.status || "").toLowerCase();
 
     if (activeTab === "Published" && statusLower !== "published") return false;
@@ -76,20 +271,67 @@ export default function TrenduppNewsPage() {
       const matchTags = Array.isArray(article.tags)
         ? article.tags.some((t) => t.toLowerCase().includes(q))
         : false;
-      return matchTitle || matchCategory || matchTags;
+      if (!matchTitle && !matchCategory && !matchTags) return false;
+    }
+
+    const articleDateStr =
+      article.publishedAt || article.createdAt || article.updatedAt;
+    if (fromDate && articleDateStr) {
+      const articleTime = new Date(articleDateStr).getTime();
+      const fromTime = new Date(fromDate).getTime();
+      if (!isNaN(articleTime) && !isNaN(fromTime) && articleTime < fromTime) {
+        return false;
+      }
+    }
+
+    if (toDate && articleDateStr) {
+      const articleTime = new Date(articleDateStr).getTime();
+      const toTime = new Date(toDate).setHours(23, 59, 59, 999);
+      if (!isNaN(articleTime) && !isNaN(toTime) && articleTime > toTime) {
+        return false;
+      }
     }
 
     return true;
   });
 
+  // Drag-and-drop is only available on the "All" tab with no active filters
+  const isDragEnabled =
+    activeTab === "All" &&
+    searchQuery.trim() === "" &&
+    fromDate === "" &&
+    toDate === "";
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(String(event.active.id));
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    setActiveId(null);
+    if (!over || active.id === over.id) return;
+
+    const currentIds = orderedArticles.map((a) => a.id);
+    const oldIndex = currentIds.indexOf(String(active.id));
+    const newIndex = currentIds.indexOf(String(over.id));
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newIds = arrayMove(currentIds, oldIndex, newIndex);
+    setCustomOrderIds(newIds);
+    try {
+      localStorage.setItem("trendupp_admin_news_order", JSON.stringify(newIds));
+    } catch {
+      // storage quota fallback
+    }
+  }
+
   const handleSaveArticle = (
     savedData: CreateNewsDto,
-    customStatus?: "published" | "draft",
+    customStatus: "published" | "draft" | "scheduled",
+    scheduledAt?: string,
   ) => {
-    const payload = {
-      ...savedData,
-      status: customStatus || savedData.status || "draft",
-    };
+    const payload = { ...savedData, status: customStatus, scheduledAt };
 
     if (editingArticle) {
       updateMutation.mutate(
@@ -126,6 +368,10 @@ export default function TrenduppNewsPage() {
     return num.toString();
   };
 
+  const activeArticle = activeId
+    ? orderedArticles.find((a) => a.id === activeId)
+    : null;
+
   return (
     <div className="p-6 flex flex-col gap-6 select-none text-left min-h-screen bg-[#fafafa]">
       {/* Header section */}
@@ -148,71 +394,81 @@ export default function TrenduppNewsPage() {
         </button>
       </div>
 
-      {/* Tabs list */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <button
-          onClick={() => setActiveTab("All")}
-          className={cn(
-            "h-8 px-4 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
-            activeTab === "All"
-              ? "bg-brand-pink text-white"
-              : "bg-white border border-[#e8e6f0] text-[#7a7a9a] hover:bg-[#faf9fc]",
-          )}
-        >
-          All{" "}
-          <span
+      {/* Tabs & Custom Date Range Filter */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 flex-wrap">
+        <div className="flex flex-wrap gap-2 items-center">
+          <button
+            onClick={() => setActiveTab("All")}
             className={cn(
-              "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+              "h-8 px-4 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
               activeTab === "All"
-                ? "bg-white/20 text-white"
-                : "bg-[#f4f3f6] text-[#7a7a9a]",
+                ? "bg-brand-pink text-white"
+                : "bg-white border border-[#e8e6f0] text-[#7a7a9a] hover:bg-[#faf9fc]",
             )}
           >
-            {totalArticles}
-          </span>
-        </button>
-        <button
-          onClick={() => setActiveTab("Published")}
-          className={cn(
-            "h-8 px-4 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
-            activeTab === "Published"
-              ? "bg-brand-pink text-white"
-              : "bg-white border border-[#e8e6f0] text-[#7a7a9a] hover:bg-[#faf9fc]",
-          )}
-        >
-          Published{" "}
-          <span
+            All{" "}
+            <span
+              className={cn(
+                "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+                activeTab === "All"
+                  ? "bg-white/20 text-white"
+                  : "bg-[#f4f3f6] text-[#7a7a9a]",
+              )}
+            >
+              {totalArticles}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab("Published")}
             className={cn(
-              "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+              "h-8 px-4 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
               activeTab === "Published"
-                ? "bg-white/20 text-white"
-                : "bg-[#f4f3f6] text-[#7a7a9a]",
+                ? "bg-brand-pink text-white"
+                : "bg-white border border-[#e8e6f0] text-[#7a7a9a] hover:bg-[#faf9fc]",
             )}
           >
-            {publishedCount}
-          </span>
-        </button>
-        <button
-          onClick={() => setActiveTab("Draft")}
-          className={cn(
-            "h-8 px-4 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
-            activeTab === "Draft"
-              ? "bg-brand-pink text-white"
-              : "bg-white border border-[#e8e6f0] text-[#7a7a9a] hover:bg-[#faf9fc]",
-          )}
-        >
-          Draft{" "}
-          <span
+            Published{" "}
+            <span
+              className={cn(
+                "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+                activeTab === "Published"
+                  ? "bg-white/20 text-white"
+                  : "bg-[#f4f3f6] text-[#7a7a9a]",
+              )}
+            >
+              {publishedCount}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab("Draft")}
             className={cn(
-              "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+              "h-8 px-4 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
               activeTab === "Draft"
-                ? "bg-white/20 text-white"
-                : "bg-[#f4f3f6] text-[#7a7a9a]",
+                ? "bg-brand-pink text-white"
+                : "bg-white border border-[#e8e6f0] text-[#7a7a9a] hover:bg-[#faf9fc]",
             )}
           >
-            {draftCount}
-          </span>
-        </button>
+            Draft{" "}
+            <span
+              className={cn(
+                "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+                activeTab === "Draft"
+                  ? "bg-white/20 text-white"
+                  : "bg-[#f4f3f6] text-[#7a7a9a]",
+              )}
+            >
+              {draftCount}
+            </span>
+          </button>
+        </div>
+
+        {/* Custom From/To Date Filter */}
+        <CardDateRangeBar
+          onDateChange={(from, to) => {
+            setFromDate(from);
+            setToDate(to);
+          }}
+        />
       </div>
 
       {/* Search Input bar */}
@@ -229,6 +485,14 @@ export default function TrenduppNewsPage() {
           className="h-11 w-full bg-white border border-[#e8e6f0] rounded-xl pl-10 pr-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium text-[#1a1a2e]"
         />
       </div>
+
+      {/* Drag hint — only shown when drag is enabled */}
+      {isDragEnabled && filteredArticles.length > 1 && (
+        <p className="text-[10px] font-semibold text-[#9a99b0] flex items-center gap-1.5">
+          <GripVertical size={12} className="text-[#c4c2d4]" />
+          Drag the handle to reorder articles
+        </p>
+      )}
 
       {/* Articles List */}
       <div className="flex flex-col gap-4">
@@ -249,107 +513,64 @@ export default function TrenduppNewsPage() {
             </span>
           </div>
         ) : (
-          filteredArticles.map((article) => {
-            const statusLower = (article.status || "draft").toLowerCase();
-
-            return (
-              <div
-                key={article.id}
-                className="border border-[#e8e6f0]/60 rounded-3xl p-4 flex items-center gap-4 bg-white transition-all hover:border-brand-pink/20"
-              >
-                {/* Drag handle */}
-                {activeTab === "All" && (
-                  <div className="cursor-grab text-[#c4c2d4] hover:text-[#9a99b0] shrink-0 p-1">
-                    <GripVertical size={16} />
-                  </div>
-                )}
-
-                {/* Cover Thumbnail */}
-                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-zinc-100 shrink-0 relative flex items-center justify-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={
-                      article.coverImage ||
-                      article.image ||
-                      "/dashboard/tiktok_news_banner.png"
-                    }
-                    alt={article.title || "News Image"}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-
-                {/* Article details */}
-                <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0",
-                        CATEGORY_COLORS[article.category] ||
-                          "text-[#7a7a9a] bg-[#f4f3f6]",
-                      )}
-                    >
-                      {article.category || "General"}
-                    </span>
-                    <span
-                      className={cn(
-                        "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1",
-                        statusLower === "published"
-                          ? "text-[#16a34a] bg-[#f0fdf4]"
-                          : "text-[#d97706] bg-[#fffbeb]",
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "w-1 h-1 rounded-full",
-                          statusLower === "published"
-                            ? "bg-[#16a34a]"
-                            : "bg-[#d97706]",
-                        )}
-                      />
-                      {article.status || "Draft"}
-                    </span>
-                  </div>
-
-                  <h3 className="text-xs font-bold text-[#1a1a2e] leading-snug line-clamp-1">
-                    {article.title}
-                  </h3>
-
-                  <div className="text-[10px] font-semibold text-[#9a99b0] flex items-center gap-1.5 flex-wrap">
-                    <span>{article.brand || "Trendupp Africa"}</span>
-                    <span>•</span>
-                    <span>{article.publishedAt || "Recently"}</span>
-                  </div>
-                </div>
-
-                {/* Views stats */}
-                <div className="hidden sm:flex items-center gap-1 text-[#9a99b0] text-[10px] font-bold shrink-0 px-4">
-                  <Eye size={12} />
-                  <span>{formatNumber(article.views)}</span>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={() => {
-                      setEditingArticle(article);
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={filteredArticles.map((a) => a.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="flex flex-col gap-3">
+                {filteredArticles.map((article) => (
+                  <SortableArticleRow
+                    key={article.id}
+                    article={article}
+                    isDragEnabled={isDragEnabled}
+                    formatNumber={formatNumber}
+                    onEdit={(a) => {
+                      setEditingArticle(a);
                       setIsDrawerOpen(true);
                     }}
-                    className="p-2 text-[#7a7a9a] hover:text-[#1a1a2e] hover:bg-[#f4f3f6] rounded-xl transition-colors cursor-pointer"
-                    title="Edit"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button
-                    onClick={() => setDeleteTarget(article)}
-                    className="p-2 text-[#7a7a9a] hover:text-[#dc2626] hover:bg-[#fef2f2] rounded-xl transition-colors cursor-pointer"
-                    title="Delete"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
+                    onDelete={setDeleteTarget}
+                  />
+                ))}
               </div>
-            );
-          })
+            </SortableContext>
+
+            {/* Drag Overlay — ghost card while dragging */}
+            <DragOverlay>
+              {activeArticle ? (
+                <div className="border border-brand-pink/40 rounded-3xl p-4 flex items-center gap-4 bg-white shadow-2xl opacity-95">
+                  <div className="cursor-grabbing text-brand-pink shrink-0 p-1">
+                    <GripVertical size={16} />
+                  </div>
+                  <div className="w-14 h-14 rounded-2xl overflow-hidden bg-zinc-100 shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={
+                        activeArticle.coverImage ||
+                        activeArticle.image ||
+                        "/dashboard/tiktok_news_banner.png"
+                      }
+                      alt={activeArticle.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-[#1a1a2e] line-clamp-1">
+                      {activeArticle.title}
+                    </p>
+                    <p className="text-[10px] text-[#9a99b0] font-semibold mt-0.5">
+                      {activeArticle.brand || "Trendupp Africa"}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         )}
       </div>
 

@@ -3,19 +3,27 @@
 import { useState, useMemo } from "react";
 import {
   Search,
-  Eye,
   ChevronDown,
   X,
   RotateCcw,
   ChevronLeft,
   ChevronRight,
+  Download,
 } from "lucide-react";
-import { FaTiktok, FaInstagram, FaYoutube } from "react-icons/fa";
+import {
+  FaTiktok,
+  FaInstagram,
+  FaYoutube,
+  FaTwitter,
+  FaFacebook,
+} from "react-icons/fa";
 import { cn } from "@/lib/utils";
 import UserAvatar from "@/shared/UserAvatar";
 import { AdminStatusBadge } from "../AdminStatusBadge";
 import CreatorProfileDrawer from "./CreatorProfileDrawer";
 import { useAdminCreatorsList } from "@/hooks/useAdminCreators";
+import { CardFilterHeaderControls } from "./CardFilterHeaderControls";
+import { CardDateRangeBar } from "./CardDateRangeBar";
 
 interface CreatorItem {
   id: string;
@@ -27,8 +35,9 @@ interface CreatorItem {
   tier: "Mega" | "Macro" | "Micro" | "Nano";
   niche: string;
   gender: "Male" | "Female";
-  platforms: ("IG" | "TikTok" | "YT")[];
+  platforms: ("IG" | "TikTok" | "YT" | "X" | "FB")[];
   completion: number;
+  campaignsCount: number;
   totalEarnings: number;
   revisionCount: number;
   status: "Active" | "Pending" | "Suspended";
@@ -66,9 +75,8 @@ export default function CreatorTable() {
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
-  const [selectedTimeframe, setSelectedTimeframe] = useState<
-    "Week" | "Month" | "Year"
-  >("Week");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [selectedCreatorId, setSelectedCreatorId] = useState<string | null>(
     null,
   );
@@ -86,6 +94,10 @@ export default function CreatorTable() {
     status: apiStatus,
     tier: selectedTier || undefined,
     niche: selectedNiche || undefined,
+    startDate: fromDate || undefined,
+    endDate: toDate || undefined,
+    fromDate: fromDate || undefined,
+    toDate: toDate || undefined,
     page,
     limit: 10,
   });
@@ -93,15 +105,92 @@ export default function CreatorTable() {
   const listItems: CreatorItem[] = useMemo(() => {
     if (paginatedResponse?.data !== undefined) {
       return paginatedResponse.data.map((c, idx) => {
+        const rawDate = c.createdAt || c.joinedAt || c.dateJoined;
+        const formattedDateJoined = formatDateOnly(rawDate);
+
         const rawStatus = (c.status || "").toLowerCase();
         const normalizedStatus: "Active" | "Pending" | "Suspended" =
-          rawStatus === "active" || rawStatus === "verified"
+          rawStatus === "active" ||
+          rawStatus === "verified" ||
+          rawStatus === "onboarded" ||
+          Boolean(rawDate)
             ? "Active"
             : rawStatus === "suspended" ||
                 rawStatus === "blocked" ||
                 rawStatus === "inactive"
               ? "Suspended"
               : "Pending";
+
+        const parsedCompletion =
+          typeof c.profileCompletion === "number"
+            ? c.profileCompletion
+            : typeof c.profileCompletion === "string"
+              ? parseInt(c.profileCompletion.replace("%", ""), 10) || 100
+              : 100;
+
+        const rawPlatforms =
+          c.platformsConnected ||
+          c.platforms ||
+          c.connectedSocials ||
+          c.socialAccounts;
+
+        const parsedPlatforms: ("IG" | "TikTok" | "YT" | "X" | "FB")[] = [];
+
+        if (Array.isArray(rawPlatforms)) {
+          rawPlatforms.forEach((p) => {
+            const pStr =
+              typeof p === "string"
+                ? p.toLowerCase().trim()
+                : (
+                    (p as { platform?: string; name?: string; type?: string })
+                      ?.platform ||
+                    (p as { platform?: string; name?: string; type?: string })
+                      ?.name ||
+                    (p as { platform?: string; name?: string; type?: string })
+                      ?.type ||
+                    ""
+                  )
+                    .toLowerCase()
+                    .trim();
+            if (pStr.includes("ig") || pStr.includes("insta")) {
+              if (!parsedPlatforms.includes("IG")) parsedPlatforms.push("IG");
+            } else if (pStr.includes("tiktok") || pStr.includes("tik")) {
+              if (!parsedPlatforms.includes("TikTok"))
+                parsedPlatforms.push("TikTok");
+            } else if (pStr.includes("yt") || pStr.includes("youtube")) {
+              if (!parsedPlatforms.includes("YT")) parsedPlatforms.push("YT");
+            } else if (pStr.includes("twitter") || pStr.includes("x")) {
+              if (!parsedPlatforms.includes("X")) parsedPlatforms.push("X");
+            } else if (pStr.includes("facebook") || pStr.includes("fb")) {
+              if (!parsedPlatforms.includes("FB")) parsedPlatforms.push("FB");
+            }
+          });
+        } else if (rawPlatforms && typeof rawPlatforms === "object") {
+          Object.keys(rawPlatforms).forEach((key) => {
+            const val = (rawPlatforms as Record<string, unknown>)[key];
+            if (val) {
+              const kLower = key.toLowerCase().trim();
+              if (kLower.includes("insta") || kLower.includes("ig")) {
+                if (!parsedPlatforms.includes("IG")) parsedPlatforms.push("IG");
+              } else if (kLower.includes("tiktok") || kLower.includes("tik")) {
+                if (!parsedPlatforms.includes("TikTok"))
+                  parsedPlatforms.push("TikTok");
+              } else if (kLower.includes("yt") || kLower.includes("youtube")) {
+                if (!parsedPlatforms.includes("YT")) parsedPlatforms.push("YT");
+              } else if (kLower.includes("twitter") || kLower === "x") {
+                if (!parsedPlatforms.includes("X")) parsedPlatforms.push("X");
+              } else if (kLower.includes("facebook") || kLower === "fb") {
+                if (!parsedPlatforms.includes("FB")) parsedPlatforms.push("FB");
+              }
+            }
+          });
+        }
+
+        const finalPlatforms: ("IG" | "TikTok" | "YT" | "X" | "FB")[] =
+          parsedPlatforms;
+
+        const revCount =
+          c.revisionCount ?? c.revisionsCount ?? c.revisions ?? 0;
 
         return {
           id: c.id || `creator-${idx}`,
@@ -117,12 +206,13 @@ export default function CreatorTable() {
           tier: (c.tier as "Mega" | "Macro" | "Micro" | "Nano") || "Micro",
           niche: c.niche || "General",
           gender: "Female",
-          platforms: ["IG", "TikTok"],
-          completion: 100,
+          platforms: finalPlatforms,
+          completion: parsedCompletion,
+          campaignsCount: c.completedCampaigns ?? c.campaignsCount ?? 0,
           totalEarnings: c.totalEarnings ?? 0,
-          revisionCount: 0,
+          revisionCount: revCount,
           status: normalizedStatus,
-          dateJoined: formatDateOnly(c.joinedAt),
+          dateJoined: formattedDateJoined,
           lastLogin: "Active",
         };
       });
@@ -212,14 +302,69 @@ export default function CreatorTable() {
     setPage(1);
   };
 
+  const handleExportCSV = () => {
+    if (filtered.length === 0) return;
+    const headers = [
+      "Creator ID",
+      "Name",
+      "Handle",
+      "Email",
+      "Country",
+      "Tier",
+      "Niche",
+      "Gender",
+      "Platforms",
+      "Profile",
+      "Total Earnings",
+      "Revisions",
+      "Status",
+      "Date Joined",
+    ];
+
+    const rows = filtered.map((c) => [
+      c.creatorId,
+      `"${c.name.replace(/"/g, '""')}"`,
+      `"${c.handle.replace(/"/g, '""')}"`,
+      c.email,
+      c.country,
+      c.tier,
+      c.niche,
+      c.gender,
+      `"${c.platforms.join(", ")}"`,
+      `${c.completion}%`,
+      c.totalEarnings,
+      c.revisionCount,
+      c.status,
+      c.dateJoined,
+    ]);
+
+    const csvString = [headers.join(","), ...rows.map((e) => e.join(","))].join(
+      "\n",
+    );
+
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `creators_export_${new Date().toISOString().split("T")[0]}.csv`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const totalPages = paginatedResponse?.totalPages || 1;
   const totalItems = paginatedResponse?.total || filtered.length;
 
   return (
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5 shadow-sm">
-      {/* Status Filter Tabs */}
+      {/* Status Filter Tabs (Left) & Card Controls + Actions (Right) */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-1 bg-[#f4f3f6] border border-[#e8e6f0]/80 p-1 rounded-xl w-fit self-start max-w-full overflow-x-auto scrollbar-none">
+        {/* Left: Status Filter Tabs */}
+        <div className="flex items-center gap-1.5 bg-[#f4f3f6] border border-[#e8e6f0]/80 p-1 rounded-xl max-w-xl overflow-x-auto no-scrollbar">
           {(["All", "Active", "Suspended", "Pending"] as const).map((tab) => {
             const active = activeTab === tab;
             return (
@@ -232,7 +377,7 @@ export default function CreatorTable() {
                   setPage(1);
                 }}
                 className={cn(
-                  "px-4.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
+                  "px-4.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0",
                   active
                     ? "bg-brand-pink text-white shadow-sm"
                     : "bg-transparent text-[#5a5a7a] hover:text-[#1a1a2e]",
@@ -244,22 +389,42 @@ export default function CreatorTable() {
           })}
         </div>
 
-        {/* Clear All Filters Button */}
-        {hasActiveFilters && (
+        {/* Right: Time Controls, Clear Filters & Export */}
+        <div className="flex items-center gap-3 flex-wrap shrink-0">
+          <CardFilterHeaderControls
+            onYearChange={(yr) => {
+              setSelectedYear(String(yr));
+              setPage(1);
+            }}
+            defaultYear={selectedYear ? Number(selectedYear) : 2026}
+          />
+
+          {/* Clear All Filters Button */}
+          {hasActiveFilters && (
+            <button
+              onClick={clearAllFilters}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-600 hover:text-rose-700 cursor-pointer bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-xl transition-colors"
+            >
+              <RotateCcw size={12} /> Clear all filters
+            </button>
+          )}
+
+          {/* Export CSV Button */}
           <button
-            onClick={clearAllFilters}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-600 hover:text-rose-700 cursor-pointer bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-xl transition-colors"
+            onClick={handleExportCSV}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-[#e8e6f0] text-[#1a1a2e] hover:bg-[#faf9fc] text-xs font-bold shadow-2xs transition-all cursor-pointer shrink-0"
           >
-            <RotateCcw size={12} /> Clear all filters
+            <Download size={13} className="text-brand-pink" />
+            <span>Export CSV</span>
           </button>
-        )}
+        </div>
       </div>
 
       {/* Filters Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3 flex-1 min-w-0">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
           {/* Search */}
-          <div className="relative flex items-center min-w-[240px] flex-1 max-w-sm">
+          <div className="relative flex items-center w-full sm:w-[240px] flex-1 max-w-sm">
             <Search size={14} className="absolute left-3.5 text-[#9a99b0]" />
             <input
               type="text"
@@ -281,7 +446,7 @@ export default function CreatorTable() {
             )}
           </div>
 
-          {/* Filter dropdowns */}
+          {/* Unique Creator Demographic Filter Dropdowns */}
           {[
             {
               value: selectedTier,
@@ -351,15 +516,6 @@ export default function CreatorTable() {
                 "Kenya",
               ],
             },
-            {
-              value: selectedYear,
-              onChange: (val: string) => {
-                setSelectedYear(val);
-                setPage(1);
-              },
-              label: "Year",
-              options: ["2026", "2025", "2024"],
-            },
           ].map(({ value, onChange, label, options }) => (
             <div key={label} className="relative">
               <select
@@ -390,23 +546,14 @@ export default function CreatorTable() {
           ))}
         </div>
 
-        {/* Timeframe Switcher */}
-        <div className="flex items-center bg-[#f4f3f6] rounded-xl p-0.5 border border-[#e8e6f0]/60 shrink-0">
-          {(["Week", "Month", "Year"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setSelectedTimeframe(t)}
-              className={cn(
-                "px-3.5 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
-                selectedTimeframe === t
-                  ? "bg-white text-brand-pink shadow-sm"
-                  : "text-[#7a7a9a] hover:text-[#1a1a2e]",
-              )}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+        {/* Date Range Selector */}
+        <CardDateRangeBar
+          onDateChange={(from, to) => {
+            setFromDate(from);
+            setToDate(to);
+            setPage(1);
+          }}
+        />
       </div>
 
       {/* Active Filter Badges */}
@@ -519,43 +666,71 @@ export default function CreatorTable() {
           </p>
           <button
             onClick={clearAllFilters}
-            className="mt-4 px-4 py-2 bg-brand-pink text-white text-xs font-bold rounded-xl hover:opacity-90 transition-opacity cursor-pointer inline-flex items-center gap-1.5"
+            className="mt-4 px-4 py-2 rounded-xl bg-brand-pink text-white text-xs font-semibold shadow-xs hover:opacity-90 transition-all cursor-pointer"
           >
-            <RotateCcw size={13} /> Reset All Filters
+            Reset Filters
           </button>
         </div>
       ) : (
-        <div className="overflow-x-auto -mx-6 px-6">
-          <table className="w-full text-left border-collapse">
+        <div className="w-full overflow-x-auto no-scrollbar">
+          <table className="w-full min-w-[1380px] text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-[#e8e6f0]/40 text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
-                <th className="pb-3.5 pl-2">Creator ID</th>
-                <th className="pb-3.5">Creator</th>
-                <th className="pb-3.5">Email</th>
-                <th className="pb-3.5">Country</th>
-                <th className="pb-3.5">Tier</th>
-                <th className="pb-3.5">Niche</th>
-                <th className="pb-3.5">Gender</th>
-                <th className="pb-3.5">Platforms</th>
-                <th className="pb-3.5">Profile Completion</th>
-                <th className="pb-3.5">Earnings</th>
-                <th className="pb-3.5 text-center">Revisions</th>
-                <th className="pb-3.5">Status</th>
-                <th className="pb-3.5">Date Joined</th>
-                <th className="pb-3.5">Last Login</th>
-                <th className="pb-3.5 text-right pr-2">Action</th>
+                <th className="pb-3.5 pt-1 pl-2 pr-3 min-w-[110px] whitespace-nowrap">
+                  Creator ID
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[160px] whitespace-nowrap">
+                  Creator
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[170px] whitespace-nowrap">
+                  Email
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[100px] whitespace-nowrap">
+                  Country
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[90px] whitespace-nowrap">
+                  Tier
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[110px] whitespace-nowrap">
+                  Niche
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[90px] whitespace-nowrap">
+                  Gender
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[100px] whitespace-nowrap">
+                  Platforms
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[130px] whitespace-nowrap">
+                  Profile
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[100px] whitespace-nowrap">
+                  Earnings
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[80px] whitespace-nowrap text-center">
+                  Revisions
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[90px] whitespace-nowrap">
+                  Status
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[110px] whitespace-nowrap">
+                  Date Joined
+                </th>
+                <th className="pb-3.5 pt-1 pl-3 pr-4 min-w-[110px] whitespace-nowrap">
+                  Last Login
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#e8e6f0]/30 text-xs">
+            <tbody className="divide-y divide-[#e8e6f0]/30 text-xs font-medium">
               {filtered.map((c) => (
                 <tr
                   key={c.id}
-                  className="hover:bg-[#faf9fc]/40 transition-colors"
+                  onClick={() => setSelectedCreatorId(c.id)}
+                  className="hover:bg-[#faf9fc] transition-colors cursor-pointer"
                 >
-                  <td className="py-3 pl-2 text-[#5a5a7a] font-medium">
+                  <td className="py-3 pl-2 pr-3 text-[#5a5a7a] font-medium whitespace-nowrap">
                     {c.creatorId}
                   </td>
-                  <td className="py-3">
+                  <td className="py-3 px-3 whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       <UserAvatar
                         initials={c.name
@@ -574,9 +749,13 @@ export default function CreatorTable() {
                       </div>
                     </div>
                   </td>
-                  <td className="py-3 text-[#5a5a7a]">{c.email}</td>
-                  <td className="py-3 text-[#5a5a7a]">{c.country}</td>
-                  <td className="py-3">
+                  <td className="py-3 px-3 text-[#5a5a7a] whitespace-nowrap">
+                    {c.email}
+                  </td>
+                  <td className="py-3 px-3 text-[#5a5a7a] whitespace-nowrap">
+                    {c.country}
+                  </td>
+                  <td className="py-3 px-3 whitespace-nowrap">
                     <span
                       className={cn(
                         "px-2 py-0.5 rounded-md text-[10px] font-bold border capitalize",
@@ -586,43 +765,69 @@ export default function CreatorTable() {
                       {c.tier}
                     </span>
                   </td>
-                  <td className="py-3 text-[#5a5a7a]">{c.niche}</td>
-                  <td className="py-3 text-[#5a5a7a]">{c.gender}</td>
-                  <td className="py-3">
-                    <div className="flex items-center gap-1.5">
-                      {c.platforms.map((p) => {
-                        if (p === "IG")
-                          return (
-                            <span
-                              key={p}
-                              className="p-1 rounded-md bg-[#fdf2f6] text-brand-pink border border-rose-100"
-                            >
-                              <FaInstagram size={11} />
-                            </span>
-                          );
-                        if (p === "YT")
-                          return (
-                            <span
-                              key={p}
-                              className="p-1 rounded-md bg-[#fef2f2] text-[#dc2626] border border-red-100"
-                            >
-                              <FaYoutube size={11} />
-                            </span>
-                          );
-                        if (p === "TikTok")
-                          return (
-                            <span
-                              key={p}
-                              className="p-1 rounded-md bg-[#f4f3f6] text-[#1a1a2e] border border-[#e8e6f0]"
-                            >
-                              <FaTiktok size={11} />
-                            </span>
-                          );
-                        return null;
-                      })}
-                    </div>
+                  <td className="py-3 px-3 text-[#5a5a7a] whitespace-nowrap">
+                    {c.niche}
                   </td>
-                  <td className="py-3">
+                  <td className="py-3 px-3 text-[#5a5a7a] whitespace-nowrap">
+                    {c.gender}
+                  </td>
+                  <td className="py-3 px-3 whitespace-nowrap">
+                    {c.platforms.length === 0 ? (
+                      <span className="text-[#9a99b0] text-[11px]">—</span>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        {c.platforms.map((p) => {
+                          if (p === "IG")
+                            return (
+                              <span
+                                key={p}
+                                className="p-1 rounded-md bg-[#fdf2f6] text-brand-pink border border-rose-100"
+                              >
+                                <FaInstagram size={11} />
+                              </span>
+                            );
+                          if (p === "YT")
+                            return (
+                              <span
+                                key={p}
+                                className="p-1 rounded-md bg-[#fef2f2] text-[#dc2626] border border-red-100"
+                              >
+                                <FaYoutube size={11} />
+                              </span>
+                            );
+                          if (p === "TikTok")
+                            return (
+                              <span
+                                key={p}
+                                className="p-1 rounded-md bg-[#f4f3f6] text-[#1a1a2e] border border-[#e8e6f0]"
+                              >
+                                <FaTiktok size={11} />
+                              </span>
+                            );
+                          if (p === "X")
+                            return (
+                              <span
+                                key={p}
+                                className="p-1 rounded-md bg-[#f8fafc] text-[#0f172a] border border-[#e2e8f0]"
+                              >
+                                <FaTwitter size={11} />
+                              </span>
+                            );
+                          if (p === "FB")
+                            return (
+                              <span
+                                key={p}
+                                className="p-1 rounded-md bg-[#eff6ff] text-[#2563eb] border border-[#dbeafe]"
+                              >
+                                <FaFacebook size={11} />
+                              </span>
+                            );
+                          return null;
+                        })}
+                      </div>
+                    )}
+                  </td>
+                  <td className="py-3 px-3 whitespace-nowrap">
                     <div className="flex items-center gap-2 min-w-[100px]">
                       <div className="w-12 h-1.5 bg-[#f4f3f6] rounded-full overflow-hidden shrink-0">
                         <div
@@ -640,30 +845,22 @@ export default function CreatorTable() {
                       </span>
                     </div>
                   </td>
-                  <td className="py-3 font-semibold text-[#1a1a2e] whitespace-nowrap">
+                  <td className="py-3 px-3 font-semibold text-[#1a1a2e] whitespace-nowrap">
                     ₦{c.totalEarnings.toLocaleString()}
                   </td>
-                  <td className="py-3 text-center">
+                  <td className="py-3 px-3 text-center whitespace-nowrap">
                     <span className="px-2 py-0.5 rounded-full bg-[#f4f3f6] text-[#5a5a7a] font-bold text-[10px]">
                       {c.revisionCount}
                     </span>
                   </td>
-                  <td className="py-3">
-                    <AdminStatusBadge status={c.status.toLowerCase()} />
+                  <td className="py-3 px-3 whitespace-nowrap">
+                    <AdminStatusBadge status={c.status} />
                   </td>
-                  <td className="py-3 text-[#9a99b0] whitespace-nowrap">
+                  <td className="py-3 px-3 text-[#5a5a7a] whitespace-nowrap">
                     {c.dateJoined}
                   </td>
-                  <td className="py-3 text-[#9a99b0] whitespace-nowrap">
+                  <td className="py-3 pl-3 pr-4 text-[#7a7a9a] whitespace-nowrap">
                     {c.lastLogin}
-                  </td>
-                  <td className="py-3 text-right pr-2">
-                    <button
-                      onClick={() => setSelectedCreatorId(c.id)}
-                      className="h-8 px-3.5 bg-[#eff6ff] text-[#2563eb] rounded-xl hover:bg-[#dbeafe] transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 text-xs font-bold shrink-0"
-                    >
-                      <Eye size={13} className="shrink-0" /> View
-                    </button>
                   </td>
                 </tr>
               ))}

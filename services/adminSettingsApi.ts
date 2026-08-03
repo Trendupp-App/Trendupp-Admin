@@ -4,6 +4,8 @@ import type {
   CreateCommissionTierDto,
   UpdateCommissionTierDto,
   CreatorNiche,
+  BrandIndustry,
+  TicketCategory,
   CreateNicheDto,
   UpdateNicheDto,
   FaqItem,
@@ -54,6 +56,40 @@ export const adminSettingsApi = {
   // 8. Delete Creator Niche
   deleteNiche: (id: string) =>
     apiClient.delete<{ message?: string }>(`/admin/settings/niches/${id}`),
+
+  // ── Brand Industries (same CRUD shape as niches) ───────────────────────────
+  getIndustries: () =>
+    apiClient.get<BrandIndustry[] | { data: BrandIndustry[] }>(
+      "/admin/settings/brand-industries",
+    ),
+  createIndustry: (data: CreateNicheDto) =>
+    apiClient.post<BrandIndustry>("/admin/settings/brand-industries", data),
+  updateIndustry: (id: string, data: UpdateNicheDto) =>
+    apiClient.patch<BrandIndustry>(
+      `/admin/settings/brand-industries/${id}`,
+      data,
+    ),
+  deleteIndustry: (id: string) =>
+    apiClient.delete<{ message?: string }>(
+      `/admin/settings/brand-industries/${id}`,
+    ),
+
+  // ── Support Ticket Categories ──────────────────────────────────────────────
+  getTicketCategories: () =>
+    apiClient.get<TicketCategory[] | { data: TicketCategory[] }>(
+      "/admin/settings/ticket-categories",
+    ),
+  createTicketCategory: (data: CreateNicheDto) =>
+    apiClient.post<TicketCategory>("/admin/settings/ticket-categories", data),
+  updateTicketCategory: (id: string, data: UpdateNicheDto) =>
+    apiClient.patch<TicketCategory>(
+      `/admin/settings/ticket-categories/${id}`,
+      data,
+    ),
+  deleteTicketCategory: (id: string) =>
+    apiClient.delete<{ message?: string }>(
+      `/admin/settings/ticket-categories/${id}`,
+    ),
 
   // 9. Get FAQs
   getFaqs: (params?: FaqQueryParams) =>

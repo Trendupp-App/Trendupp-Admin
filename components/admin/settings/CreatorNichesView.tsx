@@ -15,29 +15,6 @@ import {
 import type { CreatorNiche } from "@/types/adminSettings";
 import { toast } from "sonner";
 
-const DEFAULT_SAMPLE_NICHES: CreatorNiche[] = [
-  { id: "1", name: "Sports" },
-  { id: "2", name: "Fitness" },
-  { id: "3", name: "Comedy" },
-  { id: "4", name: "Travel" },
-  { id: "5", name: "Beauty" },
-  { id: "6", name: "Parenting" },
-  { id: "7", name: "Finance" },
-  { id: "8", name: "Technology" },
-  { id: "9", name: "Lifestyle" },
-  { id: "10", name: "Education" },
-  { id: "11", name: "Activism" },
-  { id: "12", name: "Food & Drink" },
-  { id: "13", name: "Social Good" },
-  { id: "14", name: "Wellness" },
-  { id: "15", name: "Music" },
-  { id: "16", name: "Gaming" },
-  { id: "17", name: "Hospitality" },
-  { id: "18", name: "Fashion" },
-  { id: "19", name: "Entertainment" },
-  { id: "20", name: "Photography" },
-];
-
 export default function CreatorNichesView() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -49,16 +26,11 @@ export default function CreatorNichesView() {
   const updateMutation = useUpdateNiche();
   const deleteMutation = useDeleteNiche();
 
-  const displayNiches = useMemo(() => {
-    if (niches && niches.length > 0) return niches;
-    return process.env.NODE_ENV === "development" ? DEFAULT_SAMPLE_NICHES : [];
-  }, [niches]);
-
   const filteredNiches = useMemo(() => {
-    if (!searchTerm.trim()) return displayNiches;
+    if (!searchTerm.trim()) return niches;
     const term = searchTerm.toLowerCase();
-    return displayNiches.filter((n) => n.name.toLowerCase().includes(term));
-  }, [displayNiches, searchTerm]);
+    return niches.filter((n) => n.name.toLowerCase().includes(term));
+  }, [niches, searchTerm]);
 
   const handleOpenAddModal = () => {
     setEditingNiche(null);
@@ -118,7 +90,7 @@ export default function CreatorNichesView() {
           <p className="text-xs text-[#7a7a9a] mt-1">
             These are the niche options shown to creators during onboarding.{" "}
             <strong className="text-[#1a1a2e] font-semibold">
-              {displayNiches.length} niches total.
+              {niches.length} niches total.
             </strong>
           </p>
         </div>
@@ -148,7 +120,7 @@ export default function CreatorNichesView() {
       </div>
 
       {/* Niches Card Container */}
-      <div className="bg-white border border-[#f0f0f5] rounded-2xl p-7 flex flex-col gap-6 shadow-xs">
+      <div className="bg-white border border-[#f0f0f5] rounded-2xl p-4 sm:p-7 flex flex-col gap-6 shadow-xs">
         <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#7a7a9a]">
           ALL NICHES ({filteredNiches.length})
         </span>

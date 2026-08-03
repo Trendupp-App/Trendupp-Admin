@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import type { AxiosError } from "axios";
 import type {
   RaiseDisputePayload,
+  RejectDisputePayload,
   ResolveDisputePayload,
 } from "@/types/dispute";
 
@@ -110,6 +111,33 @@ export function useResolveDispute(onSuccess?: () => void) {
   });
 }
 
+export function useRejectDispute(onSuccess?: () => void) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: RejectDisputePayload;
+    }) => disputeApi.rejectDispute(id, payload),
+    onSuccess: (_, variables) => {
+      toast.success("Dispute declined");
+      queryClient.invalidateQueries({ queryKey: ["disputes"] });
+      queryClient.invalidateQueries({
+        queryKey: ["dispute-details", variables.id],
+      });
+      if (onSuccess) onSuccess();
+    },
+    onError: (err: AxiosError<{ message?: string }>) => {
+      toast.error(
+        err?.response?.data?.message ??
+          "Could not decline dispute, please try again",
+      );
+    },
+  });
+}
+
 export function useUpdateDisputeNotes(onSuccess?: () => void) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -126,6 +154,28 @@ export function useUpdateDisputeNotes(onSuccess?: () => void) {
       toast.error(
         err?.response?.data?.message ??
           "Could not save admin note, please try again",
+      );
+    },
+  });
+}
+
+export function useDeclineDispute(onSuccess?: () => void) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      disputeApi.declineDispute(id, reason),
+    onSuccess: (_, variables) => {
+      toast.success("Dispute request declined");
+      queryClient.invalidateQueries({ queryKey: ["disputes"] });
+      queryClient.invalidateQueries({
+        queryKey: ["dispute-details", variables.id],
+      });
+      if (onSuccess) onSuccess();
+    },
+    onError: (err: AxiosError<{ message?: string }>) => {
+      toast.error(
+        err?.response?.data?.message ??
+          "Could not decline dispute, please try again",
       );
     },
   });

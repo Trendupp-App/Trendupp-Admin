@@ -45,6 +45,18 @@ export interface CreatorNiche {
   updatedAt?: string;
 }
 
+/** Brand industry — same {id, name} shape as niches. */
+export type BrandIndustry = CreatorNiche;
+
+/** Support ticket category — {id, name} (+ optional description on the API). */
+export interface TicketCategory {
+  id: string;
+  name: string;
+  description?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface CreateNicheDto {
   name: string;
 }

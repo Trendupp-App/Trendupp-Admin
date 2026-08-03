@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import UserAvatar from "@/shared/UserAvatar";
 import { useTopCreators } from "@/hooks/useAdminCreators";
+import { CardDateRangeBar } from "./CardDateRangeBar";
 
 const TIER_BADGE_COLORS: Record<string, string> = {
   Mega: "bg-[#fff7ed] text-[#ea580c] border-[#ffedd5]",
@@ -12,7 +14,14 @@ const TIER_BADGE_COLORS: Record<string, string> = {
 };
 
 export default function TopCreators() {
-  const { data: topCreatorsList, isLoading } = useTopCreators();
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
+  const { data: topCreatorsList, isLoading } = useTopCreators({
+    startDate: fromDate || undefined,
+    endDate: toDate || undefined,
+    limit: 10,
+  });
 
   const creators = topCreatorsList?.length
     ? topCreatorsList.map((c, idx) => ({
@@ -47,20 +56,35 @@ export default function TopCreators() {
 
   return (
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-sm font-semibold text-[#1a1a2e]">Top Creators</h2>
-          <span className="text-xs text-[#9a99b0]">By total earnings</span>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-[#1a1a2e]">
+              Top Creators
+            </h2>
+            <span className="text-xs text-[#9a99b0]">By total earnings</span>
+          </div>
+
+          <Link
+            href="/admin/users/creators"
+            className="text-xs font-bold text-brand-pink hover:underline shrink-0"
+          >
+            View all
+          </Link>
         </div>
-        <Link
-          href="/admin/users/creators"
-          className="text-xs font-bold text-brand-pink hover:underline"
-        >
-          View all
-        </Link>
+
+        {/* Date Range Selector Toolbar (From, To) */}
+        <div className="pt-1 flex justify-start">
+          <CardDateRangeBar
+            onDateChange={(from, to) => {
+              setFromDate(from);
+              setToDate(to);
+            }}
+          />
+        </div>
       </div>
 
-      <div className="flex flex-col gap-3.5">
+      <div className="flex flex-col gap-3.5 max-h-[340px] overflow-y-auto pr-1">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
             <div

@@ -10,9 +10,26 @@ export interface CompletionDistributionItemDto {
   count: number;
 }
 
+export interface ConnectedSocialsDto {
+  instagram?: number;
+  tiktok?: number;
+  youtube?: number;
+  twitter?: number;
+  facebook?: number;
+}
+
+export interface ConnectedSocialsCountsDto {
+  instagram: number;
+  tiktok: number;
+  youtube: number;
+  twitter: number;
+  facebook: number;
+}
+
 export interface AdminCreatorSummaryResponseDto {
   summary: CreatorSummaryDto;
-  profileCompletionDistribution: CompletionDistributionItemDto[];
+  connectedSocials?: ConnectedSocialsDto | ConnectedSocialsCountsDto;
+  profileCompletionDistribution?: CompletionDistributionItemDto[];
 }
 
 export interface SignupGrowthItemDto {
@@ -66,20 +83,36 @@ export interface CreatorListQueryParams {
   q?: string;
   page?: number;
   limit?: number;
+  startDate?: string;
+  endDate?: string;
+  fromDate?: string;
+  toDate?: string;
 }
 
 export interface AdminCreatorListItem {
   id: string;
-  name: string;
-  handle: string;
-  email: string;
+  name?: string;
+  handle?: string;
+  email?: string;
   avatarUrl?: string | null;
-  tier: string;
+  tier?: string;
   niche?: string | null;
-  status: string;
-  completedCampaigns: number;
-  totalEarnings: number;
-  joinedAt: string;
+  status?: string;
+  completedCampaigns?: number;
+  campaignsCount?: number;
+  totalEarnings?: number;
+  earningsStatus?: string;
+  profileCompletion?: number | string;
+  platformsConnected?: string[] | Record<string, unknown>;
+  platforms?: string[] | Record<string, unknown>;
+  connectedSocials?: ConnectedSocialsDto | ConnectedSocialsCountsDto;
+  socialAccounts?: CreatorSocialAccountDto[];
+  revisionCount?: number;
+  revisionsCount?: number;
+  revisions?: number;
+  joinedAt?: string;
+  createdAt?: string;
+  dateJoined?: string;
 }
 
 export interface PaginatedCreatorsResponse {
@@ -98,6 +131,13 @@ export interface CreatorProfileMetricsDto {
   totalTokens: number;
 }
 
+export interface CreatorBankDetailsDto {
+  accountName?: string | null;
+  accountNumber?: string | null;
+  bankId?: string | null;
+  bankName?: string | null;
+}
+
 export interface CreatorProfileDetailsDto {
   id: string;
   fullName: string;
@@ -107,8 +147,17 @@ export interface CreatorProfileDetailsDto {
   state: string;
   nationality: string;
   bio?: string | null;
+  gender?: string | null;
+  dateOfBirth?: string | null;
+  dob?: string | null;
   profileCompletion?: string | null;
+  accountNumber?: string | null;
+  bankAccountNumber?: string | null;
+  bankName?: string | null;
+  accountName?: string | null;
+  bankAccountName?: string | null;
   bankAccountStatus?: string | null;
+  bankDetails?: CreatorBankDetailsDto | null;
   dateJoined?: string | null;
   accountStatus?: string | null;
   tier?: string | null;
@@ -125,6 +174,7 @@ export interface CreatorSocialAccountDto {
 export interface AdminCreatorProfileResponseDto {
   metrics: CreatorProfileMetricsDto;
   profileDetails: CreatorProfileDetailsDto;
+  bankDetails?: CreatorBankDetailsDto | null;
   socialAccounts?: CreatorSocialAccountDto[];
 }
 

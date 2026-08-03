@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   X,
   Image as ImageIcon,
@@ -17,9 +17,11 @@ import {
   Type,
   Palette,
   Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Portal } from "@/components/ui/portal";
+import { toast } from "sonner";
 import type { AdminNewsItem, CreateNewsDto } from "@/types/adminNews";
 
 export interface NewsArticle extends AdminNewsItem {
@@ -34,10 +36,508 @@ interface NewsDrawerProps {
   onClose: () => void;
   onSave: (
     articleData: CreateNewsDto,
-    customStatus?: "published" | "draft",
+    customStatus: "published" | "draft" | "scheduled",
+    scheduledAt?: string,
   ) => void;
   article: AdminNewsItem | null;
   isSaving?: boolean;
+}
+
+interface RichTextEditorProps {
+  value: string;
+  onChange: (html: string) => void;
+  placeholder?: string;
+}
+
+const FONT_SIZES = ["12", "14", "16", "18", "20", "24", "28", "32"];
+const COLOR_PRESETS = [
+  "#1a1a2e",
+  "#e11d48",
+  "#059669",
+  "#2563eb",
+  "#7c3aed",
+  "#d97706",
+  "#5a5a7a",
+  "#000000",
+];
+
+/** Renders saved rich-text HTML with all formatting preserved (bold, italic, lists, links, etc.) */
+export function RichTextDisplay({
+  html,
+  className,
+}: {
+  html: string;
+  className?: string;
+}) {
+  if (!html) return null;
+  return (
+    <div
+      className={cn(
+        "text-sm leading-relaxed text-[#1a1a2e] font-medium",
+        // Lists
+        "[&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2",
+        "[&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-2",
+        "[&_li]:my-0.5",
+        // Inline text
+        "[&_b]:font-bold [&_strong]:font-bold",
+        "[&_i]:italic [&_em]:italic",
+        "[&_u]:underline",
+        "[&_s]:line-through [&_strike]:line-through",
+        // Links — open in new tab styles
+        "[&_a]:text-brand-pink [&_a]:underline [&_a]:font-semibold [&_a]:cursor-pointer [&_a]:hover:opacity-80",
+        // Paragraphs / line breaks
+        "[&_p]:mb-2",
+        "[&_br]:block",
+        className,
+      )}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
+
+function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const savedRangeRef = useRef<Range | null>(null);
+  const linkInputRef = useRef<HTMLInputElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showFontSizeDropdown, setShowFontSizeDropdown] = useState(false);
+  const [showLinkPopover, setShowLinkPopover] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("https://");
+  const [fontSize, setFontSize] = useState("14");
+  const [activeFormats, setActiveFormats] = useState<Record<string, boolean>>(
+    {},
+  );
+
+  // Seed the editor on initial mount
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.innerHTML = value || "";
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Sync when an article is loaded externally (edit mode)
+  useEffect(() => {
+    if (editorRef.current && value && !editorRef.current.innerHTML) {
+      editorRef.current.innerHTML = value;
+    }
+  }, [value]);
+
+  const updateActiveFormats = () => {
+    if (typeof document === "undefined") return;
+    setActiveFormats({
+      bold: document.queryCommandState("bold"),
+      italic: document.queryCommandState("italic"),
+      underline: document.queryCommandState("underline"),
+      strikethrough: document.queryCommandState("strikeThrough"),
+      unorderedList: document.queryCommandState("insertUnorderedList"),
+      orderedList: document.queryCommandState("insertOrderedList"),
+      alignLeft: document.queryCommandState("justifyLeft"),
+      alignCenter: document.queryCommandState("justifyCenter"),
+      alignRight: document.queryCommandState("justifyRight"),
+    });
+  };
+
+  const handleInput = () => {
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+    updateActiveFormats();
+  };
+
+  const exec = (command: string, val: string | null = null) => {
+    editorRef.current?.focus();
+    document.execCommand(command, false, val ?? undefined);
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+    updateActiveFormats();
+  };
+
+  const handleLink = () => {
+    // Capture current selection BEFORE the popover opens (button has onMouseDown preventDefault so focus stays)
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      savedRangeRef.current = sel.getRangeAt(0).cloneRange();
+    } else {
+      savedRangeRef.current = null;
+    }
+    setLinkUrl("https://");
+    setShowLinkPopover(true);
+    // Focus the URL input on next tick
+    setTimeout(() => linkInputRef.current?.focus(), 50);
+  };
+
+  const applyLink = () => {
+    let url = linkUrl.trim();
+    if (!url || url === "https://") return;
+    if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+    if (editorRef.current) {
+      editorRef.current.focus();
+      // Restore the saved selection so createLink operates on the right text
+      const sel = window.getSelection();
+      if (savedRangeRef.current && sel) {
+        sel.removeAllRanges();
+        sel.addRange(savedRangeRef.current);
+      }
+      document.execCommand("createLink", false, url);
+      // Make all created links open in new tab
+      editorRef.current.querySelectorAll("a").forEach((a) => {
+        a.setAttribute("target", "_blank");
+        a.setAttribute("rel", "noopener noreferrer");
+      });
+      onChange(editorRef.current.innerHTML);
+    }
+    setShowLinkPopover(false);
+    setLinkUrl("https://");
+    savedRangeRef.current = null;
+    updateActiveFormats();
+  };
+
+  const cancelLink = () => {
+    setShowLinkPopover(false);
+    setLinkUrl("https://");
+    savedRangeRef.current = null;
+  };
+
+  const handleFontSize = (sz: string) => {
+    setFontSize(sz);
+    setShowFontSizeDropdown(false);
+    editorRef.current?.focus();
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
+      const span = document.createElement("span");
+      span.style.fontSize = `${sz}px`;
+      const range = selection.getRangeAt(0);
+      try {
+        range.surroundContents(span);
+      } catch {
+        document.execCommand("fontSize", false, "3");
+      }
+      if (editorRef.current) {
+        onChange(editorRef.current.innerHTML);
+      }
+    } else {
+      document.execCommand("fontSize", false, "3");
+    }
+  };
+
+  const handleColor = (color: string) => {
+    exec("foreColor", color);
+    setShowColorPicker(false);
+  };
+
+  const toggleFullscreen = () => {
+    setIsFullscreen((prev) => !prev);
+  };
+
+  const toolbar = (
+    <div className="border-b border-[#e8e6f0] px-3.5 py-2.5 bg-[#faf9fc] flex flex-wrap gap-1.5 items-center text-[#5a5a7a] relative shrink-0">
+      {(
+        [
+          {
+            cmd: "bold",
+            icon: <Bold size={14} />,
+            active: activeFormats.bold,
+            title: "Bold",
+          },
+          {
+            cmd: "italic",
+            icon: <Italic size={14} />,
+            active: activeFormats.italic,
+            title: "Italic",
+          },
+          {
+            cmd: "underline",
+            icon: <Underline size={14} />,
+            active: activeFormats.underline,
+            title: "Underline",
+          },
+          {
+            cmd: "strikeThrough",
+            icon: <Strikethrough size={14} />,
+            active: activeFormats.strikethrough,
+            title: "Strikethrough",
+          },
+        ] as {
+          cmd: string;
+          icon: React.ReactNode;
+          active: boolean;
+          title: string;
+        }[]
+      ).map(({ cmd, icon, active, title }) => (
+        <button
+          key={cmd}
+          type="button"
+          title={title}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => exec(cmd)}
+          className={cn(
+            "p-1.5 rounded-lg transition-colors cursor-pointer",
+            active
+              ? "bg-brand-pink text-white"
+              : "hover:bg-[#e8e6f0] hover:text-[#1a1a2e]",
+          )}
+        >
+          {icon}
+        </button>
+      ))}
+
+      <div className="w-px h-4 bg-[#e8e6f0] mx-1 self-center" />
+
+      {/* Link with inline popover */}
+      <div className="relative">
+        <button
+          type="button"
+          title="Insert Link"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={handleLink}
+          className={cn(
+            "p-1.5 rounded-lg transition-colors cursor-pointer",
+            showLinkPopover
+              ? "bg-brand-pink text-white"
+              : "hover:bg-[#e8e6f0] hover:text-[#1a1a2e]",
+          )}
+        >
+          <LinkIcon size={14} />
+        </button>
+
+        {showLinkPopover && (
+          <div className="absolute top-full left-0 mt-2 z-50 bg-white border border-[#e8e6f0] rounded-xl shadow-xl p-3 w-72 flex flex-col gap-2">
+            <p className="text-[10px] font-semibold text-[#5a5a7a] uppercase tracking-wide">
+              Insert hyperlink
+            </p>
+            <input
+              ref={linkInputRef}
+              type="url"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") applyLink();
+                if (e.key === "Escape") cancelLink();
+              }}
+              placeholder="https://example.com"
+              className="w-full text-xs px-3 py-2 border border-[#e8e6f0] rounded-lg focus:outline-none focus:border-brand-pink text-[#1a1a2e] font-medium"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={cancelLink}
+                className="text-xs px-3 py-1.5 rounded-lg border border-[#e8e6f0] text-[#5a5a7a] hover:bg-[#faf9fc] transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={applyLink}
+                className="text-xs px-3 py-1.5 rounded-lg bg-brand-pink text-white hover:opacity-90 transition-opacity font-semibold"
+              >
+                Apply Link
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bullet list */}
+      <button
+        type="button"
+        title="Bullet List"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => exec("insertUnorderedList")}
+        className={cn(
+          "p-1.5 rounded-lg transition-colors cursor-pointer",
+          activeFormats.unorderedList
+            ? "bg-brand-pink text-white"
+            : "hover:bg-[#e8e6f0] hover:text-[#1a1a2e]",
+        )}
+      >
+        <List size={14} />
+      </button>
+
+      {/* Numbered list */}
+      <button
+        type="button"
+        title="Numbered List"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => exec("insertOrderedList")}
+        className={cn(
+          "p-1.5 rounded-lg transition-colors cursor-pointer",
+          activeFormats.orderedList
+            ? "bg-brand-pink text-white"
+            : "hover:bg-[#e8e6f0] hover:text-[#1a1a2e]",
+        )}
+      >
+        <ListOrdered size={14} />
+      </button>
+
+      <div className="w-px h-4 bg-[#e8e6f0] mx-1 self-center" />
+
+      {/* Alignment */}
+      {(
+        [
+          {
+            cmd: "justifyLeft",
+            icon: <AlignLeft size={14} />,
+            active: activeFormats.alignLeft,
+            title: "Align Left",
+          },
+          {
+            cmd: "justifyCenter",
+            icon: <AlignCenter size={14} />,
+            active: activeFormats.alignCenter,
+            title: "Align Center",
+          },
+          {
+            cmd: "justifyRight",
+            icon: <AlignRight size={14} />,
+            active: activeFormats.alignRight,
+            title: "Align Right",
+          },
+        ] as {
+          cmd: string;
+          icon: React.ReactNode;
+          active: boolean;
+          title: string;
+        }[]
+      ).map(({ cmd, icon, active, title }) => (
+        <button
+          key={cmd}
+          type="button"
+          title={title}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => exec(cmd)}
+          className={cn(
+            "p-1.5 rounded-lg transition-colors cursor-pointer",
+            active
+              ? "bg-brand-pink text-white"
+              : "hover:bg-[#e8e6f0] hover:text-[#1a1a2e]",
+          )}
+        >
+          {icon}
+        </button>
+      ))}
+
+      <div className="w-px h-4 bg-[#e8e6f0] mx-1 self-center" />
+
+      {/* Font Size */}
+      <div className="relative">
+        <button
+          type="button"
+          title="Font Size"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => setShowFontSizeDropdown((p) => !p)}
+          className="flex items-center gap-1 text-xs font-bold text-[#5a5a7a] hover:text-[#1a1a2e] px-2 py-1 hover:bg-[#e8e6f0] rounded-lg cursor-pointer transition-colors"
+        >
+          <span>{fontSize}</span>
+          <Type size={12} />
+        </button>
+        {showFontSizeDropdown && (
+          <div className="absolute top-full left-0 mt-1 bg-white border border-[#e8e6f0] rounded-xl shadow-lg py-1.5 z-50 min-w-[70px] text-xs">
+            {FONT_SIZES.map((sz) => (
+              <button
+                key={sz}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => handleFontSize(sz)}
+                className={cn(
+                  "w-full text-left px-3 py-1 font-bold hover:bg-[#faf9fc] cursor-pointer",
+                  fontSize === sz
+                    ? "text-brand-pink bg-rose-50/50"
+                    : "text-[#1a1a2e]",
+                )}
+              >
+                {sz}px
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Color Picker */}
+      <div className="relative">
+        <button
+          type="button"
+          title="Text Color"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => setShowColorPicker((p) => !p)}
+          className="p-1.5 rounded-lg hover:bg-[#e8e6f0] hover:text-[#1a1a2e] transition-colors cursor-pointer"
+        >
+          <Palette size={14} />
+        </button>
+        {showColorPicker && (
+          <div className="absolute top-full left-0 mt-1 bg-white border border-[#e8e6f0] rounded-xl shadow-lg p-2 z-50 grid grid-cols-4 gap-1.5 w-32">
+            {COLOR_PRESETS.map((col) => (
+              <button
+                key={col}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => handleColor(col)}
+                style={{ backgroundColor: col }}
+                className="w-6 h-6 rounded-full border border-black/10 hover:scale-110 transition-transform cursor-pointer"
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Fullscreen Toggle */}
+      <button
+        type="button"
+        onClick={toggleFullscreen}
+        title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Editor"}
+        className="p-1.5 rounded-lg hover:bg-[#e8e6f0] hover:text-[#1a1a2e] transition-colors cursor-pointer ml-auto"
+      >
+        {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+      </button>
+    </div>
+  );
+
+  const editorBody = (
+    <div
+      ref={editorRef}
+      contentEditable
+      suppressContentEditableWarning
+      onInput={handleInput}
+      onKeyUp={updateActiveFormats}
+      onMouseUp={updateActiveFormats}
+      onBlur={handleInput}
+      data-placeholder={placeholder || "Write article content here..."}
+      className={cn(
+        "flex-1 p-4 text-xs font-medium text-[#1a1a2e] focus:outline-none overflow-y-auto leading-relaxed min-h-[160px]",
+        "[&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2",
+        "[&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-2",
+        "[&_li]:my-0.5 [&_a]:text-brand-pink [&_a]:underline [&_a]:font-bold",
+        isFullscreen
+          ? "max-h-[calc(100vh-110px)] text-sm p-6"
+          : "max-h-[400px]",
+      )}
+    />
+  );
+
+  return (
+    <>
+      {/* Fullscreen backdrop — rendered in-tree, no Portal needed */}
+      {isFullscreen && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998]"
+          onClick={toggleFullscreen}
+        />
+      )}
+      <div
+        className={cn(
+          "border border-[#e8e6f0] bg-white overflow-hidden flex flex-col",
+          isFullscreen
+            ? "fixed inset-4 z-[9999] shadow-2xl border-brand-pink/60 rounded-3xl"
+            : "rounded-2xl min-h-[240px]",
+        )}
+      >
+        {toolbar}
+        {editorBody}
+      </div>
+    </>
+  );
 }
 
 function NewsDrawerFormInner({
@@ -61,53 +561,88 @@ function NewsDrawerFormInner({
     article?.coverImage || article?.image || null,
   );
   const [bodyContent, setBodyContent] = useState(article?.content || "");
-  const [summaryInput, setSummaryInput] = useState(article?.summary || "");
   const [tagsInput, setTagsInput] = useState(
     Array.isArray(article?.tags) ? article.tags.join(", ") : "",
   );
-  const [status, setStatus] = useState<string>(
-    (article?.status || "draft").toLowerCase(),
-  );
+  const [isDragging, setIsDragging] = useState(false);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
 
-  const [isPlatformUpdate, setIsPlatformUpdate] = useState<boolean>(
-    article?.isPlatformUpdate ?? true,
-  );
-  const [isTopNews, setIsTopNews] = useState<boolean>(
-    article?.isTopNews ?? false,
-  );
-  const [industryId, setIndustryId] = useState<string>(
-    article?.industryId || "",
-  );
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const processFile = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file (JPEG, PNG, WEBP, etc.)");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image file size must be less than 5MB");
+      return;
+    }
     setCoverFile(file);
     const url = URL.createObjectURL(file);
     setPreviewImage(url);
     setCoverUrl("");
+    toast.success("Image selected for upload");
   };
 
-  const handleSave = (customStatus?: "published" | "draft") => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processFile(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processFile(file);
+    }
+  };
+
+  const handleClearImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCoverFile(null);
+    setCoverUrl("");
+    setPreviewImage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleSave = (
+    customStatus: "published" | "draft" | "scheduled",
+    scheduledAtTimestamp?: string,
+  ) => {
     if (!title.trim()) {
       alert("Please enter an article title.");
       return;
     }
 
-    const finalStatus = customStatus || status || "draft";
+    const plainTextBody = bodyContent.replace(/<[^>]*>/g, "").trim();
     const summaryText =
-      summaryInput.trim() ||
-      bodyContent.slice(0, 150) + (bodyContent.length > 150 ? "..." : "");
+      plainTextBody.slice(0, 150) + (plainTextBody.length > 150 ? "..." : "");
 
     const dto: CreateNewsDto = {
       title: title.trim(),
-      summary: summaryText,
+      summary: summaryText || title.trim(),
       content: bodyContent || `<p>${title.trim()}</p>`,
       category,
-      status: finalStatus,
-      isPlatformUpdate,
-      isTopNews,
-      industryId: industryId.trim() || undefined,
+      status: customStatus,
       coverImage: coverFile || coverUrl || null,
       brand: source.trim() || "Trendupp Africa",
       authorName: authorName.trim(),
@@ -115,9 +650,37 @@ function NewsDrawerFormInner({
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean),
+      scheduledAt: scheduledAtTimestamp,
     };
 
-    onSave(dto, customStatus);
+    onSave(dto, customStatus, scheduledAtTimestamp);
+  };
+
+  const handleOpenScheduleModal = () => {
+    if (!title.trim()) {
+      toast.error("Please enter an article title before scheduling.");
+      return;
+    }
+    setIsScheduleModalOpen(true);
+  };
+
+  const handleConfirmSchedule = () => {
+    if (!scheduleDate || !scheduleTime) {
+      toast.error("Please select both a date and a time to schedule.");
+      return;
+    }
+    const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
+    if (isNaN(scheduledDateTime.getTime())) {
+      toast.error("Invalid date or time selected.");
+      return;
+    }
+    if (scheduledDateTime.getTime() <= Date.now()) {
+      toast.error("Scheduled time must be in the future.");
+      return;
+    }
+    const isoString = scheduledDateTime.toISOString();
+    setIsScheduleModalOpen(false);
+    handleSave("scheduled", isoString);
   };
 
   return (
@@ -169,29 +732,6 @@ function NewsDrawerFormInner({
           </select>
         </div>
 
-        {/* Feature Checkboxes */}
-        <div className="flex items-center gap-6 py-1">
-          <label className="flex items-center gap-2 text-xs font-semibold text-[#1a1a2e] cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isPlatformUpdate}
-              onChange={(e) => setIsPlatformUpdate(e.target.checked)}
-              className="accent-brand-pink rounded"
-            />
-            Platform Update
-          </label>
-
-          <label className="flex items-center gap-2 text-xs font-semibold text-[#1a1a2e] cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isTopNews}
-              onChange={(e) => setIsTopNews(e.target.checked)}
-              className="accent-brand-pink rounded"
-            />
-            Top News
-          </label>
-        </div>
-
         {/* Source */}
         <div className="flex flex-col gap-1.5">
           <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
@@ -216,34 +756,6 @@ function NewsDrawerFormInner({
             value={authorName}
             onChange={(e) => setAuthorName(e.target.value)}
             placeholder="e.g. Ikechukwu Nwe..."
-            className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium text-[#1a1a2e]"
-          />
-        </div>
-
-        {/* Industry ID */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
-            Industry ID (Optional)
-          </label>
-          <input
-            type="text"
-            value={industryId}
-            onChange={(e) => setIndustryId(e.target.value)}
-            placeholder="e.g. uuid-of-industry"
-            className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium text-[#1a1a2e]"
-          />
-        </div>
-
-        {/* Summary Input */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
-            Summary
-          </label>
-          <input
-            type="text"
-            value={summaryInput}
-            onChange={(e) => setSummaryInput(e.target.value)}
-            placeholder="A brief summary of the news..."
             className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium text-[#1a1a2e]"
           />
         </div>
@@ -273,29 +785,50 @@ function NewsDrawerFormInner({
         {/* Drag and drop image */}
         <div
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-[#e8e6f0] bg-white rounded-2xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-brand-pink/40 transition-colors relative min-h-[140px] overflow-hidden"
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={cn(
+            "border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all relative min-h-[140px] overflow-hidden",
+            isDragging
+              ? "border-brand-pink bg-rose-50/50 scale-[0.99]"
+              : "border-[#e8e6f0] bg-white hover:border-brand-pink/40",
+          )}
         >
           {previewImage ? (
-            <>
+            <div className="relative w-full h-36 rounded-xl overflow-hidden group">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewImage}
                 alt="Preview"
-                className="absolute inset-0 w-full h-full object-cover"
+                className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                <span className="text-white text-xs font-bold bg-brand-pink px-3 py-1.5 rounded-lg shadow-md">
-                  Change Photo
-                </span>
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleClearImage}
+                  className="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors shadow-sm"
+                >
+                  Remove Photo
+                </button>
               </div>
-            </>
+            </div>
           ) : (
             <>
-              <div className="w-10 h-10 rounded-full bg-[#f4f3f6] flex items-center justify-center text-[#7a7a9a]">
+              <div
+                className={cn(
+                  "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+                  isDragging
+                    ? "bg-brand-pink text-white"
+                    : "bg-[#f4f3f6] text-[#7a7a9a]",
+                )}
+              >
                 <ImageIcon size={18} />
               </div>
               <span className="text-[11px] font-bold text-[#1a1a2e]">
-                Drag & drop image here
+                {isDragging
+                  ? "Drop your image file here"
+                  : "Drag & drop image here"}
               </span>
               <span className="text-[9px] font-medium text-[#7a7a9a] text-center px-4">
                 (jpeg, jpg, png, webp file extensions up to 5MB)
@@ -316,97 +849,11 @@ function NewsDrawerFormInner({
           <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
             Article Body Content
           </label>
-          <div className="border border-[#e8e6f0] rounded-2xl bg-white overflow-hidden flex flex-col min-h-[220px]">
-            {/* Toolbar */}
-            <div className="border-b border-[#e8e6f0] px-3.5 py-2.5 bg-[#faf9fc] flex flex-wrap gap-2.5 items-center text-[#5a5a7a]">
-              <button
-                type="button"
-                className="p-1 rounded hover:bg-[#e8e6f0] hover:text-[#1a1a2e] cursor-pointer"
-              >
-                <Bold size={13} />
-              </button>
-              <button
-                type="button"
-                className="p-1 rounded hover:bg-[#e8e6f0] hover:text-[#1a1a2e] cursor-pointer"
-              >
-                <Italic size={13} />
-              </button>
-              <button
-                type="button"
-                className="p-1 rounded hover:bg-[#e8e6f0] hover:text-[#1a1a2e] cursor-pointer"
-              >
-                <Underline size={13} />
-              </button>
-              <button
-                type="button"
-                className="p-1 rounded hover:bg-[#e8e6f0] hover:text-[#1a1a2e] cursor-pointer"
-              >
-                <Strikethrough size={13} />
-              </button>
-              <div className="w-px h-3.5 bg-[#e8e6f0] self-center" />
-              <button
-                type="button"
-                className="p-1 rounded hover:bg-[#e8e6f0] hover:text-[#1a1a2e] cursor-pointer"
-              >
-                <LinkIcon size={13} />
-              </button>
-              <button
-                type="button"
-                className="p-1 rounded hover:bg-[#e8e6f0] hover:text-[#1a1a2e] cursor-pointer"
-              >
-                <List size={13} />
-              </button>
-              <button
-                type="button"
-                className="p-1 rounded hover:bg-[#e8e6f0] hover:text-[#1a1a2e] cursor-pointer"
-              >
-                <ListOrdered size={13} />
-              </button>
-              <div className="w-px h-3.5 bg-[#e8e6f0] self-center" />
-              <button
-                type="button"
-                className="p-1 rounded hover:bg-[#e8e6f0] hover:text-[#1a1a2e] cursor-pointer"
-              >
-                <AlignLeft size={13} />
-              </button>
-              <button
-                type="button"
-                className="p-1 rounded hover:bg-[#e8e6f0] hover:text-[#1a1a2e] cursor-pointer"
-              >
-                <AlignCenter size={13} />
-              </button>
-              <button
-                type="button"
-                className="p-1 rounded hover:bg-[#e8e6f0] hover:text-[#1a1a2e] cursor-pointer"
-              >
-                <AlignRight size={13} />
-              </button>
-              <div className="w-px h-3.5 bg-[#e8e6f0] self-center" />
-              <div className="flex items-center gap-1 text-[10px] font-bold text-[#5a5a7a] hover:text-[#1a1a2e] px-1 hover:bg-[#e8e6f0] rounded cursor-pointer h-5">
-                <span>14</span>
-                <Type size={11} />
-              </div>
-              <button
-                type="button"
-                className="p-1 rounded hover:bg-[#e8e6f0] hover:text-[#1a1a2e] cursor-pointer"
-              >
-                <Palette size={13} />
-              </button>
-              <button
-                type="button"
-                className="p-1 rounded hover:bg-[#e8e6f0] hover:text-[#1a1a2e] cursor-pointer ml-auto"
-              >
-                <Maximize2 size={13} />
-              </button>
-            </div>
-            {/* Textarea */}
-            <textarea
-              placeholder="Write article content here..."
-              value={bodyContent}
-              onChange={(e) => setBodyContent(e.target.value)}
-              className="flex-1 w-full p-4 text-xs font-medium text-[#1a1a2e] placeholder-[#9a99b0] focus:outline-none resize-none min-h-[160px] leading-relaxed"
-            />
-          </div>
+          <RichTextEditor
+            value={bodyContent}
+            onChange={setBodyContent}
+            placeholder="Write article content here..."
+          />
         </div>
 
         {/* Tags */}
@@ -422,45 +869,10 @@ function NewsDrawerFormInner({
             className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium text-[#1a1a2e]"
           />
         </div>
-
-        {/* Status Radio Toggles */}
-        <div className="flex flex-col gap-2">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
-            Status
-          </label>
-          <div className="flex gap-4">
-            <button
-              type="button"
-              onClick={() => setStatus("draft")}
-              className={cn(
-                "flex-1 h-10 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold transition-all cursor-pointer",
-                status === "draft"
-                  ? "border-[#d97706] bg-[#fffbeb] text-[#d97706]"
-                  : "border-[#e8e6f0] bg-white text-[#7a7a9a] hover:bg-[#faf9fc]",
-              )}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-[#d97706]" />
-              Draft
-            </button>
-            <button
-              type="button"
-              onClick={() => setStatus("published")}
-              className={cn(
-                "flex-1 h-10 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold transition-all cursor-pointer",
-                status === "published"
-                  ? "border-[#16a34a] bg-[#f0fdf4] text-[#16a34a]"
-                  : "border-[#e8e6f0] bg-white text-[#7a7a9a] hover:bg-[#faf9fc]",
-              )}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a]" />
-              Publish Immediately
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Action Buttons Sticky Footer */}
-      <div className="border-t border-[#e8e6f0]/60 p-6 flex gap-4 bg-white shrink-0">
+      <div className="border-t border-[#e8e6f0]/60 p-6 flex gap-3 bg-white shrink-0">
         <button
           type="button"
           onClick={() => handleSave("draft")}
@@ -471,6 +883,14 @@ function NewsDrawerFormInner({
         </button>
         <button
           type="button"
+          onClick={handleOpenScheduleModal}
+          disabled={isSaving}
+          className="flex-1 h-11 border border-[#e8e6f0] bg-[#f4f3f6] text-[#1a1a2e] hover:bg-[#e8e6f0] text-xs font-bold rounded-xl transition-all cursor-pointer text-center disabled:opacity-50"
+        >
+          Schedule
+        </button>
+        <button
+          type="button"
           onClick={() => handleSave("published")}
           disabled={isSaving}
           className="flex-1 h-11 bg-brand-pink hover:opacity-90 text-white text-xs font-bold rounded-xl transition-all cursor-pointer text-center disabled:opacity-50"
@@ -478,6 +898,84 @@ function NewsDrawerFormInner({
           {isSaving ? "Saving..." : "Publish Article"}
         </button>
       </div>
+
+      {/* Schedule Article Modal */}
+      {isScheduleModalOpen && (
+        <Portal>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
+              onClick={() => setIsScheduleModalOpen(false)}
+            />
+
+            {/* Modal Card */}
+            <div className="relative z-10 w-full max-w-[420px] bg-white rounded-3xl p-6 shadow-2xl flex flex-col gap-5 text-left">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-[#1a1a2e]">
+                  Schedule Article
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsScheduleModalOpen(false)}
+                  className="p-1.5 rounded-full hover:bg-[#f4f3f6] text-[#7a7a9a] transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Date & Time Selectors */}
+              <div className="flex flex-col gap-4">
+                {/* Date */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[#1a1a2e]">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={scheduleDate}
+                    onChange={(e) => setScheduleDate(e.target.value)}
+                    min={new Date().toISOString().split("T")[0]}
+                    className="h-11 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs font-medium text-[#1a1a2e] focus:outline-none focus:border-brand-pink cursor-pointer"
+                  />
+                </div>
+
+                {/* Time */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[#1a1a2e]">
+                    Time
+                  </label>
+                  <input
+                    type="time"
+                    value={scheduleTime}
+                    onChange={(e) => setScheduleTime(e.target.value)}
+                    className="h-11 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs font-medium text-[#1a1a2e] focus:outline-none focus:border-brand-pink cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsScheduleModalOpen(false)}
+                  className="h-10 px-5 border border-[#e8e6f0] rounded-xl text-xs font-bold text-[#5a5a7a] hover:bg-[#faf9fc] transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmSchedule}
+                  className="h-10 px-6 bg-brand-pink text-white rounded-xl text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+                >
+                  Schedule
+                </button>
+              </div>
+            </div>
+          </div>
+        </Portal>
+      )}
     </div>
   );
 }

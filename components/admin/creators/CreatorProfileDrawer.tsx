@@ -8,7 +8,6 @@ import {
   TrendingUp,
   CheckCircle,
   Wallet,
-  Award,
   Star,
   Pencil,
   Trash2,
@@ -17,8 +16,12 @@ import {
   Ban,
   ShieldOff,
   ShieldCheck,
+  CheckCircle2,
   Layers,
+  Download,
+  Zap,
 } from "lucide-react";
+import { toast } from "sonner";
 import { FaTiktok, FaInstagram, FaYoutube } from "react-icons/fa";
 import { cn } from "@/lib/utils";
 import UserAvatar from "@/shared/UserAvatar";
@@ -36,6 +39,11 @@ import {
   useAddCreatorNote,
   useUpdateCreatorNote,
   useDeleteCreatorNote,
+  useSuspendCreatorAccount,
+  useSuspendCreatorCampaignAccess,
+  useReactivateCreatorAccount,
+  useChangeCreatorTier,
+  useDeleteCreatorAccount,
 } from "@/hooks/useAdminCreators";
 
 interface CreatorProfileDrawerProps {
@@ -206,6 +214,13 @@ export default function CreatorProfileDrawer({
   const updateNoteMutation = useUpdateCreatorNote();
   const deleteNoteMutation = useDeleteCreatorNote();
 
+  /* Actions Mutations */
+  const suspendAccountMutation = useSuspendCreatorAccount();
+  const suspendCampaignAccessMutation = useSuspendCreatorCampaignAccess();
+  const reactivateAccountMutation = useReactivateCreatorAccount();
+  const changeTierMutation = useChangeCreatorTier();
+  const deleteAccountMutation = useDeleteCreatorAccount();
+
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
     return () => {
@@ -238,6 +253,91 @@ export default function CreatorProfileDrawer({
   const creatorStatus = (
     profileDetails?.accountStatus || "active"
   ).toLowerCase();
+
+  // Action Confirmation Submission
+  const handleConfirmAction = (inputValue: string) => {
+    if (!creatorId || !activeAction) return;
+
+    if (activeAction === "suspend") {
+      suspendAccountMutation.mutate(
+        { id: creatorId, reason: inputValue },
+        {
+          onSuccess: () => {
+            setSuccessModalTitle("Account Suspended");
+            setSuccessModalMessage(
+              "You have successfully suspended this creator account",
+            );
+            setIsSuccessModalOpen(true);
+            setActiveAction(null);
+          },
+        },
+      );
+    } else if (activeAction === "suspendCampaign") {
+      suspendCampaignAccessMutation.mutate(
+        { id: creatorId, reason: inputValue },
+        {
+          onSuccess: () => {
+            setSuccessModalTitle("Campaign Access Suspended");
+            setSuccessModalMessage(
+              "You have successfully restricted campaign access for this creator",
+            );
+            setIsSuccessModalOpen(true);
+            setActiveAction(null);
+          },
+        },
+      );
+    } else if (activeAction === "reactivate") {
+      reactivateAccountMutation.mutate(
+        { id: creatorId, reason: inputValue },
+        {
+          onSuccess: () => {
+            setSuccessModalTitle("Account Reactivated");
+            setSuccessModalMessage(
+              "You have successfully reactivated this creator account",
+            );
+            setIsSuccessModalOpen(true);
+            setActiveAction(null);
+          },
+        },
+      );
+    } else if (activeAction === "changeTier") {
+      changeTierMutation.mutate(
+        { id: creatorId, tier: inputValue },
+        {
+          onSuccess: () => {
+            setSuccessModalTitle("Creator tier changed successfully");
+            setSuccessModalMessage(
+              `You have successfully changed the creator tier to ${inputValue}`,
+            );
+            setIsSuccessModalOpen(true);
+            setActiveAction(null);
+          },
+        },
+      );
+    } else if (activeAction === "delete") {
+      deleteAccountMutation.mutate(
+        { id: creatorId },
+        {
+          onSuccess: () => {
+            setSuccessModalTitle("Account Deleted");
+            setSuccessModalMessage(
+              "You have successfully deleted this creator account",
+            );
+            setIsSuccessModalOpen(true);
+            setActiveAction(null);
+            onClose();
+          },
+        },
+      );
+    }
+  };
+
+  const isActionSubmitting =
+    suspendAccountMutation.isPending ||
+    suspendCampaignAccessMutation.isPending ||
+    reactivateAccountMutation.isPending ||
+    changeTierMutation.isPending ||
+    deleteAccountMutation.isPending;
 
   // Dynamic reviews array
   const displayReviews = useMemo(() => {
@@ -284,7 +384,6 @@ export default function CreatorProfileDrawer({
   const totalFollowersCount = useMemo(() => {
     if (!creatorProfile) return 0;
 
-    // 1. Root level properties
     const rootObj = creatorProfile as unknown as Record<string, unknown>;
     const rootVal =
       rootObj["total followers"] ??
@@ -296,7 +395,6 @@ export default function CreatorProfileDrawer({
       if (!isNaN(num) && num > 0) return num;
     }
 
-    // 2. Metrics object properties
     const m = (metricsData || rootObj.metrics) as
       Record<string, unknown> | undefined;
     if (m) {
@@ -311,7 +409,6 @@ export default function CreatorProfileDrawer({
       }
     }
 
-    // 3. Profile details object properties
     const pd = (profileDetails || rootObj.profileDetails) as
       Record<string, unknown> | undefined;
     if (pd) {
@@ -327,7 +424,6 @@ export default function CreatorProfileDrawer({
       }
     }
 
-    // 4. Stats object properties
     const st = rootObj.stats as Record<string, unknown> | undefined;
     if (st) {
       const rawVal =
@@ -341,7 +437,6 @@ export default function CreatorProfileDrawer({
       }
     }
 
-    // 5. Sum of socialAccounts
     if (
       socialAccounts &&
       Array.isArray(socialAccounts) &&
@@ -357,34 +452,70 @@ export default function CreatorProfileDrawer({
     return 0;
   }, [creatorProfile, metricsData, profileDetails, socialAccounts]);
 
-  // Metrics under Overview (derived from GET /api/v1/admin/creators/{id} -> metrics)
+  const realBankDetails = useMemo(() => {
+    const rootObj = (creatorProfile || {}) as Record<string, unknown>;
+    const rootBank = (creatorProfile?.bankDetails ||
+      profileDetails?.bankDetails ||
+      rootObj?.bankDetails ||
+      rootObj?.bank_details ||
+      rootObj?.bank) as Record<string, unknown> | undefined;
+
+    const accountNumber =
+      (rootBank?.accountNumber as string) ??
+      (rootBank?.account_number as string) ??
+      profileDetails?.accountNumber ??
+      profileDetails?.bankAccountNumber ??
+      "";
+
+    const bankName =
+      (rootBank?.bankName as string) ??
+      (rootBank?.bank_name as string) ??
+      profileDetails?.bankName ??
+      "";
+
+    const accountName =
+      (rootBank?.accountName as string) ??
+      (rootBank?.account_name as string) ??
+      profileDetails?.accountName ??
+      profileDetails?.bankAccountName ??
+      profileDetails?.fullName ??
+      creatorName;
+
+    const bankAccountStatus =
+      (rootBank?.status as string) ??
+      (rootBank?.bankAccountStatus as string) ??
+      (rootBank?.bank_account_status as string) ??
+      profileDetails?.bankAccountStatus ??
+      (accountNumber ? "Verified" : "Unverified");
+
+    const isVerified =
+      String(bankAccountStatus).toLowerCase().includes("verified") ||
+      String(bankAccountStatus).toLowerCase() === "active" ||
+      Boolean(rootBank?.isVerified || rootBank?.is_verified);
+
+    return {
+      accountNumber: accountNumber ? String(accountNumber) : "",
+      bankName: bankName ? String(bankName) : "",
+      accountName: accountName ? String(accountName) : "",
+      bankAccountStatus: String(bankAccountStatus),
+      isVerified,
+      hasBank: Boolean(accountNumber || bankName),
+    };
+  }, [creatorProfile, profileDetails, creatorName]);
+
   const metrics = [
     {
-      label: "Followers",
-      value: formatFollowerCount(totalFollowersCount),
-      icon: Users,
-      bg: "bg-[#fdf2f6] text-[#d7176f]",
-    },
-    {
-      label: "Engagement",
-      value:
-        metricsData?.onTimeSubmissionRate !== undefined
-          ? `${metricsData.onTimeSubmissionRate}%`
-          : "0%",
-      icon: TrendingUp,
-      bg: "bg-[#edf2fe] text-[#2f63eb]",
-    },
-    {
-      label: "Campaigns",
+      label: "Completed Campaigns",
       value:
         metricsData?.completedCampaigns !== undefined
           ? String(metricsData.completedCampaigns)
           : String(displayCampaigns.length),
-      icon: CheckCircle,
-      bg: "bg-[#f0fdf4] text-[#16a34a]",
+      icon: CheckCircle2,
+      color: "text-[#16a34a]",
+      bg: "bg-[#f0fdf4]",
     },
     {
-      label: "Earnings",
+      label: "Total Earnings",
       value:
         metricsData?.totalEarnings !== undefined
           ? `₦${
@@ -394,18 +525,67 @@ export default function CreatorProfileDrawer({
             }`
           : "₦0",
       icon: Wallet,
-      bg: "bg-[#fff7ed] text-[#ea580c]",
+      color: "text-[#d97706]",
+      bg: "bg-[#fffbeb]",
     },
     {
-      label: "Tokens",
+      label: "On-Time Submission rate",
+      value:
+        metricsData?.onTimeSubmissionRate !== undefined
+          ? `${metricsData.onTimeSubmissionRate}%`
+          : "0%",
+      icon: TrendingUp,
+      color: "text-[#2563eb]",
+      bg: "bg-[#eff6ff]",
+    },
+    {
+      label: "Total Followers",
+      value: formatFollowerCount(totalFollowersCount),
+      icon: Users,
+      color: "text-[#d7176f]",
+      bg: "bg-[#fdf2f6]",
+    },
+    {
+      label: "Total Tokens",
       value:
         metricsData?.totalTokens !== undefined
           ? String(metricsData.totalTokens)
           : "0",
-      icon: Award,
-      bg: "bg-[#f5f3ff] text-[#7c3aed]",
+      icon: Zap,
+      color: "text-[#7c3aed]",
+      bg: "bg-[#f5f3ff]",
     },
   ];
+
+  const handleExportMetrics = () => {
+    const csvRows = [
+      ["Metric", "Value"],
+      ["Creator Name", creatorName],
+      ["Username", creatorHandle],
+      ["Completed Campaigns", metrics[0].value],
+      ["Total Earnings", metrics[1].value],
+      ["On-Time Submission rate", metrics[2].value],
+      ["Total Followers", metrics[3].value],
+      ["Total Tokens", metrics[4].value],
+    ];
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      csvRows.map((e) => e.map((cell) => `"${cell}"`).join(",")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `${creatorName.toLowerCase().replace(/\s+/g, "_")}_metrics.csv`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success("Metrics exported successfully");
+  };
 
   if (!isOpen || !creatorId) return null;
 
@@ -487,11 +667,57 @@ export default function CreatorProfileDrawer({
                 {/* OVERVIEW TAB */}
                 {activeTab === "Overview" && (
                   <>
-                    <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-4">
-                      <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
+                    {/* METRICS CARDS MATRIX (POSITIONED AT TOP WITH EXPORT OPTION) */}
+                    <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-4 shadow-xs">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-extrabold text-[#1a1a2e] uppercase tracking-wider">
+                          METRICS
+                        </h4>
+                        <button
+                          type="button"
+                          onClick={handleExportMetrics}
+                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white border border-[#e8e6f0] hover:bg-[#faf9fc] text-[#1a1a2e] text-xs font-bold rounded-xl transition-all shadow-2xs cursor-pointer hover:border-[#d0ceeb]"
+                        >
+                          <Download size={13} className="text-[#5a5a7a]" />
+                          <span>Export</span>
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                        {metrics.map((m, i) => {
+                          const Icon = m.icon;
+                          return (
+                            <div
+                              key={i}
+                              className="bg-[#faf9fc]/80 border border-[#e8e6f0]/80 rounded-2xl p-4 flex flex-col items-center text-center justify-center gap-1.5 shadow-2xs transition-all hover:bg-white hover:shadow-xs"
+                            >
+                              <div
+                                className={cn(
+                                  "w-7 h-7 rounded-full flex items-center justify-center shrink-0",
+                                  m.bg,
+                                  m.color,
+                                )}
+                              >
+                                <Icon size={14} />
+                              </div>
+                              <span className="text-base font-bold text-[#1a1a2e] tracking-tight mt-0.5">
+                                {m.value}
+                              </span>
+                              <span className="text-[11px] text-[#7a7a9a] font-medium leading-tight text-center">
+                                {m.label}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Profile Details */}
+                    <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-4">
+                      <h4 className="text-sm font-bold text-[#1a1a2e]">
                         Profile Details
                       </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3.5 text-xs">
+                      <div className="flex flex-col gap-3.5 text-xs">
                         {[
                           {
                             label: "Full name",
@@ -499,7 +725,7 @@ export default function CreatorProfileDrawer({
                           },
                           {
                             label: "Email",
-                            value: profileDetails?.email || "alex@email.com",
+                            value: profileDetails?.email || "amara@email.com",
                           },
                           {
                             label: "Country of residence",
@@ -507,7 +733,7 @@ export default function CreatorProfileDrawer({
                               profileDetails?.countryOfResidence || "Nigeria",
                           },
                           {
-                            label: "State / Location",
+                            label: "State",
                             value: profileDetails?.state || "Lagos",
                           },
                           {
@@ -515,91 +741,130 @@ export default function CreatorProfileDrawer({
                             value: profileDetails?.nationality || "Nigeria",
                           },
                           {
-                            label: "Phone",
-                            value: profileDetails?.phoneNumber || "N/A",
-                          },
-                          {
                             label: "Bio",
                             value:
                               profileDetails?.bio ||
                               "Fashion content creator passionate about African aesthetics and modern style.",
-                            span: true,
+                          },
+                          {
+                            label: "Gender",
+                            value: profileDetails?.gender || "Male",
+                          },
+                          {
+                            label: "Date of Birth",
+                            value:
+                              profileDetails?.dateOfBirth ||
+                              profileDetails?.dob ||
+                              "11-05-2000",
                           },
                           {
                             label: "Profile Completion",
                             value: profileDetails?.profileCompletion || "100%",
                           },
                           {
-                            label: "Bank Account",
+                            label: "Account Number",
                             value:
-                              profileDetails?.bankAccountStatus || "Verified",
-                            color: "text-[#16a34a] font-bold",
+                              realBankDetails.accountNumber ||
+                              profileDetails?.accountNumber ||
+                              profileDetails?.bankAccountNumber ||
+                              "—",
+                            isBankAccountNumber: Boolean(
+                              realBankDetails.accountNumber ||
+                              profileDetails?.accountNumber ||
+                              profileDetails?.bankAccountNumber,
+                            ),
+                          },
+                          {
+                            label: "Bank Name",
+                            value:
+                              realBankDetails.bankName ||
+                              profileDetails?.bankName ||
+                              "—",
+                          },
+                          {
+                            label: "Account Name",
+                            value:
+                              realBankDetails.accountName ||
+                              profileDetails?.accountName ||
+                              profileDetails?.bankAccountName ||
+                              profileDetails?.fullName ||
+                              creatorName,
+                          },
+                          {
+                            label: "Bank Account Status",
+                            value:
+                              realBankDetails.bankAccountStatus ||
+                              profileDetails?.bankAccountStatus ||
+                              "Verified",
+                            isBankStatusBadge: true,
                           },
                           {
                             label: "Date Joined",
-                            value: formatDateOnly(profileDetails?.dateJoined),
+                            value:
+                              formatDateOnly(profileDetails?.dateJoined) !== "—"
+                                ? formatDateOnly(profileDetails?.dateJoined)
+                                : "Jan 15, 2026",
                           },
-                          { label: "Account Status", badge: true },
+                          {
+                            label: "Account Status",
+                            isBadge: true,
+                          },
                         ].map((f, i) => (
                           <div
                             key={i}
-                            className={cn(
-                              "flex flex-col gap-1",
-                              f.span && "sm:col-span-2",
-                            )}
+                            className="grid grid-cols-1 sm:grid-cols-[170px_1fr] items-start gap-1 sm:gap-4"
                           >
-                            <span className="text-[#9a99b0] text-[10px] font-semibold uppercase">
+                            <span className="font-bold text-[#5a5a7a]">
                               {f.label}
                             </span>
-                            {f.badge ? (
+                            {f.isBadge ? (
                               <div className="w-fit">
                                 <AdminStatusBadge status={creatorStatus} />
                               </div>
-                            ) : (
+                            ) : f.isBankStatusBadge ? (
                               <span
                                 className={cn(
-                                  "text-[#1a1a2e] font-medium leading-relaxed",
-                                  f.color,
+                                  "px-2.5 py-0.5 rounded-full text-[10px] font-bold border capitalize w-fit inline-block",
+                                  (String(f.value)
+                                    .toLowerCase()
+                                    .includes("verified") &&
+                                    !String(f.value)
+                                      .toLowerCase()
+                                      .includes("unverified")) ||
+                                    String(f.value).toLowerCase() === "active"
+                                    ? "bg-[#f0fdf4] text-[#16a34a] border-emerald-200"
+                                    : String(f.value)
+                                          .toLowerCase()
+                                          .includes("unverified") ||
+                                        String(f.value)
+                                          .toLowerCase()
+                                          .includes("rejected") ||
+                                        String(f.value)
+                                          .toLowerCase()
+                                          .includes("failed")
+                                      ? "bg-[#fef2f2] text-[#dc2626] border-red-200"
+                                      : "bg-[#fffbeb] text-[#d97706] border-amber-200",
                                 )}
                               >
+                                {f.value}
+                              </span>
+                            ) : f.isBankAccountNumber ? (
+                              <div className="flex items-center gap-1.5 font-semibold text-[#1a1a2e]">
+                                <span>{f.value}</span>
+                                {realBankDetails.isVerified && (
+                                  <CheckCircle2
+                                    size={15}
+                                    className="text-[#10b981] fill-[#10b981]/15 shrink-0"
+                                  />
+                                )}
+                              </div>
+                            ) : (
+                              <span className="font-semibold text-[#1a1a2e] leading-relaxed">
                                 {f.value}
                               </span>
                             )}
                           </div>
                         ))}
-                      </div>
-                    </div>
-
-                    {/* Metrics Cards Grid Under Overview */}
-                    <div className="flex flex-col gap-3">
-                      <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
-                        Metrics
-                      </h4>
-                      <div className="grid grid-cols-5 gap-3">
-                        {metrics.map((m, i) => {
-                          const Icon = m.icon;
-                          return (
-                            <div
-                              key={i}
-                              className="bg-white border border-[#e8e6f0]/60 rounded-2xl p-3.5 flex flex-col items-center text-center gap-1 shadow-xs"
-                            >
-                              <div
-                                className={cn(
-                                  "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-                                  m.bg,
-                                )}
-                              >
-                                <Icon size={14} />
-                              </div>
-                              <span className="text-sm font-bold text-[#1a1a2e] mt-1">
-                                {m.value}
-                              </span>
-                              <span className="text-[9px] text-[#9a99b0] font-medium uppercase tracking-wider">
-                                {m.label}
-                              </span>
-                            </div>
-                          );
-                        })}
                       </div>
                     </div>
 
@@ -975,32 +1240,10 @@ export default function CreatorProfileDrawer({
               {/* Action confirmation Modal */}
               <CreatorActionModal
                 action={activeAction}
+                currentTier={creatorTier}
                 onClose={() => setActiveAction(null)}
-                onConfirm={() => {
-                  if (activeAction === "changeTier") {
-                    setSuccessModalTitle("Creator tier changed successfully");
-                    setSuccessModalMessage(
-                      "You have successfully changed the creator tier to another tier",
-                    );
-                  } else if (activeAction === "suspend") {
-                    setSuccessModalTitle("Account Suspended");
-                    setSuccessModalMessage(
-                      "You have successfully suspended this creator account",
-                    );
-                  } else if (activeAction === "delete") {
-                    setSuccessModalTitle("Account Deleted");
-                    setSuccessModalMessage(
-                      "You have successfully deleted this creator account",
-                    );
-                  } else {
-                    setSuccessModalTitle("Action Successful");
-                    setSuccessModalMessage(
-                      "The requested action completed successfully",
-                    );
-                  }
-                  setIsSuccessModalOpen(true);
-                  setActiveAction(null);
-                }}
+                onConfirm={handleConfirmAction}
+                isSubmitting={isActionSubmitting}
               />
 
               {/* Note Modal (Add/Edit) */}

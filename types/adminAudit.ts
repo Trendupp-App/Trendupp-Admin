@@ -56,6 +56,8 @@ export interface AuditLogListParams {
   q?: string;
   adminId?: string;
   targetUserId?: string;
+  /** Actions whose route targeted this campaign */
+  campaignId?: string;
   startDate?: string;
   endDate?: string;
 }

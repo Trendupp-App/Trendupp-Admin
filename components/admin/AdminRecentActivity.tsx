@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { AdminDataTable, type AdminColumn } from "./AdminDataTable";
 import { AdminStatusBadge } from "./AdminStatusBadge";
 import { RecentCampaignDto } from "@/types/adminOverview";
@@ -13,54 +15,6 @@ interface ActivityRow {
   budget: string;
   applications: number;
 }
-
-const MOCK: ActivityRow[] = [
-  {
-    id: "1",
-    campaignId: "T-10-1001",
-    campaign: "Summer Style Collect",
-    brand: "7ère Africa",
-    status: "live",
-    budget: "₦3.0M",
-    applications: 47,
-  },
-  {
-    id: "2",
-    campaignId: "T-10-1002",
-    campaign: "SPARK 20 Launch",
-    brand: "Tecno Mobile",
-    status: "submitted",
-    budget: "₦2.5M",
-    applications: 0,
-  },
-  {
-    id: "3",
-    campaignId: "T-10-1003",
-    campaign: "Back to School 2026",
-    brand: "Stronite Nigeria",
-    status: "submitted",
-    budget: "₦1.0M",
-    applications: 0,
-  },
-  {
-    id: "4",
-    campaignId: "T-10-1004",
-    campaign: "Ramadan Special",
-    brand: "Dangote Sugar",
-    status: "completed",
-    budget: "₦1.2M",
-    applications: 89,
-  },
-  {
-    id: "5",
-    campaignId: "T-10-1005",
-    campaign: "Tech Unboxing Series",
-    brand: "Samsung Nigeria",
-    status: "active",
-    budget: "₦4.5M",
-    applications: 134,
-  },
-];
 
 const COLS: AdminColumn<ActivityRow>[] = [
   {
@@ -106,7 +60,7 @@ export function AdminRecentActivity({ activities }: AdminRecentActivityProps) {
               : `₦${item.budget.toLocaleString()}`,
         applications: item.applicationsCount ?? 0,
       }))
-    : MOCK;
+    : [];
 
   return (
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6">
@@ -114,9 +68,13 @@ export function AdminRecentActivity({ activities }: AdminRecentActivityProps) {
         <h2 className="text-sm font-semibold text-[#1a1a2e]">
           Recent Campaign Activity
         </h2>
-        <button className="text-[10px] text-brand-pink font-semibold hover:underline">
-          View All ›
-        </button>
+        <Link
+          href="/admin/campaigns"
+          className="h-7 px-3 bg-[#edf3ff] hover:bg-[#dbe9ff] text-[#2f63eb] text-xs font-bold rounded-xl flex items-center gap-1 transition-colors cursor-pointer"
+        >
+          <span>View All</span>
+          <ChevronRight size={13} className="stroke-[2.5]" />
+        </Link>
       </div>
       <AdminDataTable
         columns={COLS}

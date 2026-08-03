@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import UserAvatar from "@/shared/UserAvatar";
 
 interface Creator {
@@ -11,54 +13,6 @@ interface Creator {
   earnings: string;
   campaigns: number;
 }
-
-const MOCK: Creator[] = [
-  {
-    rank: 1,
-    name: "Tolu Fashola",
-    handle: "@to.ustyles",
-    initials: "TF",
-    tier: "mega",
-    earnings: "₦2.1M",
-    campaigns: 15,
-  },
-  {
-    rank: 2,
-    name: "Amara Osei",
-    handle: "@amara.creates",
-    initials: "AO",
-    tier: "macro",
-    earnings: "₦847K",
-    campaigns: 11,
-  },
-  {
-    rank: 3,
-    name: "Ngozi Eze",
-    handle: "@ngozi.by.beauty",
-    initials: "NE",
-    tier: "micro",
-    earnings: "₦441K",
-    campaigns: 9,
-  },
-  {
-    rank: 4,
-    name: "Chidi Nwosu",
-    handle: "@chidi.lifestyle",
-    initials: "CN",
-    tier: "micro",
-    earnings: "₦312K",
-    campaigns: 7,
-  },
-  {
-    rank: 5,
-    name: "Emeka Dev",
-    handle: "@emeka.dev",
-    initials: "ED",
-    tier: "nano",
-    earnings: "₦98K",
-    campaigns: 3,
-  },
-];
 
 const TIER_COLOR: Record<string, string> = {
   mega: "text-[#7c3aed] bg-[#f5f3ff]",
@@ -92,16 +46,26 @@ export function AdminTopCreators({ creators }: AdminTopCreatorsProps) {
             : `₦${(item.totalEarnings / 1000).toFixed(0)}K`,
         campaigns: item.completedCampaigns,
       }))
-    : MOCK;
+    : [];
 
   return (
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6">
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-sm font-semibold text-[#1a1a2e]">Top Creators</h2>
-        <button className="text-[10px] text-brand-pink font-semibold hover:underline">
-          View All ›
-        </button>
+        <Link
+          href="/admin/users/creators"
+          className="h-7 px-3 bg-[#edf3ff] hover:bg-[#dbe9ff] text-[#2f63eb] text-xs font-bold rounded-xl flex items-center gap-1 transition-colors cursor-pointer"
+        >
+          <span>View All</span>
+          <ChevronRight size={13} className="stroke-[2.5]" />
+        </Link>
       </div>
+
+      {creatorsList.length === 0 && (
+        <p className="text-xs text-[#9a99b0] text-center py-8">
+          No creator activity yet.
+        </p>
+      )}
 
       <div className="flex flex-col gap-3">
         {creatorsList.map(

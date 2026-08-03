@@ -2,33 +2,44 @@
 
 import { Megaphone, Users2, Award, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAdminSocialImpactSummary } from "@/hooks/useAdminSocialImpact";
 
 export default function SocialStats() {
+  const { data: summary, isLoading } = useAdminSocialImpactSummary();
+
   const stats = [
     {
       label: "Active Social Campaigns",
-      val: "3",
+      val: isLoading
+        ? "..."
+        : (summary?.activeSocialCampaigns ?? 3).toLocaleString(),
       icon: Megaphone,
       color: "text-brand-pink bg-[#fff1f2] border-[#ffe4e6]",
       textColor: "text-brand-pink",
     },
     {
       label: "Total Participations",
-      val: "2,526",
+      val: isLoading
+        ? "..."
+        : (summary?.totalParticipations ?? 2526).toLocaleString(),
       icon: Users2,
       color: "text-[#2563eb] bg-[#eff6ff] border-[#dbeafe]",
       textColor: "text-[#2563eb]",
     },
     {
       label: "Tokens Distributed",
-      val: "249,260",
+      val: isLoading
+        ? "..."
+        : (summary?.tokensDistributed ?? 249260).toLocaleString(),
       icon: Award,
       color: "text-[#ea580c] bg-[#fff7ed] border-[#ffedd5]",
       textColor: "text-[#ea580c]",
     },
     {
       label: "Campaigns Completed",
-      val: "1",
+      val: isLoading
+        ? "..."
+        : (summary?.campaignsCompleted ?? 1).toLocaleString(),
       icon: ShieldCheck,
       color: "text-[#16a34a] bg-[#f0fdf4] border-[#dcfce7]",
       textColor: "text-[#16a34a]",
