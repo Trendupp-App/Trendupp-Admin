@@ -20,6 +20,7 @@ import { CampaignSubmission, VetDraftPayload } from "@/types/submissions";
 import type { CreateDisputePayload } from "@/types/dispute";
 import type { CreateReviewPayload } from "@/types/review";
 import type { ActivityTimelineResponse } from "@/types/activityTimeline";
+import type { CampaignMetricsDto } from "@/types/postMetrics";
 
 function appendIfDefined(form: FormData, key: string, value: unknown) {
   if (value === undefined || value === null || value === "") return;
@@ -121,6 +122,9 @@ export const campaignApi = {
     apiClient.get<ActivityTimelineResponse>(
       `/campaigns/${campaignId}/activity-timeline`,
     ),
+
+  getCampaignMetrics: (campaignId: string) =>
+    apiClient.get<CampaignMetricsDto>(`/post-metrics/campaigns/${campaignId}`),
 
   submitCampaign: (id: string) =>
     apiClient.post<SubmitCampaignResponse>(`/campaigns/${id}/submit`),
