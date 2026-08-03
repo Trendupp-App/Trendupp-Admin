@@ -173,10 +173,17 @@ function CreatorPayoutsView({ exportTrigger }: { exportTrigger?: number }) {
         brandName.includes(q) ||
         campaignTitle.includes(q);
 
+      const normalizedStatus = (item.status ?? "").toLowerCase();
+      const selected = statusFilter.toLowerCase();
       const matchesStatus =
-        statusFilter === "All" ||
-        (item.status ?? "").toLowerCase() === statusFilter.toLowerCase();
-
+        selected === "all" ||
+        (selected === "successful" &&
+          ["successful", "paid"].includes(normalizedStatus)) ||
+        (selected === "pending" &&
+          ["pending", "processing"].includes(normalizedStatus)) ||
+        (selected === "on_hold" &&
+          ["onhold", "on_hold", "held"].includes(normalizedStatus)) ||
+        normalizedStatus === selected;
       const itemDateStr =
         item.lastUpdated ??
         item.updatedAt ??
