@@ -80,6 +80,8 @@ export interface CreatorListQueryParams {
   status?: string;
   tier?: string;
   niche?: string;
+  gender?: string;
+  country?: string;
   q?: string;
   page?: number;
   limit?: number;
@@ -97,6 +99,10 @@ export interface AdminCreatorListItem {
   avatarUrl?: string | null;
   tier?: string;
   niche?: string | null;
+  gender?: string | null;
+  country?: string | null;
+  state?: string | null;
+  location?: string | { country?: string; state?: string } | null;
   status?: string;
   completedCampaigns?: number;
   campaignsCount?: number;

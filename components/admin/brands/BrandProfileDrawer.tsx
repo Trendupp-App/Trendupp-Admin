@@ -83,13 +83,17 @@ export default function BrandProfileDrawer({
   const [successModalTitle, setSuccessModalTitle] = useState("");
   const [successModalMessage, setSuccessModalMessage] = useState("");
 
+  /* Campaign History Pagination state */
+  const [campaignPage, setCampaignPage] = useState(1);
+  const campaignLimit = 10;
+
   /* API Hooks */
   const { data: brandData, isLoading: isLoadingDetails } = useBrandDetails(
     brandId,
     isOpen,
   );
   const { data: campaignHistoryData, isLoading: isLoadingCampaigns } =
-    useBrandCampaignHistory(brandId, 1, 10, isOpen);
+    useBrandCampaignHistory(brandId, campaignPage, campaignLimit, isOpen);
   const { data: notesData = [], isLoading: isLoadingNotes } = useBrandNotes(
     brandId,
     isOpen,
@@ -307,24 +311,107 @@ export default function BrandProfileDrawer({
     return "—";
   }, [rootObj, brandDetails, profileDetails]);
 
-  const displayCampaigns = useMemo(() => {
-    if (
-      campaignHistoryData?.data &&
-      Array.isArray(campaignHistoryData.data) &&
-      campaignHistoryData.data.length > 0
-    ) {
-      return campaignHistoryData.data.map((c) => ({
-        id: c.id,
-        title: c.campaignTitle || "Campaign Title",
-        status: c.status || "ACTIVE",
-        budget: c.budget ? `₦${(c.budget / 1000000).toFixed(1)}M` : "₦0",
-        spent: c.spentAmount ? `₦${(c.spentAmount / 1000).toFixed(0)}K` : "₦0",
-        creators: c.creatorsJoinedCount || 0,
-        date: formatDateOnly(c.startDate || c.createdAt),
-      }));
-    }
-    return [];
-  }, [campaignHistoryData]);
+  // Dynamic campaigns array & pagination metadata
+  const { displayCampaigns, totalCampaignItems, totalCampaignPages } =
+    useMemo(() => {
+      const rawObj = campaignHistoryData as Record<string, unknown> | undefined;
+      let list: unknown[] = [];
+      let totalCount = 0;
+
+      if (Array.isArray(campaignHistoryData)) {
+        list = campaignHistoryData;
+        totalCount = campaignHistoryData.length;
+      } else if (rawObj && Array.isArray(rawObj.data)) {
+        list = rawObj.data;
+        const meta = rawObj.meta as Record<string, unknown> | undefined;
+        totalCount =
+          typeof meta?.total === "number"
+            ? meta.total
+            : typeof rawObj.total === "number"
+              ? rawObj.total
+              : typeof rawObj.totalCount === "number"
+                ? rawObj.totalCount
+                : list.length;
+      } else if (
+        rawObj &&
+        rawObj.data &&
+        typeof rawObj.data === "object" &&
+        Array.isArray((rawObj.data as Record<string, unknown>).data)
+      ) {
+        const inner = rawObj.data as Record<string, unknown>;
+        list = inner.data as unknown[];
+        totalCount =
+          typeof inner.total === "number" ? inner.total : list.length;
+      } else if (rawObj && Array.isArray(rawObj.campaigns)) {
+        list = rawObj.campaigns as unknown[];
+        totalCount =
+          typeof rawObj.total === "number" ? rawObj.total : list.length;
+      } else if (rawObj && Array.isArray(rawObj.items)) {
+        list = rawObj.items as unknown[];
+        totalCount =
+          typeof rawObj.total === "number" ? rawObj.total : list.length;
+      }
+
+      const items = list.map((item, idx) => {
+        const c = item as Record<string, unknown>;
+        const budgetVal =
+          (c.budget as number) ??
+          (c.totalBudget as number) ??
+          (c.amount as number) ??
+          0;
+        const spentVal =
+          (c.spentAmount as number) ??
+          (c.spent as number) ??
+          (c.amountSpent as number) ??
+          0;
+        const creatorsCount =
+          (c.creatorsJoinedCount as number) ??
+          (c.creatorsCount as number) ??
+          (c.applicantsCount as number) ??
+          (c.creators as number) ??
+          0;
+
+        const formatMoney = (val: number) => {
+          if (!val || val <= 0) return "₦0";
+          if (val >= 1000000) return `₦${(val / 1000000).toFixed(1)}M`;
+          if (val >= 1000) return `₦${(val / 1000).toFixed(0)}K`;
+          return `₦${val.toLocaleString()}`;
+        };
+
+        return {
+          id:
+            (c.id as string) ??
+            (c._id as string) ??
+            (c.campaignId as string) ??
+            String(idx),
+          title:
+            (c.campaignTitle as string) ??
+            (c.title as string) ??
+            (c.campaignName as string) ??
+            (c.name as string) ??
+            "Campaign Title",
+          status:
+            (c.status as string) ?? (c.campaignStatus as string) ?? "ACTIVE",
+          budget: formatMoney(budgetVal),
+          spent: formatMoney(spentVal),
+          creators: creatorsCount,
+          date: formatDateOnly(
+            (c.startDate as string) ??
+              (c.createdAt as string) ??
+              (c.date as string),
+          ),
+        };
+      });
+
+      const calculatedTotal = totalCount > 0 ? totalCount : items.length;
+      const pages = Math.max(1, Math.ceil(calculatedTotal / campaignLimit));
+
+      return {
+        displayCampaigns: items,
+        totalCampaignItems: calculatedTotal,
+        totalCampaignPages: pages,
+      };
+    }, [campaignHistoryData, campaignLimit]);
 
   if (!isOpen || !brandId) return null;
 
@@ -616,51 +703,97 @@ export default function BrandProfileDrawer({
                 {/* CAMPAIGN HISTORY TAB */}
                 {activeTab === "Campaign History" && (
                   <div className="flex flex-col gap-3">
-                    <h4 className="text-xs font-bold text-[#1a1a2e]">
-                      Campaign History
-                    </h4>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-[#1a1a2e]">
+                        Campaign History
+                      </h4>
+                      {totalCampaignItems > 0 && (
+                        <span className="text-[11px] font-semibold text-[#9a99b0]">
+                          Total: {totalCampaignItems}
+                        </span>
+                      )}
+                    </div>
                     {isLoadingCampaigns ? (
                       <div className="p-4 text-center text-xs text-[#9a99b0]">
                         Loading campaign history...
                       </div>
+                    ) : displayCampaigns.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-[#9a99b0] bg-[#faf9fc] rounded-2xl border border-[#e8e6f0]/60">
+                        No campaign history found for this brand.
+                      </div>
                     ) : (
-                      <div className="overflow-x-auto rounded-2xl border border-[#e8e6f0]/60">
-                        <table className="w-full text-left text-xs border-collapse">
-                          <thead>
-                            <tr className="bg-[#faf9fc] border-b border-[#e8e6f0]/60 text-[10px] font-extrabold uppercase text-[#7a7a9a]">
-                              <th className="py-3 px-3">Title</th>
-                              <th className="py-3 px-3">Status</th>
-                              <th className="py-3 px-3">Budget</th>
-                              <th className="py-3 px-3">Spent</th>
-                              <th className="py-3 px-3">Creators</th>
-                              <th className="py-3 px-3">Start Date</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-[#e8e6f0]/40">
-                            {displayCampaigns.map((c) => (
-                              <tr key={c.id}>
-                                <td className="py-3 px-3 font-bold text-[#1a1a2e]">
-                                  {c.title}
-                                </td>
-                                <td className="py-3 px-3">
-                                  <AdminStatusBadge status={c.status} />
-                                </td>
-                                <td className="py-3 px-3 font-bold text-[#1a1a2e]">
-                                  {c.budget}
-                                </td>
-                                <td className="py-3 px-3 font-bold text-[#1a1a2e]">
-                                  {c.spent}
-                                </td>
-                                <td className="py-3 px-3 font-bold text-[#1a1a2e]">
-                                  {c.creators}
-                                </td>
-                                <td className="py-3 px-3 text-[#7a7a9a]">
-                                  {c.date}
-                                </td>
+                      <div className="flex flex-col gap-3">
+                        <div className="overflow-x-auto rounded-2xl border border-[#e8e6f0]/60">
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                              <tr className="bg-[#faf9fc] border-b border-[#e8e6f0]/60 text-[10px] font-extrabold uppercase text-[#7a7a9a]">
+                                <th className="py-3 px-3">Title</th>
+                                <th className="py-3 px-3">Status</th>
+                                <th className="py-3 px-3">Budget</th>
+                                <th className="py-3 px-3">Spent</th>
+                                <th className="py-3 px-3">Creators</th>
+                                <th className="py-3 px-3">Start Date</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            </thead>
+                            <tbody className="divide-y divide-[#e8e6f0]/40">
+                              {displayCampaigns.map((c) => (
+                                <tr key={c.id}>
+                                  <td className="py-3 px-3 font-bold text-[#1a1a2e]">
+                                    {c.title}
+                                  </td>
+                                  <td className="py-3 px-3">
+                                    <AdminStatusBadge status={c.status} />
+                                  </td>
+                                  <td className="py-3 px-3 font-bold text-[#1a1a2e]">
+                                    {c.budget}
+                                  </td>
+                                  <td className="py-3 px-3 font-bold text-[#1a1a2e]">
+                                    {c.spent}
+                                  </td>
+                                  <td className="py-3 px-3 font-bold text-[#1a1a2e]">
+                                    {c.creators}
+                                  </td>
+                                  <td className="py-3 px-3 text-[#7a7a9a]">
+                                    {c.date}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Pagination Controls */}
+                        {totalCampaignPages > 1 && (
+                          <div className="flex items-center justify-between px-1 pt-1 text-xs">
+                            <span className="text-[11px] font-medium text-[#9a99b0]">
+                              Page {campaignPage} of {totalCampaignPages}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                disabled={campaignPage <= 1}
+                                onClick={() =>
+                                  setCampaignPage((p) => Math.max(1, p - 1))
+                                }
+                                className="px-3 py-1 bg-white border border-[#e8e6f0] rounded-xl text-xs font-bold text-[#1a1a2e] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#faf9fc] cursor-pointer"
+                              >
+                                Previous
+                              </button>
+                              <button
+                                type="button"
+                                disabled={campaignPage >= totalCampaignPages}
+                                onClick={() =>
+                                  setCampaignPage((p) =>
+                                    Math.min(totalCampaignPages, p + 1),
+                                  )
+                                }
+                                className="px-3 py-1 bg-white border border-[#e8e6f0] rounded-xl text-xs font-bold text-[#1a1a2e] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#faf9fc] cursor-pointer"
+                              >
+                                Next
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

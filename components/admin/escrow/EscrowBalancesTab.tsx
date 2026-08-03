@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   SlidersHorizontal,
   Download,
@@ -32,83 +32,45 @@ type EscrowRowItem = EscrowBalanceItem & {
   breakdown?: EscrowBreakdownDto;
 };
 
-const DEFAULT_BALANCES: EscrowRowItem[] = [
-  {
-    id: "bal-1",
-    campaignTitle: "Summer Style Collection 2025",
-    advertiser: { name: "Konga" },
-    totalFunded: 3500000,
-    breakdown: {
-      netAmount: 2712500,
-      commission: 525000,
-      vat: 262500,
-    },
-    fundingStatus: "successful",
-    campaignStatus: "active",
-    lastUpdated: "2025-06-15T14:15:00.000Z",
-  },
-  {
-    id: "bal-2",
-    campaignTitle: "Pepsi Summer Vibes",
-    advertiser: { name: "Pepsi Nigeria" },
-    totalFunded: 8000000,
-    breakdown: {
-      netAmount: 6200000,
-      commission: 1200000,
-      vat: 600000,
-    },
-    fundingStatus: "pending",
-    campaignStatus: "active",
-    lastUpdated: "2025-06-16T10:20:00.000Z",
-  },
-  {
-    id: "bal-3",
-    campaignTitle: "Pepsi Summer Vibes",
-    advertiser: { name: "Pepsi Nigeria" },
-    totalFunded: 8000000,
-    breakdown: {
-      netAmount: 6200000,
-      commission: 1200000,
-      vat: 600000,
-    },
-    fundingStatus: "pending",
-    campaignStatus: "active",
-    lastUpdated: "2025-06-16T10:20:00.000Z",
-  },
-  {
-    id: "bal-4",
-    campaignTitle: "GTBank SPARK 20",
-    advertiser: { name: "GTBank" },
-    totalFunded: 5200000,
-    breakdown: {
-      netAmount: 4030000,
-      commission: 780000,
-      vat: 390000,
-    },
-    fundingStatus: "failed",
-    campaignStatus: "disputed",
-    lastUpdated: "2025-06-16T11:45:00.000Z",
-  },
-];
-
 export default function EscrowBalancesTab() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [fundingStatusFilter, setFundingStatusFilter] = useState("All");
+  const [campaignStatusFilter, setCampaignStatusFilter] = useState("All");
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const LIMIT = 10;
 
   const { data, isLoading, isFetching } = useEscrowBalances(page, LIMIT);
 
-  const rawItems: EscrowRowItem[] =
-    data?.data && data.data.length > 0
-      ? (data.data as EscrowRowItem[])
-      : DEFAULT_BALANCES;
+  const rawItems: EscrowRowItem[] = useMemo(
+    () => (data?.data as EscrowRowItem[]) ?? [],
+    [data?.data],
+  );
   const total = data?.meta?.total ?? data?.total ?? rawItems.length;
   const totalPages = data?.meta?.totalPages ?? Math.ceil(total / LIMIT);
 
-  // Client-side search + Date Range filter (From / To)
+  // Extract unique options from current data
+  const fundingStatusOptions = useMemo(() => {
+    const set = new Set<string>();
+    rawItems.forEach((i) => {
+      const status = i.fundingStatus ?? i.status;
+      if (status) set.add(status);
+    });
+    return Array.from(set);
+  }, [rawItems]);
+
+  const campaignStatusOptions = useMemo(() => {
+    const set = new Set<string>();
+    rawItems.forEach((i) => {
+      const status = i.campaignStatus ?? i.campaign?.status;
+      if (status) set.add(status);
+    });
+    return Array.from(set);
+  }, [rawItems]);
+
+  // Client-side search + Date Range + Funding Status + Campaign Status filter
   const filtered = rawItems.filter((item: EscrowRowItem) => {
     const title = (
       item.campaignTitle ??
@@ -138,8 +100,46 @@ export default function EscrowBalancesTab() {
       }
     }
 
-    return matchesSearch && matchesDateRange;
+    const itemFundingStatus = (item.fundingStatus ?? item.status ?? "").toLowerCase();
+    const selectedFunding = fundingStatusFilter.toLowerCase();
+    const matchesFundingStatus =
+      selectedFunding === "all" ||
+      (selectedFunding === "successful" &&
+        ["successful", "funded"].includes(itemFundingStatus)) ||
+      (selectedFunding === "held" &&
+        ["held", "onhold", "on_hold", "on-hold"].includes(itemFundingStatus)) ||
+      itemFundingStatus === selectedFunding;
+    const itemCampaignStatus = (
+      item.campaignStatus ??
+      item.campaign?.status ??
+      ""
+    ).toLowerCase();
+    const matchesCampaignStatus =
+      campaignStatusFilter === "All" ||
+      itemCampaignStatus === campaignStatusFilter.toLowerCase();
+
+    return (
+      matchesSearch &&
+      matchesDateRange &&
+      matchesFundingStatus &&
+      matchesCampaignStatus
+    );
   });
+
+  const isAnyFilterActive =
+    fromDate !== "" ||
+    toDate !== "" ||
+    fundingStatusFilter !== "All" ||
+    campaignStatusFilter !== "All";
+
+  const handleClearFilters = () => {
+    setSearch("");
+    setFromDate("");
+    setToDate("");
+    setFundingStatusFilter("All");
+    setCampaignStatusFilter("All");
+    setPage(1);
+  };
 
   const handleExport = () => {
     const headers = [
@@ -278,21 +278,88 @@ export default function EscrowBalancesTab() {
 
       {/* Filters + Search Row */}
       <div className="flex flex-wrap items-center justify-between gap-3 mt-1">
-        <div className="relative">
-          <Search
-            size={13}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9a99b0]"
-          />
-          <input
-            type="text"
-            placeholder="Search campaign or brand..."
-            value={search}
+        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[300px]">
+          <div className="relative min-w-[200px] flex-1 max-w-sm">
+            <Search
+              size={13}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9a99b0]"
+            />
+            <input
+              type="text"
+              placeholder="Search campaign or brand..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="pl-8 pr-3 py-1.5 text-xs border border-[#e8e6f0] rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#e91e8c]/20 w-full text-[#1a1a2e] font-medium"
+            />
+          </div>
+
+          {/* Funding Status Filter */}
+          <select
+            value={fundingStatusFilter}
             onChange={(e) => {
-              setSearch(e.target.value);
+              setFundingStatusFilter(e.target.value);
               setPage(1);
             }}
-            className="pl-8 pr-3 py-1.5 text-xs border border-[#e8e6f0] rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#e91e8c]/20 w-64 text-[#1a1a2e]"
-          />
+            className="text-xs border border-[#e8e6f0] rounded-xl px-3 py-1.5 bg-white text-[#4a4a6a] font-semibold focus:outline-none cursor-pointer"
+          >
+            <option value="All">Funding Status: All</option>
+            <option value="successful">Successful / Funded</option>
+            <option value="pending">Pending</option>
+            <option value="failed">Failed</option>
+            <option value="held">Held / On Hold</option>
+            {fundingStatusOptions
+              .filter(
+                (opt) =>
+                  ![
+                    "successful",
+                    "funded",
+                    "pending",
+                    "failed",
+                    "held",
+                  ].includes(opt.toLowerCase()),
+              )
+              .map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                </option>
+              ))}
+          </select>
+
+          {/* Campaign Status Filter */}
+          <select
+            value={campaignStatusFilter}
+            onChange={(e) => {
+              setCampaignStatusFilter(e.target.value);
+              setPage(1);
+            }}
+            className="text-xs border border-[#e8e6f0] rounded-xl px-3 py-1.5 bg-white text-[#4a4a6a] font-semibold focus:outline-none cursor-pointer"
+          >
+            <option value="All">Campaign Status: All</option>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+            <option value="disputed">Disputed</option>
+            <option value="paused">Paused</option>
+            <option value="cancelled">Cancelled</option>
+            {campaignStatusOptions
+              .filter(
+                (opt) =>
+                  ![
+                    "active",
+                    "completed",
+                    "disputed",
+                    "paused",
+                    "cancelled",
+                  ].includes(opt.toLowerCase()),
+              )
+              .map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                </option>
+              ))}
+          </select>
         </div>
 
         <div className="flex items-center gap-2">
@@ -300,13 +367,13 @@ export default function EscrowBalancesTab() {
             type="button"
             onClick={() => setShowFilterPanel(!showFilterPanel)}
             className={`inline-flex items-center gap-1.5 text-xs border rounded-xl px-3 py-1.5 font-semibold transition-colors cursor-pointer ${
-              showFilterPanel || fromDate || toDate
+              showFilterPanel || isAnyFilterActive
                 ? "border-[#e91e8c] bg-[#fce4f3] text-[#e91e8c]"
                 : "border-[#e8e6f0] bg-white text-[#4a4a6a] hover:bg-[#f4f3f6]"
             }`}
           >
-            <SlidersHorizontal size={12} /> Filters
-            {(fromDate || toDate) && (
+            <SlidersHorizontal size={12} /> Date Range
+            {isAnyFilterActive && (
               <span className="w-2 h-2 rounded-full bg-[#e91e8c] ml-0.5" />
             )}
           </button>
@@ -354,17 +421,13 @@ export default function EscrowBalancesTab() {
               className="px-2.5 py-1 text-xs border border-[#e8e6f0] rounded-xl bg-white text-[#1a1a2e] focus:outline-none focus:border-[#e91e8c]"
             />
           </div>
-          {(fromDate || toDate) && (
+          {isAnyFilterActive && (
             <button
               type="button"
-              onClick={() => {
-                setFromDate("");
-                setToDate("");
-                setPage(1);
-              }}
+              onClick={handleClearFilters}
               className="px-2.5 py-1 text-[11px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-200 transition-colors ml-auto cursor-pointer"
             >
-              Clear Filter
+              Clear All Filters
             </button>
           )}
         </div>

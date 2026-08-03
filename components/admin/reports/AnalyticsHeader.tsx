@@ -126,33 +126,35 @@ export default function AnalyticsHeader({
         </button>
       </div>
 
-      {/* Sub-Tabs Navigation */}
-      <div className="flex items-center gap-6 border-b border-[#e8e6f0]/80 overflow-x-auto scrollbar-none pt-2">
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.key;
-          return (
-            <button
-              key={tab.key}
-              disabled={tab.disabled}
-              onClick={() => !tab.disabled && onTabChange(tab.key)}
-              className={`pb-3 text-xs font-bold transition-all border-b-2 whitespace-nowrap cursor-pointer ${
-                isActive
-                  ? "border-brand-pink text-brand-pink"
-                  : tab.disabled
-                    ? "border-transparent text-[#b0aec8] cursor-not-allowed opacity-50"
-                    : "border-transparent text-[#7a7a9a] hover:text-[#1a1a2e]"
-              }`}
-            >
-              {tab.label}
-              {tab.disabled && (
-                <span className="ml-1.5 px-1.5 py-0.2 rounded text-[9px] font-semibold bg-[#f4f3f6] text-[#9a99b0]">
-                  Soon
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+      {/* Sub-Tabs Navigation - hidden in External Report mode */}
+      {activeMode === "internal" && (
+        <div className="flex items-center gap-6 border-b border-[#e8e6f0]/80 overflow-x-auto scrollbar-none pt-2">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                disabled={tab.disabled}
+                onClick={() => !tab.disabled && onTabChange(tab.key)}
+                className={`pb-3 text-xs font-bold transition-all border-b-2 whitespace-nowrap cursor-pointer ${
+                  isActive
+                    ? "border-brand-pink text-brand-pink"
+                    : tab.disabled
+                      ? "border-transparent text-[#b0aec8] cursor-not-allowed opacity-50"
+                      : "border-transparent text-[#7a7a9a] hover:text-[#1a1a2e]"
+                }`}
+              >
+                {tab.label}
+                {tab.disabled && (
+                  <span className="ml-1.5 px-1.5 py-0.2 rounded text-[9px] font-semibold bg-[#f4f3f6] text-[#9a99b0]">
+                    Soon
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

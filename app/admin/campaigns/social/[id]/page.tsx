@@ -536,15 +536,18 @@ export default function SocialImpactDetailsPage({
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center pt-2">
-                  <span className="text-[#7a7a9a] font-semibold">
-                    Token Reward
-                  </span>
-                  <span className="font-bold text-brand-pink flex items-center gap-1">
-                    <Ticket size={14} />
-                    {campaignData?.tokensReward ?? 100} Tokens
-                  </span>
-                </div>
+                {String(campaignData?.status || "").toLowerCase() ===
+                  "completed" && (
+                  <div className="flex justify-between items-center pt-2">
+                    <span className="text-[#7a7a9a] font-semibold">
+                      Token Reward
+                    </span>
+                    <span className="font-bold text-brand-pink flex items-center gap-1">
+                      <Ticket size={14} />
+                      {campaignData?.tokensReward ?? 100} Tokens
+                    </span>
+                  </div>
+                )}
 
                 <div className="flex justify-between items-center pt-2">
                   <span className="text-[#7a7a9a] font-semibold">
