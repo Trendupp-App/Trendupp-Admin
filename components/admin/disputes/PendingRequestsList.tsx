@@ -6,7 +6,7 @@ import { useUserById } from "@/hooks/useUsers";
 interface PendingRequestsListProps {
   disputes: Dispute[];
   onActivateClick: (dispute: Dispute) => void;
-  onDeclineClick: (dispute: Dispute) => void;
+  onDeclineClick?: (dispute: Dispute) => void;
 }
 
 function PendingRequestRow({
@@ -16,7 +16,7 @@ function PendingRequestRow({
 }: {
   dispute: Dispute;
   onActivateClick: (dispute: Dispute) => void;
-  onDeclineClick: (dispute: Dispute) => void;
+  onDeclineClick?: (dispute: Dispute) => void;
 }) {
   const { data: brandUser } = useUserById(dispute.brandId);
   const { data: creatorUser } = useUserById(dispute.creatorId);
@@ -73,17 +73,21 @@ function PendingRequestRow({
         </span>
 
         <div className="flex items-center gap-2">
+          {onDeclineClick && (
+            <button
+              type="button"
+              onClick={() => onDeclineClick(dispute)}
+              className="h-8 px-3 bg-[#faf9fc] border border-[#e8e6f0] hover:bg-rose-50 hover:border-rose-200 text-rose-600 text-[11px] font-bold rounded-xl transition-all cursor-pointer"
+            >
+              Decline
+            </button>
+          )}
           <button
+            type="button"
             onClick={() => onActivateClick(dispute)}
             className="h-8 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-bold rounded-xl transition-all cursor-pointer shadow-sm"
           >
             Activate Chat
-          </button>
-          <button
-            onClick={() => onDeclineClick(dispute)}
-            className="h-8 px-4 bg-rose-500 hover:bg-rose-600 text-white text-[11px] font-bold rounded-xl transition-all cursor-pointer shadow-sm"
-          >
-            Decline Request
           </button>
         </div>
       </div>

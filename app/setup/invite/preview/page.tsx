@@ -15,9 +15,7 @@ interface PreviewPageProps {
   };
 }
 
-export default function InvitePreviewPage({
-  searchParams,
-}: PreviewPageProps) {
+export default function InvitePreviewPage({ searchParams }: PreviewPageProps) {
   const name = searchParams.name ?? "Team Member";
   const role = searchParams.role ?? "Admin";
   const email = searchParams.email ?? "";
@@ -25,7 +23,7 @@ export default function InvitePreviewPage({
 
   const activationUrl =
     otp && email
-      ? `/setup/invite/${otp}?email=${encodeURIComponent(email)}`
+      ? `${process.env.NEXT_PUBLIC_APP_URL}/setup/invite/${otp}?email=${encodeURIComponent(email)}`
       : "#";
 
   const displayUrl =

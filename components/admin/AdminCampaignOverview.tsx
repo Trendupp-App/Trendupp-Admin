@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CampaignOverviewDto } from "@/types/adminOverview";
 
@@ -23,42 +25,42 @@ export function AdminCampaignOverview({
 
   const statusCards: StatusCard[] = [
     {
-      count: overview?.total ?? 284,
+      count: overview?.total ?? 0,
       label: "Total Campaigns",
       status: "",
       color: "text-[#2f63eb]",
       bg: "bg-[#edf2fe]",
     },
     {
-      count: overview?.draft ?? 18,
+      count: overview?.draft ?? 0,
       label: "Draft",
       status: "draft",
       color: "text-[#7a7a9a]",
       bg: "bg-[#f4f3f6]",
     },
     {
-      count: overview?.live ?? 41,
+      count: overview?.live ?? 0,
       label: "Live",
       status: "live",
       color: "text-[#d7176f]",
       bg: "bg-[#fdf2f6]",
     },
     {
-      count: overview?.active ?? 62,
+      count: overview?.active ?? 0,
       label: "Active",
       status: "active",
       color: "text-[#16a34a]",
       bg: "bg-[#f0fdf4]",
     },
     {
-      count: overview?.postPending ?? 9,
+      count: overview?.postPending ?? 0,
       label: "Post Pending",
       status: "post_pending",
       color: "text-[#7c3aed]",
       bg: "bg-[#f5f3ff]",
     },
     {
-      count: overview?.completed ?? 128,
+      count: overview?.completed ?? 0,
       label: "Completed",
       status: "completed",
       color: "text-[#2f63eb]",
@@ -77,9 +79,13 @@ export function AdminCampaignOverview({
             Click any status to filter campaigns
           </p>
         </div>
-        <button className="text-[10px] text-brand-pink font-semibold hover:underline flex items-center gap-0.5 cursor-pointer">
-          View All ›
-        </button>
+        <Link
+          href="/admin/campaigns"
+          className="h-7 px-3 bg-[#edf3ff] hover:bg-[#dbe9ff] text-[#2f63eb] text-xs font-bold rounded-xl flex items-center gap-1 transition-colors cursor-pointer"
+        >
+          <span>View All</span>
+          <ChevronRight size={13} className="stroke-[2.5]" />
+        </Link>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">

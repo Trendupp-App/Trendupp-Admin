@@ -17,68 +17,110 @@ type Status =
   | "paid"
   | "unpaid"
   | "suspended"
-  | "onboarded";
+  | "onboarded"
+  // Escrow-specific statuses
+  | "funded"
+  | "released"
+  | "held"
+  | "processing"
+  | "failed"
+  | "refunded"
+  | "successful"
+  | "cancelled";
 
 const STATUS_MAP: Record<Status, { label: string; cls: string }> = {
   pending: {
     label: "Pending",
-    cls: "bg-amber-50   text-amber-600   border-amber-200",
+    cls: "bg-[#fef3c7] text-[#d97706] border-transparent font-bold",
   },
   submitted: {
     label: "Submitted",
-    cls: "bg-blue-50    text-blue-600    border-blue-200",
+    cls: "bg-[#eff6ff] text-[#2563eb] border-transparent font-bold",
   },
   active: {
     label: "Active",
-    cls: "bg-green-50   text-green-600   border-green-200",
+    cls: "bg-[#dcfce7] text-[#15803d] border-transparent font-bold",
   },
   onboarded: {
     label: "Onboarded",
-    cls: "bg-green-50   text-green-600   border-green-200",
+    cls: "bg-[#dcfce7] text-[#15803d] border-transparent font-bold",
   },
   suspended: {
     label: "Suspended",
-    cls: "bg-red-50     text-red-600     border-red-200",
+    cls: "bg-[#ffe4e6] text-[#991b1b] border-transparent font-bold",
   },
   live: {
     label: "Live",
-    cls: "bg-green-50   text-green-600   border-green-200",
+    cls: "bg-[#dcfce7] text-[#15803d] border-transparent font-bold",
   },
   completed: {
     label: "Completed",
-    cls: "bg-purple-50  text-purple-600  border-purple-200",
+    cls: "bg-[#f3e8ff] text-[#7e22ce] border-transparent font-bold",
   },
   raised: {
     label: "Raised",
-    cls: "bg-amber-50   text-amber-600   border-amber-200",
+    cls: "bg-[#fef3c7] text-[#d97706] border-transparent font-bold",
   },
   under_review: {
     label: "In Review",
-    cls: "bg-blue-50    text-blue-600    border-blue-200",
+    cls: "bg-[#eff6ff] text-[#2563eb] border-transparent font-bold",
   },
   resolved: {
     label: "Resolved",
-    cls: "bg-green-50   text-green-600   border-green-200",
+    cls: "bg-[#dcfce7] text-[#15803d] border-transparent font-bold",
   },
   accepted: {
     label: "Accepted",
-    cls: "bg-green-50   text-green-600   border-green-200",
+    cls: "bg-[#dcfce7] text-[#15803d] border-transparent font-bold",
   },
   rejected: {
     label: "Rejected",
-    cls: "bg-red-50     text-red-600     border-red-200",
+    cls: "bg-[#ffe4e6] text-[#991b1b] border-transparent font-bold",
   },
   draft: {
     label: "Draft",
-    cls: "bg-[#f4f3f6]  text-[#7a7a9a]   border-[#e8e6f0]",
+    cls: "bg-[#f4f3f6] text-[#7a7a9a] border-transparent font-bold",
   },
   paid: {
     label: "Paid",
-    cls: "bg-green-50   text-green-600   border-green-200",
+    cls: "bg-[#dcfce7] text-[#15803d] border-transparent font-bold",
   },
   unpaid: {
     label: "Unpaid",
-    cls: "bg-red-50     text-red-600     border-red-200",
+    cls: "bg-[#ffe4e6] text-[#991b1b] border-transparent font-bold",
+  },
+  // Escrow statuses
+  funded: {
+    label: "Funded",
+    cls: "bg-[#eff6ff] text-[#2563eb] border-transparent font-bold",
+  },
+  released: {
+    label: "Released",
+    cls: "bg-[#dcfce7] text-[#15803d] border-transparent font-bold",
+  },
+  held: {
+    label: "Held",
+    cls: "bg-[#fef3c7] text-[#d97706] border-transparent font-bold",
+  },
+  processing: {
+    label: "Processing",
+    cls: "bg-[#eff6ff] text-[#2563eb] border-transparent font-bold",
+  },
+  failed: {
+    label: "Failed",
+    cls: "bg-[#ffe4e6] text-[#991b1b] border-transparent font-bold",
+  },
+  refunded: {
+    label: "Refunded",
+    cls: "bg-[#f3e8ff] text-[#7e22ce] border-transparent font-bold",
+  },
+  successful: {
+    label: "Successful",
+    cls: "bg-[#dcfce7] text-[#15803d] border-transparent font-bold",
+  },
+  cancelled: {
+    label: "Cancelled",
+    cls: "bg-[#f4f3f6] text-[#7a7a9a] border-transparent font-bold",
   },
 };
 
@@ -88,14 +130,18 @@ interface AdminStatusBadgeProps {
 }
 
 export function AdminStatusBadge({ status, className }: AdminStatusBadgeProps) {
-  const config = STATUS_MAP[status as Status] ?? {
+  const normalizedKey = (status || "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "_");
+  const config = STATUS_MAP[normalizedKey as Status] ?? {
     label: status,
-    cls: "bg-[#f4f3f6] text-[#7a7a9a] border-[#e8e6f0]",
+    cls: "bg-[#f4f3f6] text-[#7a7a9a] border-transparent font-bold",
   };
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border",
+        "inline-flex items-center justify-center px-3 py-0.5 rounded-full text-[11px] font-bold transition-all",
         config.cls,
         className,
       )}

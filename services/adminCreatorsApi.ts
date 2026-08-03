@@ -42,24 +42,66 @@ export const adminCreatorsApi = {
     }),
 
   // 4. Top Creators
-  getTopCreators: () =>
-    apiClient.get<TopCreatorDto[]>("/admin/creators/top-creators"),
+  getTopCreators: (params?: {
+    startDate?: string;
+    endDate?: string;
+    fromDate?: string;
+    toDate?: string;
+    limit?: number;
+    period?: string;
+    year?: number;
+  }) => {
+    const startDate = params?.startDate || params?.fromDate;
+    const endDate = params?.endDate || params?.toDate;
+    const queryParams: Record<string, unknown> = {};
+    if (params?.limit) queryParams.limit = params.limit;
+    if (params?.period) queryParams.period = params.period;
+    if (params?.year) queryParams.year = params.year;
+    if (startDate && startDate.trim() !== "") queryParams.startDate = startDate;
+    if (endDate && endDate.trim() !== "") queryParams.endDate = endDate;
+
+    return apiClient.get<TopCreatorDto[]>("/admin/creators/top-creators", {
+      params: queryParams,
+    });
+  },
 
   // 5. Tier Distribution
-  getTierDistribution: () =>
+  getTierDistribution: (params?: {
+    period?: string;
+    year?: number;
+    month?: number;
+    startDate?: string;
+    endDate?: string;
+  }) =>
     apiClient.get<TierDistributionItemDto[]>(
       "/admin/creators/tier-distribution",
+      { params },
     ),
 
   // 6. Gender Distribution
-  getGenderDistribution: () =>
+  getGenderDistribution: (params?: {
+    period?: string;
+    year?: number;
+    month?: number;
+    startDate?: string;
+    endDate?: string;
+  }) =>
     apiClient.get<GenderDistributionItemDto[]>(
       "/admin/creators/gender-distribution",
+      { params },
     ),
 
   // 7. Niche Breakdown
-  getNicheBreakdown: () =>
-    apiClient.get<NicheBreakdownItemDto[]>("/admin/creators/niche-breakdown"),
+  getNicheBreakdown: (params?: {
+    period?: string;
+    year?: number;
+    month?: number;
+    startDate?: string;
+    endDate?: string;
+  }) =>
+    apiClient.get<NicheBreakdownItemDto[]>("/admin/creators/niche-breakdown", {
+      params,
+    }),
 
   // 8. Country Breakdown
   getCountryBreakdown: () =>
@@ -71,8 +113,19 @@ export const adminCreatorsApi = {
   getAnalytics: () => apiClient.get("/admin/creators/analytics"),
 
   // 10. Paginated Creators Directory
-  getCreators: (params?: CreatorListQueryParams) =>
-    apiClient.get<PaginatedCreatorsResponse>("/admin/creators", { params }),
+  getCreators: (params?: CreatorListQueryParams) => {
+    const cleanParams: Record<string, unknown> = {};
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          cleanParams[key] = value;
+        }
+      });
+    }
+    return apiClient.get<PaginatedCreatorsResponse>("/admin/creators", {
+      params: cleanParams,
+    });
+  },
 
   // 11. Single Creator Details
   getCreatorDetails: (id: string) =>
@@ -110,4 +163,35 @@ export const adminCreatorsApi = {
   // 17. Delete Note
   deleteCreatorNote: (id: string, noteId: string) =>
     apiClient.delete(`/admin/creators/${id}/notes/${noteId}`),
+
+  // 18. Suspend Account
+  suspendCreatorAccount: (id: string, payload: { reason: string }) =>
+    apiClient.patch<{ message?: string }>(
+      `/admin/users/${id}/suspend`,
+      payload,
+    ),
+
+  // 19. Suspend Campaign Access
+  suspendCreatorCampaignAccess: (id: string, payload: { reason: string }) =>
+    apiClient.patch<{ message?: string }>(`/admin/users/${id}/suspend`, {
+      ...payload,
+      scope: "campaign",
+    }),
+
+  // 20. Reactivate Account
+  reactivateCreatorAccount: (id: string, payload: { reason: string }) =>
+    apiClient.patch<{ message?: string }>(
+      `/admin/users/${id}/reactivate`,
+      payload,
+    ),
+
+  // 21. Change Creator Tier
+  changeCreatorTier: (id: string, payload: { tier: string }) =>
+    apiClient.patch<{ message?: string }>(`/admin/users/${id}`, payload),
+
+  // 22. Delete Creator Account
+  deleteCreatorAccount: (id: string, payload?: { reason?: string }) =>
+    apiClient.delete<{ message?: string }>(`/admin/users/${id}`, {
+      data: payload,
+    }),
 };

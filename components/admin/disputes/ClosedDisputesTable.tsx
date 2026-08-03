@@ -83,6 +83,10 @@ function ClosedDisputeRow({ dispute }: { dispute: Dispute }) {
           >
             {decision.label}
           </span>
+        ) : dispute.status === "rejected" ? (
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200">
+            Declined
+          </span>
         ) : (
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#f4f3f6] text-[#5a5a7a] border border-[#e8e6f0]">
             Resolved

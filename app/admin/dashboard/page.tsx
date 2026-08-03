@@ -17,49 +17,50 @@ export default function AdminDashboardPage() {
 
   const topMetrics = overview?.topMetrics;
 
-  const formatMetricValue = (val: number | undefined, fallback: string) => {
-    if (val === undefined || val === null) return fallback;
+  const formatMetricValue = (val: number | undefined) => {
+    if (val === undefined || val === null) return "0";
     if (val >= 100000) {
       return `${(val / 1000).toFixed(1)}k`;
     }
     return val.toLocaleString();
   };
 
+  const weeklyTrend = (count: number | undefined) =>
+    count ? `+${count.toLocaleString()} this week` : "No change this week";
+
   const topKpis: AdminKpiCardProps[] = [
     {
-      value: formatMetricValue(topMetrics?.totalCreators, "3,847"),
+      value: formatMetricValue(topMetrics?.totalCreators),
       label: "Total Creators",
-      trend: overview?.creatorTiers?.newThisWeek
-        ? `+${overview.creatorTiers.newThisWeek} this week`
-        : "+124 this week",
+      trend: weeklyTrend(overview?.creatorTiers?.newThisWeek),
       trendUp: true,
       icon: Users,
       iconBg: "bg-[#edf2fe]",
       iconColor: "text-[#2f63eb]",
     },
     {
-      value: formatMetricValue(topMetrics?.totalBrands, "0"),
-      label: "Total Advertisers",
-      trend: "+12M vs last month",
-      trendUp: true,
-      icon: TrendingUp,
-      iconBg: "bg-[#f0fdf4]",
-      iconColor: "text-[#16a34a]",
-    },
-    {
-      value: formatMetricValue(topMetrics?.totalCampaigns, "0"),
+      value: formatMetricValue(topMetrics?.totalCampaigns),
       label: "Total Campaigns",
-      trend: "Across 62 campaigns",
+      trend: weeklyTrend(topMetrics?.newCampaignsThisWeek),
       trendUp: true,
       icon: Wallet,
       iconBg: "bg-[#fef9e7]",
       iconColor: "text-[#ca8a04]",
     },
     {
-      value: formatMetricValue(topMetrics?.openDisputes, "0"),
+      value: formatMetricValue(topMetrics?.totalBrands),
+      label: "Total Advertisers",
+      trend: weeklyTrend(topMetrics?.newBrandsThisWeek),
+      trendUp: true,
+      icon: TrendingUp,
+      iconBg: "bg-[#f0fdf4]",
+      iconColor: "text-[#16a34a]",
+    },
+    {
+      value: formatMetricValue(topMetrics?.openDisputes),
       label: "Open Disputes",
-      trend: "+2 this week",
-      trendUp: false,
+      trend: weeklyTrend(topMetrics?.newDisputesThisWeek),
+      trendUp: !topMetrics?.newDisputesThisWeek,
       icon: ShieldAlert,
       iconBg: "bg-[#fdf2f6]",
       iconColor: "text-brand-pink",

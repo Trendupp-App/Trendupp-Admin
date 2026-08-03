@@ -5,13 +5,15 @@ import { X, AlertTriangle, Trash2, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Portal } from "@/components/ui/portal";
 
-type ActionType =
+export type ActionType =
   "suspend" | "suspendCampaign" | "reactivate" | "delete" | "changeTier";
 
 interface CreatorActionModalProps {
   action: ActionType | null;
+  currentTier?: string;
   onClose: () => void;
-  onConfirm?: () => void;
+  onConfirm?: (inputValue: string) => void;
+  isSubmitting?: boolean;
 }
 
 const CONFIG: Record<
@@ -82,8 +84,10 @@ const CONFIG: Record<
 
 export default function CreatorActionModal({
   action,
+  currentTier = "Micro",
   onClose,
   onConfirm,
+  isSubmitting = false,
 }: CreatorActionModalProps) {
   const [inputValue, setInputValue] = useState("");
 
@@ -98,6 +102,11 @@ export default function CreatorActionModal({
   const handleClose = () => {
     setInputValue("");
     onClose();
+  };
+
+  const handleConfirm = () => {
+    if (!canSubmit) return;
+    if (onConfirm) onConfirm(inputValue);
   };
 
   return (
@@ -149,8 +158,8 @@ export default function CreatorActionModal({
                 <span className="text-[10px] font-bold text-[#7a7a9a] uppercase tracking-wider">
                   Current Tier
                 </span>
-                <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-[#f5f3ff] text-[#7c3aed] border border-[#e0e7ff]">
-                  Micro
+                <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-[#f5f3ff] text-[#7c3aed] border border-[#e0e7ff] capitalize">
+                  {currentTier}
                 </span>
               </div>
 
@@ -216,8 +225,9 @@ export default function CreatorActionModal({
           <div className="flex items-center gap-3 px-6 pb-6 pt-2">
             <button
               onClick={handleClose}
+              disabled={isSubmitting}
               className={cn(
-                "h-10 rounded-2xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center flex-1",
+                "h-10 rounded-2xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center flex-1 disabled:opacity-50",
                 isChangeTier
                   ? "bg-[#f4f5f7] hover:bg-[#e8e6f0] text-[#344054]"
                   : "border border-[#e8e6f0] text-[#5a5a7a] hover:bg-[#f4f3f6]",
@@ -226,14 +236,14 @@ export default function CreatorActionModal({
               Cancel
             </button>
             <button
-              disabled={!canSubmit}
-              onClick={onConfirm}
+              disabled={!canSubmit || isSubmitting}
+              onClick={handleConfirm}
               className={cn(
-                "h-10 rounded-2xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center flex-1",
+                "h-10 rounded-2xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center flex-1 disabled:opacity-50",
                 cfg.confirmClass,
               )}
             >
-              {cfg.confirmText}
+              {isSubmitting ? "Processing..." : cfg.confirmText}
             </button>
           </div>
         </div>

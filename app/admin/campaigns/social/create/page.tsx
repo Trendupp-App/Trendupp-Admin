@@ -1,10 +1,30 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
-import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, Trash2, Check, ArrowRight, Search, X } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  ArrowLeft,
+  Trash2,
+  Check,
+  ArrowRight,
+  Search,
+  X,
+  UploadCloud,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+
+import { useAdminBrandsList } from "@/hooks/useAdminBrands";
+import {
+  useCreateSocialImpactCampaign,
+  useUpdateSocialImpactCampaign,
+  usePublishSocialImpactCampaign,
+  useAdminSocialImpactDetails,
+} from "@/hooks/useAdminSocialImpact";
+import type {
+  CreateSocialImpactCampaignDto,
+  UpdateSocialImpactCampaignDto,
+} from "@/types/adminSocialImpact";
 
 interface BrandOption {
   id: string;
@@ -40,38 +60,58 @@ const MOCK_ADVERTISERS: BrandOption[] = [
 
 export default function CreateCampaignPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const draftIdParam = searchParams.get("draftId");
+
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(
+    draftIdParam,
+  );
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Step 1 state
-  const [preview, setPreview] = useState<string>(
-    "/dashboard/tiktok_news_banner.png",
+  const { data: brandsData } = useAdminBrandsList({ limit: 50 });
+  const { data: existingDraft } = useAdminSocialImpactDetails(
+    editingDraftId || "",
+    Boolean(editingDraftId),
   );
-  const [title, setTitle] = useState("Summer Style Collection");
-  const [goal, setGoal] = useState("Create Content");
-  const [tier, setTier] = useState("Micro (10K-200K), Nano (1K-10K)");
-  const [selectedAdvertiser, setSelectedAdvertiser] =
-    useState<string>("coca-cola");
+
+  const createCampaignMutation = useCreateSocialImpactCampaign();
+  const updateCampaignMutation = useUpdateSocialImpactCampaign();
+  const publishCampaignMutation = usePublishSocialImpactCampaign();
+
+  // Step 1 state
+  const [preview, setPreview] = useState<string>("");
+  const [title, setTitle] = useState("");
+  const [goal, setGoal] = useState("Amplify Content");
+  const [contentLink, setContentLink] = useState("");
+  const [tier, setTier] = useState(
+    "Micro (10K-200K / 3 Token), Nano (1K-10K / 1 Token)",
+  );
+  const [selectedAdvertisers, setSelectedAdvertisers] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [platform, setPlatform] = useState("Instagram");
+  const [endDate, setEndDate] = useState("");
 
   // Step 2 state
-  const [desc, setDesc] = useState(
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-  );
-  const [deliverables, setDeliverables] = useState<string[]>([
-    "1x Instagram Reel (30–60 seconds)",
-    "1x Instagram Reel (30–60 seconds)",
-  ]);
-  const [directions, setDirections] = useState<string[]>([
-    "Film in warm, golden-hour lighting",
-  ]);
-  const [dos, setDos] = useState<string[]>([
-    "Use natural lighting throughout the video",
-    "Use natural lighting throughout the video",
-  ]);
-  const [donts, setDonts] = useState<string[]>([
-    "Do not feature or mention competitor products",
-  ]);
+  const [desc, setDesc] = useState("");
+  const [deliverables, setDeliverables] = useState<string[]>([""]);
+  const [directions, setDirections] = useState<string[]>([""]);
+  const [dos, setDos] = useState<string[]>([""]);
+  const [donts, setDonts] = useState<string[]>([""]);
+
+  const liveBrands: BrandOption[] =
+    brandsData?.data && Array.isArray(brandsData.data)
+      ? brandsData.data.map((b) => {
+          const name = b.brandName || b.advertiser?.brandName || "Brand";
+          return {
+            id: b.id,
+            name,
+            rate: b.industry || "General",
+            logoColor: "bg-brand-pink",
+            logoText: name.slice(0, 4),
+          };
+        })
+      : MOCK_ADVERTISERS;
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -80,13 +120,17 @@ export default function CreateCampaignPage() {
     setPreview(url);
   };
 
-  const filteredAdvertisers = MOCK_ADVERTISERS.filter((adv) =>
+  const filteredAdvertisers = liveBrands.filter((adv) =>
     adv.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const activeAdvertiserObj = MOCK_ADVERTISERS.find(
-    (a) => a.id === selectedAdvertiser,
+  const selectedBrandObjs = liveBrands.filter((a) =>
+    selectedAdvertisers.includes(a.id),
   );
+  const activeAdvertiserNames =
+    selectedBrandObjs.length > 0
+      ? selectedBrandObjs.map((b) => b.name).join(", ")
+      : liveBrands[0]?.name || "All Advertisers";
 
   const handleAddDeliverable = () => setDeliverables([...deliverables, ""]);
   const handleRemoveDeliverable = (index: number) =>
@@ -112,17 +156,316 @@ export default function CreateCampaignPage() {
     }
   };
 
-  const handleSaveAsDraft = () => {
-    alert("Campaign saved as draft.");
-    router.push("/admin/campaigns/social");
+  const [isRestored, setIsRestored] = useState(false);
+
+  // Local draft cache helper to guarantee 100% data retention even for non-DTO fields
+  const saveLocalDraftCache = (targetId: string) => {
+    try {
+      const cacheObj = {
+        title,
+        goal,
+        selectedAdvertisers,
+        tier,
+        preview,
+        desc,
+        deliverables,
+        directions,
+        dos,
+        donts,
+        contentLink,
+        platform,
+        endDate,
+        step,
+      };
+      localStorage.setItem(
+        `trendupp_draft_${targetId}`,
+        JSON.stringify(cacheObj),
+      );
+    } catch {
+      // LocalStorage access ignore
+    }
   };
 
-  const handleContinue = () => {
+  // Continuous Auto-Sync effect to preserve working selections in localStorage
+  // Only syncs AFTER initial restoration is complete to prevent overwriting saved data on mount
+  useEffect(() => {
+    if (!isRestored) return;
+    const key = `trendupp_draft_${editingDraftId || "new"}`;
+    try {
+      const cacheObj = {
+        title,
+        goal,
+        selectedAdvertisers,
+        tier,
+        preview,
+        desc,
+        deliverables,
+        directions,
+        dos,
+        donts,
+        contentLink,
+        platform,
+        endDate,
+        step,
+      };
+      localStorage.setItem(key, JSON.stringify(cacheObj));
+    } catch {
+      // Ignore quota errors
+    }
+  }, [
+    isRestored,
+    editingDraftId,
+    title,
+    goal,
+    selectedAdvertisers,
+    tier,
+    preview,
+    desc,
+    deliverables,
+    directions,
+    dos,
+    donts,
+    contentLink,
+    platform,
+    endDate,
+    step,
+  ]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      let restoredLocalBrands = false;
+      const draftKey = `trendupp_draft_${editingDraftId || "new"}`;
+      try {
+        const cachedRaw = localStorage.getItem(draftKey);
+        if (cachedRaw) {
+          const cached = JSON.parse(cachedRaw);
+          if (cached.title) setTitle(cached.title);
+          if (cached.goal) setGoal(cached.goal);
+          if (
+            Array.isArray(cached.selectedAdvertisers) &&
+            cached.selectedAdvertisers.length > 0
+          ) {
+            setSelectedAdvertisers(cached.selectedAdvertisers);
+            restoredLocalBrands = true;
+          } else if (cached.selectedAdvertiser) {
+            setSelectedAdvertisers([cached.selectedAdvertiser]);
+            restoredLocalBrands = true;
+          }
+          if (cached.tier) setTier(cached.tier);
+          if (cached.preview) setPreview(cached.preview);
+          if (cached.desc) setDesc(cached.desc);
+          if (cached.deliverables) setDeliverables(cached.deliverables);
+          if (cached.directions) setDirections(cached.directions);
+          if (cached.dos) setDos(cached.dos);
+          if (cached.donts) setDonts(cached.donts);
+          if (cached.contentLink) setContentLink(cached.contentLink);
+          if (cached.platform) setPlatform(cached.platform);
+          if (cached.endDate) setEndDate(cached.endDate);
+          if (cached.step) setStep(cached.step);
+        }
+      } catch {
+        // Ignore parse errors
+      }
+
+      // Merge/override with server payload if existingDraft returns
+      if (existingDraft) {
+        const anyDraft = existingDraft as unknown as {
+          id?: string;
+          title?: string;
+          goal?: string;
+          brandId?: string;
+          brandName?: string;
+          brandIds?: string[];
+          brands?: Array<{ id?: string; name?: string; brandName?: string }>;
+          brand?: { id?: string; name?: string; brandName?: string };
+          creatorTiers?: string[];
+          coverImageUrl?: string;
+          coverImage?: string;
+          image?: string;
+          campaignBrief?: string;
+          brief?: string;
+          deliverables?: string[];
+          contentDirection?: string[];
+          dos?: string[];
+          donts?: string[];
+          guidelines?: { dos?: string[]; donts?: string[] };
+          contentLink?: string;
+          link?: string;
+          platforms?: string;
+          platform?: string;
+          deadline?: string;
+          endDate?: string;
+          currentStep?: number;
+        };
+
+        if (anyDraft.title) setTitle(anyDraft.title);
+        if (anyDraft.goal) setGoal(anyDraft.goal);
+
+        // Extract server brand IDs
+        const serverBrandIds =
+          anyDraft.brandIds ||
+          (Array.isArray(anyDraft.brands)
+            ? anyDraft.brands.map((b) => b.id || "").filter(Boolean)
+            : []);
+        const bId = anyDraft.brandId || anyDraft.brand?.id;
+
+        if (!restoredLocalBrands) {
+          if (serverBrandIds.length > 0) {
+            setSelectedAdvertisers(serverBrandIds);
+          } else if (bId) {
+            setSelectedAdvertisers([bId]);
+          }
+        }
+
+        if (anyDraft.creatorTiers && anyDraft.creatorTiers.length > 0) {
+          setTier(anyDraft.creatorTiers.join(", "));
+        }
+
+        const img =
+          anyDraft.coverImageUrl || anyDraft.coverImage || anyDraft.image;
+        if (img) setPreview(img);
+
+        const linkVal = anyDraft.contentLink || anyDraft.link;
+        if (linkVal) setContentLink(linkVal);
+
+        const platformVal = anyDraft.platforms || anyDraft.platform;
+        if (platformVal) setPlatform(platformVal);
+
+        const dateVal = anyDraft.deadline || anyDraft.endDate;
+        if (dateVal) setEndDate(dateVal);
+
+        const briefVal = anyDraft.campaignBrief || anyDraft.brief;
+        if (briefVal) setDesc(briefVal);
+
+        if (anyDraft.deliverables && anyDraft.deliverables.length > 0) {
+          setDeliverables(anyDraft.deliverables);
+        }
+        if (anyDraft.contentDirection && anyDraft.contentDirection.length > 0) {
+          setDirections(anyDraft.contentDirection);
+        }
+
+        const extractedDos = anyDraft.dos || anyDraft.guidelines?.dos || [];
+        const extractedDonts =
+          anyDraft.donts || anyDraft.guidelines?.donts || [];
+
+        if (extractedDos.length > 0) setDos(extractedDos);
+        if (extractedDonts.length > 0) setDonts(extractedDonts);
+
+        if (anyDraft.currentStep) {
+          setStep(Math.min(Math.max(anyDraft.currentStep, 1), 3) as 1 | 2 | 3);
+        }
+      }
+
+      setIsRestored(true);
+    });
+  }, [editingDraftId, existingDraft]);
+
+  // Clean POST payload (omits contentLink, platforms, deadline per NestJS DTO whitelist)
+  const firstRealBrandId =
+    brandsData?.data &&
+    Array.isArray(brandsData.data) &&
+    brandsData.data.length > 0
+      ? brandsData.data[0].id
+      : "";
+
+  const activeBrandId =
+    selectedAdvertisers.find((id) => id && id.length > 20) || firstRealBrandId;
+
+  const buildPayload = (isDraft: boolean): CreateSocialImpactCampaignDto => {
+    return {
+      title: title || "Untitled Campaign Draft",
+      goal: goal || "Amplify Content",
+      brandId: activeBrandId || "2be03919-825f-430f-8e30-aa4cea473c7d",
+      creatorTiers: tier
+        ? tier
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : ["Micro", "Nano"],
+      coverImageUrl: preview || undefined,
+      campaignBrief: desc || undefined,
+      deliverables: deliverables.filter(Boolean),
+      contentDirection: directions.filter(Boolean),
+      dos: dos.filter(Boolean),
+      donts: donts.filter(Boolean),
+      currentStep: step,
+      isDraft,
+    };
+  };
+
+  // Clean PATCH payload (omits isDraft, contentLink, platforms, deadline per NestJS DTO whitelist)
+  const buildUpdatePayload = (): UpdateSocialImpactCampaignDto => {
+    return {
+      title: title || "Untitled Campaign Draft",
+      goal: goal || "Amplify Content",
+      brandId: activeBrandId || undefined,
+      creatorTiers: tier
+        ? tier
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : ["Micro", "Nano"],
+      coverImageUrl: preview || undefined,
+      campaignBrief: desc || undefined,
+      deliverables: deliverables.filter(Boolean),
+      contentDirection: directions.filter(Boolean),
+      dos: dos.filter(Boolean),
+      donts: donts.filter(Boolean),
+      currentStep: step,
+    };
+  };
+
+  const handleSaveAsDraft = async () => {
+    try {
+      if (editingDraftId) {
+        // Repeated draft saving on existing draft (PATCH)
+        await updateCampaignMutation.mutateAsync({
+          id: editingDraftId,
+          payload: buildUpdatePayload(),
+        });
+        saveLocalDraftCache(editingDraftId);
+      } else {
+        // Initial draft creation (POST)
+        const res = await createCampaignMutation.mutateAsync(
+          buildPayload(true),
+        );
+        const newDraftId = res.data?.id;
+        if (newDraftId) {
+          setEditingDraftId(newDraftId);
+          saveLocalDraftCache(newDraftId);
+          window.history.replaceState(null, "", `?draftId=${newDraftId}`);
+        }
+      }
+    } catch {
+      // Toast handled by mutation
+    }
+  };
+
+  const handleContinue = async () => {
     if (step < 3) {
       setStep((step + 1) as 1 | 2 | 3);
     } else {
-      alert("Campaign successfully published.");
-      router.push("/admin/campaigns/social");
+      try {
+        let finalCampaignId = editingDraftId;
+        if (editingDraftId) {
+          await updateCampaignMutation.mutateAsync({
+            id: editingDraftId,
+            payload: buildUpdatePayload(),
+          });
+        } else {
+          const res = await createCampaignMutation.mutateAsync(
+            buildPayload(false),
+          );
+          finalCampaignId = res.data?.id || null;
+        }
+
+        if (finalCampaignId) {
+          await publishCampaignMutation.mutateAsync(finalCampaignId);
+        }
+        router.push("/admin/campaigns/social");
+      } catch {
+        // Toast handled by mutation
+      }
     }
   };
 
@@ -228,20 +571,39 @@ export default function CreateCampaignPage() {
 
         {/* Content Body */}
         <div className="py-6 flex flex-col gap-6">
-          {/* Cover image (Always shows, matches mockup image) */}
+          {/* Cover image container */}
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="relative h-48 bg-[#eff6ff] rounded-[24px] overflow-hidden flex items-center justify-center border border-[#e8e6f0]/40 group cursor-pointer"
+            className="relative h-48 bg-[#f4f3f6] border-2 border-dashed border-[#e8e6f0] hover:border-brand-pink/50 rounded-[24px] overflow-hidden flex flex-col items-center justify-center gap-2 group cursor-pointer transition-colors"
           >
-            <img
-              src={preview}
-              alt="Campaign Cover"
-              className="absolute inset-0 w-full h-full object-cover object-center"
-            />
-            <div className="absolute inset-0 bg-black/20" />
-            <button className="px-4 py-2 rounded-xl bg-white text-[10px] font-bold text-[#1a1a2e] hover:bg-white/95 transition-colors cursor-pointer shadow-sm relative z-10 select-none">
-              Change photo
-            </button>
+            {preview ? (
+              <>
+                <img
+                  src={preview}
+                  alt="Campaign Cover"
+                  onError={() => setPreview("")}
+                  className="absolute inset-0 w-full h-full object-cover object-center"
+                />
+                <div className="absolute inset-0 bg-black/20" />
+                <button className="px-4 py-2 rounded-xl bg-white text-[10px] font-bold text-[#1a1a2e] hover:bg-white/95 transition-colors cursor-pointer shadow-sm relative z-10 select-none">
+                  Change photo
+                </button>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-2 text-[#7a7a9a]">
+                <div className="w-10 h-10 rounded-full bg-white border border-[#e8e6f0] flex items-center justify-center text-[#5a5a7a] shadow-xs group-hover:scale-105 transition-transform">
+                  <UploadCloud size={18} className="text-brand-pink" />
+                </div>
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-xs font-bold text-[#1a1a2e]">
+                    Upload cover photo
+                  </span>
+                  <span className="text-[10px] text-[#9a99b0] font-medium">
+                    PNG or JPG (recommended 1200x400)
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
           <input
             ref={fileInputRef}
@@ -275,32 +637,60 @@ export default function CreateCampaignPage() {
                   onChange={(e) => setGoal(e.target.value)}
                   className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium cursor-pointer"
                 >
+                  <option value="Amplify Content">Amplify Content</option>
                   <option value="Create Content">Create Content</option>
                   <option value="Brand Awareness">Brand Awareness</option>
                 </select>
               </div>
 
+              {/* Content Link Input */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
-                  Creator tier
+                  Content Link
+                </label>
+                <input
+                  type="text"
+                  placeholder="enter the content link"
+                  value={contentLink}
+                  onChange={(e) => setContentLink(e.target.value)}
+                  className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium placeholder:text-[#c4c2d4]"
+                />
+              </div>
+
+              {/* Creator Tier and Reward */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
+                  Creator Tier and Reward
                 </label>
                 <select
                   value={tier}
                   onChange={(e) => setTier(e.target.value)}
                   className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium cursor-pointer"
                 >
-                  <option value="Micro (10K-200K), Nano (1K-10K)">
-                    Micro (10K-200K), Nano (1K-10K)
+                  <option value="Micro (10K-200K / 3 Token), Nano (1K-10K / 1 Token)">
+                    Micro (10K-200K / 3 Token), Nano (1K-10K / 1 Token)
                   </option>
-                  <option value="Macro, Micro">Macro, Micro</option>
+                  <option value="Micro (10K-200K / 100 Tokens)">
+                    Micro (10K-200K / 100 Tokens)
+                  </option>
+                  <option value="Nano (1K-10K / 50 Tokens)">
+                    Nano (1K-10K / 50 Tokens)
+                  </option>
                 </select>
               </div>
 
               {/* Select Advertiser Panel */}
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
-                  Select Advertiser
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
+                    Select Advertiser
+                  </label>
+                  {selectedAdvertisers.length > 0 && (
+                    <span className="text-[10px] text-brand-pink font-bold">
+                      {selectedAdvertisers.length} selected
+                    </span>
+                  )}
+                </div>
                 <div className="border border-[#e8e6f0] rounded-2xl p-4 flex flex-col gap-3.5 bg-white">
                   {/* Search input */}
                   <div className="relative">
@@ -317,14 +707,74 @@ export default function CreateCampaignPage() {
                     />
                   </div>
 
+                  {/* Select All Row */}
+                  {filteredAdvertisers.length > 0 && (
+                    <div className="flex items-center justify-between px-3.5 py-2 bg-[#faf9fc] border border-[#e8e6f0] rounded-xl text-xs font-bold text-[#1a1a2e]">
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={
+                            filteredAdvertisers.length > 0 &&
+                            filteredAdvertisers.every((adv) =>
+                              selectedAdvertisers.includes(adv.id),
+                            )
+                          }
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              const allIds = Array.from(
+                                new Set([
+                                  ...selectedAdvertisers,
+                                  ...filteredAdvertisers.map((adv) => adv.id),
+                                ]),
+                              );
+                              setSelectedAdvertisers(allIds);
+                            } else {
+                              const filteredIds = new Set(
+                                filteredAdvertisers.map((adv) => adv.id),
+                              );
+                              setSelectedAdvertisers(
+                                selectedAdvertisers.filter(
+                                  (id) => !filteredIds.has(id),
+                                ),
+                              );
+                            }
+                          }}
+                          className="accent-brand-pink shrink-0 cursor-pointer"
+                        />
+                        <span>Select All ({filteredAdvertisers.length})</span>
+                      </label>
+                      {selectedAdvertisers.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAdvertisers([])}
+                          className="text-[10px] font-bold text-[#7a7a9a] hover:text-brand-pink transition-colors cursor-pointer"
+                        >
+                          Clear Selection
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   {/* List */}
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-1.5 max-h-[240px] overflow-y-auto pr-0.5">
                     {filteredAdvertisers.map((adv) => {
-                      const selected = selectedAdvertiser === adv.id;
+                      const selected = selectedAdvertisers.includes(adv.id);
+                      const toggleSelect = () => {
+                        if (selected) {
+                          setSelectedAdvertisers(
+                            selectedAdvertisers.filter((id) => id !== adv.id),
+                          );
+                        } else {
+                          setSelectedAdvertisers([
+                            ...selectedAdvertisers,
+                            adv.id,
+                          ]);
+                        }
+                      };
                       return (
                         <div
                           key={adv.id}
-                          onClick={() => setSelectedAdvertiser(adv.id)}
+                          onClick={toggleSelect}
                           className={cn(
                             "flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl border transition-all cursor-pointer select-none",
                             selected
@@ -335,7 +785,7 @@ export default function CreateCampaignPage() {
                           <input
                             type="checkbox"
                             checked={selected}
-                            readOnly
+                            onChange={() => {}}
                             className="accent-brand-pink shrink-0 cursor-pointer"
                           />
                           <div
@@ -363,6 +813,38 @@ export default function CreateCampaignPage() {
                       </span>
                     )}
                   </div>
+                </div>
+              </div>
+
+              {/* Posting Platforms */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
+                  Posting Platforms
+                </label>
+                <select
+                  value={platform}
+                  onChange={(e) => setPlatform(e.target.value)}
+                  className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium cursor-pointer"
+                >
+                  <option value="Instagram">Instagram</option>
+                  <option value="TikTok">TikTok</option>
+                  <option value="YouTube">YouTube</option>
+                  <option value="X">X (Twitter)</option>
+                </select>
+              </div>
+
+              {/* End Date */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
+                  End Date
+                </label>
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium text-[#1a1a2e]"
+                  />
                 </div>
               </div>
             </div>
@@ -559,9 +1041,7 @@ export default function CreateCampaignPage() {
                     <span className="text-[#7a7a9a] uppercase tracking-wider text-[9px] font-bold">
                       Advertiser
                     </span>
-                    <span className="font-bold">
-                      {activeAdvertiserObj?.name || ""}
-                    </span>
+                    <span className="font-bold">{activeAdvertiserNames}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#7a7a9a] uppercase tracking-wider text-[9px] font-bold">

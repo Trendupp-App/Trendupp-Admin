@@ -13,28 +13,6 @@ interface CommissionTierListProps {
   onDeleteTier: (tier: CommissionTier) => void;
 }
 
-const DEFAULT_FALLBACK_TIERS: CommissionTier[] = [
-  {
-    id: "default-tier-1",
-    name: "Standard Platform Commission",
-    ratePercentage: 15,
-    isDefault: true,
-    appliedBrandsCount: 120,
-  },
-  {
-    id: "90c96252-ee9a-4ee9-bd3d-ef8bc3af09d6",
-    name: "High-Volume Partner Rate",
-    ratePercentage: 10,
-    isDefault: false,
-    appliedBrandsCount: 3,
-    brands: [
-      { id: "b1", brandName: "Coca-Cola" },
-      { id: "b2", brandName: "Nike" },
-      { id: "b3", brandName: "Samsung" },
-    ],
-  },
-];
-
 export default function CommissionTierList({
   tiers,
   isLoading,
@@ -42,12 +20,7 @@ export default function CommissionTierList({
   onEditTier,
   onDeleteTier,
 }: CommissionTierListProps) {
-  const displayTiers =
-    tiers && tiers.length > 0
-      ? tiers
-      : process.env.NODE_ENV === "development"
-        ? DEFAULT_FALLBACK_TIERS
-        : [];
+  const displayTiers = Array.isArray(tiers) ? tiers : [];
 
   return (
     <div className="flex flex-col gap-6">

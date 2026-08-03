@@ -13,6 +13,7 @@ import {
   Plus,
   Ban,
   ShieldCheck,
+  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdminStatusBadge } from "../AdminStatusBadge";
@@ -113,53 +114,121 @@ export default function BrandProfileDrawer({
   const metricsData = brandData?.metrics;
   const profileDetails = brandData?.profileDetails;
 
+  const rootObj = useMemo(
+    () => (brandData || {}) as Record<string, unknown>,
+    [brandData],
+  );
+
   const brandName =
     header?.brandName ||
     brandDetails?.brandName ||
     profileDetails?.brandName ||
+    (rootObj?.brandName as string) ||
+    (rootObj?.name as string) ||
     "Brand Profile";
-  const brandEmail = brandDetails?.email || profileDetails?.email || "N/A";
+
+  const brandEmail =
+    brandDetails?.email ||
+    profileDetails?.email ||
+    (rootObj?.email as string) ||
+    "—";
+
   const brandWebsite =
     header?.websiteUrl ||
     brandDetails?.website ||
     profileDetails?.website ||
-    "N/A";
-  const brandLogoUrl = header?.logoUrl || null;
-  const brandIndustry = header?.industry || profileDetails?.industry || "FMCG";
-  const brandStatus = (
-    header?.status ||
-    brandRepresentative?.accountStatus ||
-    profileDetails?.accountStatus ||
-    "ACTIVE"
-  ).toLowerCase();
+    (rootObj?.website as string) ||
+    (rootObj?.websiteUrl as string) ||
+    "—";
+
+  const brandLogoUrl =
+    header?.logoUrl ||
+    (rootObj?.logoUrl as string) ||
+    (rootObj?.logo as string) ||
+    null;
+
+  const brandIndustry =
+    header?.industry ||
+    profileDetails?.industry ||
+    (rootObj?.industry as string) ||
+    "FMCG";
+
+  const brandBio =
+    brandDetails?.bio || profileDetails?.bio || (rootObj?.bio as string) || "—";
+
+  const brandCountry =
+    brandDetails?.country ||
+    profileDetails?.countryOfResidence ||
+    (rootObj?.country as string) ||
+    (rootObj?.countryOfResidence as string) ||
+    "—";
+
+  const brandStateCity = useMemo(() => {
+    const st =
+      brandDetails?.stateCity ||
+      profileDetails?.state ||
+      (rootObj?.state as string);
+    const ct = profileDetails?.city || (rootObj?.city as string);
+    if (st && ct) return `${st}/${ct}`;
+    return st || ct || "—";
+  }, [rootObj, brandDetails, profileDetails]);
+
+  const accountStatusRaw = useMemo(() => {
+    const raw =
+      (brandRepresentative?.accountStatus as string) ??
+      (profileDetails?.accountStatus as string) ??
+      (header?.status as string) ??
+      (brandDetails?.accountStatus as string) ??
+      (rootObj?.accountStatus as string) ??
+      (rootObj?.status as string) ??
+      "Onboarded";
+
+    const s = String(raw).trim();
+    if (s.toLowerCase() === "active") return "onboarded";
+    return s.toLowerCase();
+  }, [rootObj, brandRepresentative, profileDetails, header, brandDetails]);
+
+  const brandStatus = accountStatusRaw;
 
   const repName =
     brandRepresentative?.fullName ||
     profileDetails?.representativeName ||
-    brandName;
+    (rootObj?.representativeName as string) ||
+    (rootObj?.representativeFullName as string) ||
+    (rootObj?.fullName as string) ||
+    "—";
+
   const repEmail =
     brandRepresentative?.email ||
     profileDetails?.representativeEmail ||
-    brandEmail;
+    (rootObj?.representativeEmail as string) ||
+    (rootObj?.email as string) ||
+    "—";
+
   const repPhone =
     brandRepresentative?.phoneNumber ||
     profileDetails?.representativePhone ||
-    "N/A";
+    (rootObj?.representativePhone as string) ||
+    (rootObj?.phoneNumber as string) ||
+    (rootObj?.phone as string) ||
+    "—";
+
   const repCompletion =
     brandRepresentative?.profileCompletion ??
     profileDetails?.profileCompletion ??
+    (rootObj?.profileCompletion as number) ??
+    (rootObj?.completion as number) ??
     0;
-  const repJoined =
-    brandRepresentative?.dateJoined || profileDetails?.dateJoined || "N/A";
 
-  const monthlyBudgetDisplay = brandDetails?.monthlyBudget
-    ? `₦${(brandDetails.monthlyBudget / 1000000).toFixed(1)}M`
-    : profileDetails?.monthlyBudget
-      ? `₦${(profileDetails.monthlyBudget / 1000000).toFixed(1)}M`
-      : "N/A";
+  const repJoinedRaw =
+    brandRepresentative?.dateJoined ||
+    profileDetails?.dateJoined ||
+    (rootObj?.dateJoined as string) ||
+    (rootObj?.joinedAt as string) ||
+    (rootObj?.createdAt as string);
 
   const formatDateOnly = (dateStr?: string) => {
-    if (!dateStr) return "N/A";
+    if (!dateStr || dateStr === "N/A" || dateStr === "—") return "—";
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
     return d.toLocaleDateString("en-US", {
@@ -168,6 +237,75 @@ export default function BrandProfileDrawer({
       year: "numeric",
     });
   };
+
+  const repJoined = formatDateOnly(repJoinedRaw);
+
+  const refundAccountData = useMemo(() => {
+    const refundObj = (brandData?.refundAccount ||
+      brandData?.bankDetails ||
+      rootObj?.refundAccount ||
+      rootObj?.bankDetails ||
+      rootObj?.bankAccount ||
+      rootObj?.refund_account ||
+      rootObj?.bank_details) as Record<string, unknown> | undefined;
+
+    const accNum =
+      (refundObj?.accountNumber as string) ??
+      (refundObj?.account_number as string) ??
+      profileDetails?.accountNumber ??
+      (rootObj?.accountNumber as string) ??
+      (rootObj?.bankAccountNumber as string) ??
+      (rootObj?.refundAccountNumber as string) ??
+      "—";
+
+    const bName =
+      (refundObj?.bankName as string) ??
+      (refundObj?.bank_name as string) ??
+      profileDetails?.bankName ??
+      (rootObj?.bankName as string) ??
+      (rootObj?.refundBankName as string) ??
+      "—";
+
+    const accName =
+      (refundObj?.accountName as string) ??
+      (refundObj?.account_name as string) ??
+      profileDetails?.accountName ??
+      (rootObj?.accountName as string) ??
+      (rootObj?.bankAccountName as string) ??
+      (rootObj?.refundAccountName as string) ??
+      (repName !== "—" ? repName : "—");
+
+    const verified =
+      Boolean(refundObj?.isVerified || refundObj?.is_verified) ||
+      Boolean(rootObj?.isBankVerified || rootObj?.isAccountVerified) ||
+      Boolean(accNum && accNum !== "—");
+
+    return {
+      accountNumber: String(accNum),
+      bankName: String(bName),
+      accountName: String(accName),
+      isVerified: verified,
+    };
+  }, [brandData, rootObj, profileDetails, repName]);
+
+  const monthlyBudgetDisplay = useMemo(() => {
+    const budgetVal =
+      brandDetails?.monthlyBudget ??
+      profileDetails?.monthlyBudget ??
+      (rootObj?.monthlyBudget as number) ??
+      (rootObj?.monthly_budget as number) ??
+      (rootObj?.budget as number);
+
+    if (budgetVal !== undefined && budgetVal !== null && budgetVal > 0) {
+      if (budgetVal >= 1000000) {
+        return `₦${(budgetVal / 1000000).toFixed(1)}M`;
+      } else if (budgetVal >= 1000) {
+        return `₦${(budgetVal / 1000).toFixed(0)}K`;
+      }
+      return `₦${budgetVal.toLocaleString()}`;
+    }
+    return "—";
+  }, [rootObj, brandDetails, profileDetails]);
 
   const displayCampaigns = useMemo(() => {
     if (
@@ -270,127 +408,150 @@ export default function BrandProfileDrawer({
                 {/* OVERVIEW TAB */}
                 {activeTab === "Overview" && (
                   <>
-                    {/* Brand Details Card */}
-                    <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-4">
-                      <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
+                    {/* Brand Details Container */}
+                    <div className="bg-[#faf9fc] border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-4">
+                      {/* Section 1: Brand Details */}
+                      <h4 className="text-sm font-bold text-[#1a1a2e]">
                         Brand Details
                       </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3.5 text-xs">
-                        <div>
-                          <span className="text-[#9a99b0] block text-[10px]">
-                            Brand name
-                          </span>
-                          <span className="font-bold text-[#1a1a2e] mt-0.5 block">
-                            {brandName}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[#9a99b0] block text-[10px]">
-                            Email
-                          </span>
-                          <span className="font-bold text-[#1a1a2e] mt-0.5 block">
-                            {brandEmail}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[#9a99b0] block text-[10px]">
-                            Website
-                          </span>
-                          <span className="font-bold text-[#1a1a2e] mt-0.5 block">
-                            {brandWebsite}
-                          </span>
-                        </div>
-                        <div className="sm:col-span-2">
-                          <span className="text-[#9a99b0] block text-[10px]">
-                            Bio
-                          </span>
-                          <span className="font-bold text-[#1a1a2e] mt-0.5 block leading-relaxed">
-                            {brandDetails?.bio || profileDetails?.bio || "N/A"}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[#9a99b0] block text-[10px]">
-                            Country
-                          </span>
-                          <span className="font-bold text-[#1a1a2e] mt-0.5 block">
-                            {brandDetails?.country ||
-                              profileDetails?.countryOfResidence ||
-                              "Nigeria"}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[#9a99b0] block text-[10px]">
-                            State/City
-                          </span>
-                          <span className="font-bold text-[#1a1a2e] mt-0.5 block">
-                            {brandDetails?.stateCity ||
-                              profileDetails?.state ||
-                              profileDetails?.city ||
-                              "N/A"}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[#9a99b0] block text-[10px]">
-                            Monthly Budget
-                          </span>
-                          <span className="font-bold text-[#1a1a2e] mt-0.5 block">
-                            {monthlyBudgetDisplay}
-                          </span>
-                        </div>
+                      <div className="flex flex-col gap-3.5 text-xs">
+                        {[
+                          {
+                            label: "Brand name",
+                            value: brandName,
+                          },
+                          {
+                            label: "Email",
+                            value: brandEmail,
+                          },
+                          {
+                            label: "Website",
+                            value: brandWebsite,
+                          },
+                          {
+                            label: "Bio",
+                            value: brandBio,
+                          },
+                          {
+                            label: "Country",
+                            value: brandCountry,
+                          },
+                          {
+                            label: "State/City",
+                            value: brandStateCity,
+                          },
+                          {
+                            label: "Monthly Budget",
+                            value: monthlyBudgetDisplay,
+                          },
+                        ].map((f, i) => (
+                          <div
+                            key={i}
+                            className="grid grid-cols-1 sm:grid-cols-[170px_1fr] items-start gap-1 sm:gap-4"
+                          >
+                            <span className="font-bold text-[#5a5a7a]">
+                              {f.label}
+                            </span>
+                            <span className="font-semibold text-[#1a1a2e] leading-relaxed">
+                              {f.value}
+                            </span>
+                          </div>
+                        ))}
                       </div>
 
-                      <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider pt-2 border-t border-[#e8e6f0]/40">
+                      {/* Section 2: Brand Representative */}
+                      <h4 className="text-sm font-bold text-[#1a1a2e] pt-2 border-t border-[#e8e6f0]/40">
                         Brand Representative
                       </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3.5 text-xs">
-                        <div>
-                          <span className="text-[#9a99b0] block text-[10px]">
-                            Full name
-                          </span>
-                          <span className="font-bold text-[#1a1a2e] mt-0.5 block">
-                            {repName}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[#9a99b0] block text-[10px]">
-                            Email
-                          </span>
-                          <span className="font-bold text-[#1a1a2e] mt-0.5 block">
-                            {repEmail}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[#9a99b0] block text-[10px]">
-                            Phone Number
-                          </span>
-                          <span className="font-bold text-[#1a1a2e] mt-0.5 block">
-                            {repPhone}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[#9a99b0] block text-[10px]">
-                            Profile Completion
-                          </span>
-                          <span className="font-bold text-[#10b981] mt-0.5 block">
-                            {repCompletion}%
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[#9a99b0] block text-[10px]">
-                            Date Joined
-                          </span>
-                          <span className="font-bold text-[#1a1a2e] mt-0.5 block">
-                            {formatDateOnly(repJoined)}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[#9a99b0] block text-[10px]">
-                            Account Status
-                          </span>
-                          <div className="mt-0.5">
-                            <AdminStatusBadge status={brandStatus} />
+                      <div className="flex flex-col gap-3.5 text-xs">
+                        {[
+                          {
+                            label: "Full name",
+                            value: repName,
+                          },
+                          {
+                            label: "Email",
+                            value: repEmail,
+                          },
+                          {
+                            label: "Phone Number",
+                            value: repPhone,
+                          },
+                        ].map((f, i) => (
+                          <div
+                            key={i}
+                            className="grid grid-cols-1 sm:grid-cols-[170px_1fr] items-start gap-1 sm:gap-4"
+                          >
+                            <span className="font-bold text-[#5a5a7a]">
+                              {f.label}
+                            </span>
+                            <span className="font-semibold text-[#1a1a2e] leading-relaxed">
+                              {f.value}
+                            </span>
                           </div>
-                        </div>
+                        ))}
+                      </div>
+
+                      {/* Section 3: Refund Account */}
+                      <h4 className="text-sm font-bold text-[#1a1a2e] pt-2 border-t border-[#e8e6f0]/40">
+                        Refund Account
+                      </h4>
+                      <div className="flex flex-col gap-3.5 text-xs">
+                        {[
+                          {
+                            label: "Account Number",
+                            value: refundAccountData.accountNumber,
+                            isAccountNumber: true,
+                          },
+                          {
+                            label: "Bank Name",
+                            value: refundAccountData.bankName,
+                          },
+                          {
+                            label: "Account Name",
+                            value: refundAccountData.accountName,
+                          },
+                          {
+                            label: "Profile Completion",
+                            value: `${repCompletion}%`,
+                          },
+                          {
+                            label: "Date Joined",
+                            value: repJoined,
+                          },
+                          {
+                            label: "Account Status",
+                            isStatusBadge: true,
+                          },
+                        ].map((f, i) => (
+                          <div
+                            key={i}
+                            className="grid grid-cols-1 sm:grid-cols-[170px_1fr] items-start gap-1 sm:gap-4"
+                          >
+                            <span className="font-bold text-[#5a5a7a]">
+                              {f.label}
+                            </span>
+                            {f.isStatusBadge ? (
+                              <div className="w-fit">
+                                <AdminStatusBadge status={accountStatusRaw} />
+                              </div>
+                            ) : f.isAccountNumber ? (
+                              <div className="flex items-center gap-1.5 font-semibold text-[#1a1a2e]">
+                                <span>{f.value}</span>
+                                {refundAccountData.isVerified && (
+                                  <CheckCircle2
+                                    size={15}
+                                    className="text-[#10b981] fill-[#10b981]/15 shrink-0"
+                                  />
+                                )}
+                              </div>
+                            ) : (
+                              <span className="font-semibold text-[#1a1a2e] leading-relaxed">
+                                {f.value}
+                              </span>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     </div>
 

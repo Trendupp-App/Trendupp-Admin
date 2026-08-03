@@ -338,7 +338,7 @@ export default function CampaignDetailsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-6 md:p-8 relative min-h-screen animate-fade-in-up">
+    <div className="flex flex-col gap-6 p-4 sm:p-6 md:p-8 relative min-h-screen animate-fade-in-up w-full max-w-full overflow-x-hidden">
       {/* Header */}
       <div className="flex items-start gap-4">
         <div className="flex items-center gap-3">
@@ -466,7 +466,7 @@ export default function CampaignDetailsPage() {
             campaignStatus={campaign?.status}
           />
         )}
-        {activeTab === "Audit Log" && <CampaignAuditLogTab />}
+        {activeTab === "Audit Log" && <CampaignAuditLogTab campaignId={id} />}
       </div>
 
       {/* Creator Details Drawer */}

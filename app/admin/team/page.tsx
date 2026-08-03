@@ -9,6 +9,8 @@ import TeamRoleCards from "@/components/admin/team/TeamRoleCards";
 import TeamToolbar from "@/components/admin/team/TeamToolbar";
 import TeamTable, { StaffMember } from "@/components/admin/team/TeamTable";
 import InvitePreviewModal from "@/components/admin/team/InvitePreviewModal";
+import AccessDenied from "@/components/admin/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/authStore";
@@ -87,6 +89,7 @@ const ROLE_TYPES = [
 ];
 
 export default function TeamManagementPage() {
+  const canAccess = usePermission("page.team");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeRoleFilter, setActiveRoleFilter] = useState("all");
   const [activeStatusFilter, setActiveStatusFilter] = useState("all");
@@ -96,6 +99,7 @@ export default function TeamManagementPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const { user } = useAuthStore();
+
   const canInvite = user?.role === "owner" || user?.role === "super_admin";
 
   // Modal control states
@@ -405,9 +409,12 @@ export default function TeamManagementPage() {
     }
   };
 
+  if (!canAccess) return <AccessDenied />;
+
   return (
     <div className="p-6 md:p-8 flex flex-col gap-8 text-left max-w-7xl mx-auto">
       {/* Stats Cards Row with Shimmer Loading */}
+
       <TeamStats
         totalStaff={totalStaff}
         activeStaff={activeStaff}

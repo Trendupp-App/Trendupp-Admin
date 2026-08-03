@@ -228,6 +228,10 @@ export default function CampaignAnalyticsTab({
           />
         ))}
       </div>
+      <p className="text-[10px] text-[#9a99b0]">
+        Post performance metrics are not connected yet — they require the social
+        platforms&apos; analytics APIs.
+      </p>
     </div>
   );
 }
