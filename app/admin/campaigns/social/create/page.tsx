@@ -807,6 +807,12 @@ export default function CreateCampaignPage() {
                     role="listbox"
                     className="absolute top-full left-0 right-0 z-30 mt-1 bg-white border border-[#e8e6f0] rounded-2xl overflow-hidden shadow-xl"
                   >
+=======
+                    role="listbox"
+                    className="absolute top-full left-0 right-0 z-30 mt-1 bg-white border border-[#e8e6f0] rounded-2xl overflow-hidden shadow-xl"
+                  >
+                    {(
+>>>>>>> cb766d8 (fix(admin): address PR review comments for sidebar, escrow CSV, pagination clamping, and ARIA attributes)
                       [
                         { t: "Nano", range: "1K-10K", min: "Minimum $50" },
                         { t: "Micro", range: "10K-200K", min: "Minimum $150" },

@@ -344,11 +344,12 @@ export default function CreatorTable() {
 
   const ITEMS_PER_PAGE = 10;
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
+  const safePage = Math.min(page, totalPages);
 
   const paginatedList = useMemo(() => {
-    const start = (page - 1) * ITEMS_PER_PAGE;
+    const start = (safePage - 1) * ITEMS_PER_PAGE;
     return filtered.slice(start, start + ITEMS_PER_PAGE);
-  }, [filtered, page]);
+  }, [filtered, safePage]);
 
   const hasActiveFilters =
     search !== "" ||

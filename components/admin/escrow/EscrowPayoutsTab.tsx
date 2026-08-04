@@ -220,7 +220,9 @@ function CreatorPayoutsView({ exportTrigger }: { exportTrigger?: number }) {
       item.creator?.name ?? item.creatorName ?? "",
       item.amount ?? 0,
       item.status ?? "pending",
-      item.failureReason ?? "—",
+      item.failureReason ??
+        (item as unknown as { reason?: string }).reason ??
+        "—",
       item.lastUpdated ??
         item.updatedAt ??
         item.paidAt ??

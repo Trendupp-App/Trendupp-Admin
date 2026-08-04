@@ -196,11 +196,12 @@ export default function BrandTable() {
 
   const ITEMS_PER_PAGE = 10;
   const totalPages = Math.ceil(filteredBrands.length / ITEMS_PER_PAGE) || 1;
+  const safePage = Math.min(currentPage, totalPages);
 
   const paginatedBrands = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    const start = (safePage - 1) * ITEMS_PER_PAGE;
     return filteredBrands.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredBrands, currentPage]);
+  }, [filteredBrands, safePage]);
 
   const handleRowClick = (brandId: string) => {
     setSelectedBrandId(brandId);
