@@ -774,6 +774,9 @@ export default function CreateCampaignPage() {
                 {/* Trigger */}
                 <button
                   type="button"
+                  aria-haspopup="listbox"
+                  aria-expanded={isTierDropdownOpen}
+                  aria-controls="creator-tier-options"
                   onClick={() => setIsTierDropdownOpen((p) => !p)}
                   className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs font-medium text-[#1a1a2e] flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-brand-pink/30 cursor-pointer select-none"
                 >
@@ -799,8 +802,11 @@ export default function CreateCampaignPage() {
 
                 {/* Dropdown Panel */}
                 {isTierDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-white border border-[#e8e6f0] rounded-2xl overflow-hidden shadow-xl">
-                    {(
+                  <div
+                    id="creator-tier-options"
+                    role="listbox"
+                    className="absolute top-full left-0 right-0 z-30 mt-1 bg-white border border-[#e8e6f0] rounded-2xl overflow-hidden shadow-xl"
+                  >
                       [
                         { t: "Nano", range: "1K-10K", min: "Minimum $50" },
                         { t: "Micro", range: "10K-200K", min: "Minimum $150" },
