@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Bell, ChevronDown } from "lucide-react";
+import { Bell, ChevronDown } from "lucide-react";
 import UserAvatar from "@/shared/UserAvatar";
 import { useAuthStore } from "@/store/authStore";
 import { useUnreadCount } from "@/hooks/useAdminInbox";
@@ -27,18 +27,8 @@ export default function AdminHeader({
       {/* Page title */}
       <h2 className="text-base font-semibold text-[#1a1a2e]">{title}</h2>
 
-      {/* Right: search + bell + avatar */}
+      {/* Right: bell + avatar */}
       <div className="flex items-center gap-3">
-        {/* Search bar */}
-        <div className="relative hidden md:flex items-center">
-          <Search size={14} className="absolute left-3 text-[#9a99b0]" />
-          <input
-            type="text"
-            placeholder="Search..."
-            className="h-9 w-[220px] bg-[#f4f3f6] rounded-full pl-9 pr-4 text-xs text-[#1a1a2e] placeholder-[#9a99b0] focus:outline-none focus:ring-1 focus:ring-brand-pink/30 border-none"
-          />
-        </div>
-
         {/* Bell */}
         <button
           onClick={onNotificationClick}

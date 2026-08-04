@@ -12,6 +12,7 @@ import {
   X,
   UploadCloud,
   ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -111,6 +112,8 @@ export default function CreateCampaignPage() {
   const platform = selectedPlatforms.join(", ");
   const [isPlatformDropdownOpen, setIsPlatformDropdownOpen] = useState(false);
   const platformDropdownRef = useRef<HTMLDivElement>(null);
+  const [isTierDropdownOpen, setIsTierDropdownOpen] = useState(false);
+  const tierDropdownRef = useRef<HTMLDivElement>(null);
 
   const handleTogglePlatform = (p: string) => {
     setSelectedPlatforms((prev) => {
@@ -137,6 +140,12 @@ export default function CreateCampaignPage() {
         !platformDropdownRef.current.contains(e.target as Node)
       ) {
         setIsPlatformDropdownOpen(false);
+      }
+      if (
+        tierDropdownRef.current &&
+        !tierDropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsTierDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -541,6 +550,14 @@ export default function CreateCampaignPage() {
         if (finalCampaignId) {
           await publishCampaignMutation.mutateAsync(finalCampaignId);
         }
+        // Clear localStorage draft cache so re-opening /create starts fresh
+        try {
+          if (finalCampaignId)
+            localStorage.removeItem(`trendupp_draft_${finalCampaignId}`);
+          localStorage.removeItem(`trendupp_draft_new`);
+        } catch {
+          /* ignore */
+        }
         router.push("/admin/campaigns/social");
       } catch {
         // Toast handled by mutation
@@ -738,11 +755,14 @@ export default function CreateCampaignPage() {
                 </div>
               )}
 
-              {/* Creator Tier (Multi-select) */}
-              <div className="flex flex-col gap-2">
+              {/* Creator Tier — Custom Dropdown */}
+              <div
+                className="flex flex-col gap-1.5 relative"
+                ref={tierDropdownRef}
+              >
                 <div className="flex items-center justify-between">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
-                    Creator Tier
+                    Creator tier <span className="text-brand-pink">*</span>
                   </label>
                   {selectedTiers.length > 0 && (
                     <span className="text-[10px] text-brand-pink font-bold">
@@ -750,36 +770,90 @@ export default function CreateCampaignPage() {
                     </span>
                   )}
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {["Nano", "Micro", "Macro", "Mega"].map((t) => {
-                    const isSelected = selectedTiers.includes(t);
-                    return (
-                      <button
-                        key={t}
-                        type="button"
-                        onClick={() => handleToggleTier(t)}
-                        className={cn(
-                          "h-10 rounded-xl px-3 text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer select-none",
-                          isSelected
-                            ? "bg-brand-pink/10 border-brand-pink text-brand-pink shadow-xs"
-                            : "bg-white border-[#e8e6f0] text-[#5a5a7a] hover:border-[#c4c2d4] hover:bg-[#faf9fc]",
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            "w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[9px] font-black",
-                            isSelected
-                              ? "border-brand-pink bg-brand-pink text-white"
-                              : "border-[#c4c2d4]",
-                          )}
+
+                {/* Trigger */}
+                <button
+                  type="button"
+                  onClick={() => setIsTierDropdownOpen((p) => !p)}
+                  className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs font-medium text-[#1a1a2e] flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-brand-pink/30 cursor-pointer select-none"
+                >
+                  <span
+                    className={cn(
+                      selectedTiers.length === 0
+                        ? "text-[#c4c2d4]"
+                        : "font-bold text-[#1a1a2e]",
+                    )}
+                  >
+                    {selectedTiers.length === 0
+                      ? "Select tier"
+                      : selectedTiers.join(", ")}
+                  </span>
+                  <ChevronDown
+                    size={16}
+                    className={cn(
+                      "text-[#7a7a9a] transition-transform duration-200",
+                      isTierDropdownOpen && "rotate-180 text-brand-pink",
+                    )}
+                  />
+                </button>
+
+                {/* Dropdown Panel */}
+                {isTierDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-white border border-[#e8e6f0] rounded-2xl overflow-hidden shadow-xl">
+                    {(
+                      [
+                        { t: "Nano", range: "1K-10K", min: "Minimum $50" },
+                        { t: "Micro", range: "10K-200K", min: "Minimum $150" },
+                        { t: "Macro", range: "200K-1M", min: "Minimum $400" },
+                        { t: "Mega", range: "1M+", min: "Minimum $2,000" },
+                      ] as { t: string; range: string; min: string }[]
+                    ).map(({ t, range, min }) => {
+                      const isSelected = selectedTiers.includes(t);
+                      return (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => handleToggleTier(t)}
+                          className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-[#faf9fc] transition-colors text-left border-b border-[#f4f3f6] last:border-0 cursor-pointer"
                         >
-                          {isSelected ? "✓" : ""}
-                        </span>
-                        {t}
-                      </button>
-                    );
-                  })}
-                </div>
+                          {/* Checkbox */}
+                          <span
+                            className={cn(
+                              "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all",
+                              isSelected
+                                ? "border-brand-pink bg-brand-pink"
+                                : "border-[#c4c2d4] bg-white",
+                            )}
+                          >
+                            {isSelected && (
+                              <Check
+                                size={10}
+                                className="text-white stroke-[3]"
+                              />
+                            )}
+                          </span>
+                          {/* Tier name + follower range */}
+                          <span className="flex-1 flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-[#1a1a2e]">
+                              {t}
+                            </span>
+                            <span className="text-[11px] font-medium text-[#9a99b0]">
+                              {range}
+                            </span>
+                          </span>
+                          {/* Minimum budget */}
+                          <span className="text-[11px] font-medium text-[#9a99b0] whitespace-nowrap">
+                            {min}
+                          </span>
+                          <ChevronRight
+                            size={14}
+                            className="text-[#c4c2d4] shrink-0"
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Select Advertiser Dropdown */}
