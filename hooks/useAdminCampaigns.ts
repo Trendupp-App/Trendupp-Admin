@@ -546,20 +546,9 @@ export function useBudgetByIndustry(
         brands = [];
       }
 
-      if (params?.fromDate || params?.toDate) {
-        const fromTime = params.fromDate
-          ? new Date(`${params.fromDate}T00:00:00`).getTime()
-          : 0;
-        const toTime = params.toDate
-          ? new Date(`${params.toDate}T23:59:59.999`).getTime()
-          : Infinity;
-        brands = brands.filter((b) => {
-          const dateStr = b.joinedAt || b.joinDate;
-          if (!dateStr) return true;
-          const d = new Date(dateStr).getTime();
-          return isNaN(d) || (d >= fromTime && d <= toTime);
-        });
-      }
+      // /admin/brands totalSpend is a lifetime aggregate and isn't tied to joinedAt/joinDate.
+      // Avoid filtering brands by join date when a spend date range is requested.
+      // (If date-range spend is required, it should be computed from campaign-level data instead.)
 
       const budgetMap: Record<string, number> = {};
       brands.forEach((b) => {
