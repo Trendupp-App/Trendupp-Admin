@@ -11,6 +11,8 @@ import {
   Search,
   X,
   UploadCloud,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -84,13 +86,71 @@ export default function CreateCampaignPage() {
   const [title, setTitle] = useState("");
   const [goal, setGoal] = useState("Amplify Content");
   const [contentLink, setContentLink] = useState("");
-  const [tier, setTier] = useState(
-    "Micro (10K-200K / 3 Token), Nano (1K-10K / 1 Token)",
-  );
+  const [selectedTiers, setSelectedTiers] = useState<string[]>([
+    "Nano",
+    "Micro",
+  ]);
+  const tier = selectedTiers.join(", ");
+
+  const handleToggleTier = (t: string) => {
+    setSelectedTiers((prev) => {
+      if (prev.includes(t)) {
+        if (prev.length === 1) return prev;
+        return prev.filter((item) => item !== t);
+      }
+      return [...prev, t];
+    });
+  };
   const [selectedAdvertisers, setSelectedAdvertisers] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [platform, setPlatform] = useState("Instagram");
+  const [isAdvertiserDropdownOpen, setIsAdvertiserDropdownOpen] =
+    useState(false);
+  const advertiserDropdownRef = useRef<HTMLDivElement>(null);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([
+    "Instagram",
+  ]);
+  const platform = selectedPlatforms.join(", ");
+  const [isPlatformDropdownOpen, setIsPlatformDropdownOpen] = useState(false);
+  const platformDropdownRef = useRef<HTMLDivElement>(null);
+  const [isTierDropdownOpen, setIsTierDropdownOpen] = useState(false);
+  const tierDropdownRef = useRef<HTMLDivElement>(null);
+
+  const handleTogglePlatform = (p: string) => {
+    setSelectedPlatforms((prev) => {
+      if (prev.includes(p)) {
+        if (prev.length === 1) return prev;
+        return prev.filter((item) => item !== p);
+      }
+      return [...prev, p];
+    });
+  };
+
   const [endDate, setEndDate] = useState("");
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        advertiserDropdownRef.current &&
+        !advertiserDropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsAdvertiserDropdownOpen(false);
+      }
+      if (
+        platformDropdownRef.current &&
+        !platformDropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsPlatformDropdownOpen(false);
+      }
+      if (
+        tierDropdownRef.current &&
+        !tierDropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsTierDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Step 2 state
   const [desc, setDesc] = useState("");
@@ -251,7 +311,18 @@ export default function CreateCampaignPage() {
             setSelectedAdvertisers([cached.selectedAdvertiser]);
             restoredLocalBrands = true;
           }
-          if (cached.tier) setTier(cached.tier);
+          if (
+            Array.isArray(cached.selectedTiers) &&
+            cached.selectedTiers.length > 0
+          ) {
+            setSelectedTiers(cached.selectedTiers);
+          } else if (cached.tier) {
+            const parsed = String(cached.tier)
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean);
+            if (parsed.length > 0) setSelectedTiers(parsed);
+          }
           if (cached.preview) setPreview(cached.preview);
           if (cached.desc) setDesc(cached.desc);
           if (cached.deliverables) setDeliverables(cached.deliverables);
@@ -259,7 +330,18 @@ export default function CreateCampaignPage() {
           if (cached.dos) setDos(cached.dos);
           if (cached.donts) setDonts(cached.donts);
           if (cached.contentLink) setContentLink(cached.contentLink);
-          if (cached.platform) setPlatform(cached.platform);
+          if (
+            Array.isArray(cached.selectedPlatforms) &&
+            cached.selectedPlatforms.length > 0
+          ) {
+            setSelectedPlatforms(cached.selectedPlatforms);
+          } else if (cached.platform) {
+            const parsed = String(cached.platform)
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean);
+            if (parsed.length > 0) setSelectedPlatforms(parsed);
+          }
           if (cached.endDate) setEndDate(cached.endDate);
           if (cached.step) setStep(cached.step);
         }
@@ -318,7 +400,7 @@ export default function CreateCampaignPage() {
         }
 
         if (anyDraft.creatorTiers && anyDraft.creatorTiers.length > 0) {
-          setTier(anyDraft.creatorTiers.join(", "));
+          setSelectedTiers(anyDraft.creatorTiers);
         }
 
         const img =
@@ -329,7 +411,13 @@ export default function CreateCampaignPage() {
         if (linkVal) setContentLink(linkVal);
 
         const platformVal = anyDraft.platforms || anyDraft.platform;
-        if (platformVal) setPlatform(platformVal);
+        if (platformVal) {
+          const parsed = String(platformVal)
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+          if (parsed.length > 0) setSelectedPlatforms(parsed);
+        }
 
         const dateVal = anyDraft.deadline || anyDraft.endDate;
         if (dateVal) setEndDate(dateVal);
@@ -461,6 +549,14 @@ export default function CreateCampaignPage() {
 
         if (finalCampaignId) {
           await publishCampaignMutation.mutateAsync(finalCampaignId);
+        }
+        // Clear localStorage draft cache so re-opening /create starts fresh
+        try {
+          if (finalCampaignId)
+            localStorage.removeItem(`trendupp_draft_${finalCampaignId}`);
+          localStorage.removeItem(`trendupp_draft_new`);
+        } catch {
+          /* ignore */
         }
         router.push("/admin/campaigns/social");
       } catch {
@@ -643,44 +739,135 @@ export default function CreateCampaignPage() {
                 </select>
               </div>
 
-              {/* Content Link Input */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
-                  Content Link
-                </label>
-                <input
-                  type="text"
-                  placeholder="enter the content link"
-                  value={contentLink}
-                  onChange={(e) => setContentLink(e.target.value)}
-                  className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium placeholder:text-[#c4c2d4]"
-                />
-              </div>
+              {/* Content Link Input - Only shown for Amplify Content */}
+              {goal === "Amplify Content" && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
+                    Content Link
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="enter the content link"
+                    value={contentLink}
+                    onChange={(e) => setContentLink(e.target.value)}
+                    className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium placeholder:text-[#c4c2d4]"
+                  />
+                </div>
+              )}
 
-              {/* Creator Tier and Reward */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
-                  Creator Tier and Reward
-                </label>
-                <select
-                  value={tier}
-                  onChange={(e) => setTier(e.target.value)}
-                  className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium cursor-pointer"
+              {/* Creator Tier — Custom Dropdown */}
+              <div
+                className="flex flex-col gap-1.5 relative"
+                ref={tierDropdownRef}
+              >
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
+                    Creator tier <span className="text-brand-pink">*</span>
+                  </label>
+                  {selectedTiers.length > 0 && (
+                    <span className="text-[10px] text-brand-pink font-bold">
+                      {selectedTiers.length} selected
+                    </span>
+                  )}
+                </div>
+
+                {/* Trigger */}
+                <button
+                  type="button"
+                  aria-haspopup="listbox"
+                  aria-expanded={isTierDropdownOpen}
+                  aria-controls="creator-tier-options"
+                  onClick={() => setIsTierDropdownOpen((p) => !p)}
+                  className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs font-medium text-[#1a1a2e] flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-brand-pink/30 cursor-pointer select-none"
                 >
-                  <option value="Micro (10K-200K / 3 Token), Nano (1K-10K / 1 Token)">
-                    Micro (10K-200K / 3 Token), Nano (1K-10K / 1 Token)
-                  </option>
-                  <option value="Micro (10K-200K / 100 Tokens)">
-                    Micro (10K-200K / 100 Tokens)
-                  </option>
-                  <option value="Nano (1K-10K / 50 Tokens)">
-                    Nano (1K-10K / 50 Tokens)
-                  </option>
-                </select>
+                  <span
+                    className={cn(
+                      selectedTiers.length === 0
+                        ? "text-[#c4c2d4]"
+                        : "font-bold text-[#1a1a2e]",
+                    )}
+                  >
+                    {selectedTiers.length === 0
+                      ? "Select tier"
+                      : selectedTiers.join(", ")}
+                  </span>
+                  <ChevronDown
+                    size={16}
+                    className={cn(
+                      "text-[#7a7a9a] transition-transform duration-200",
+                      isTierDropdownOpen && "rotate-180 text-brand-pink",
+                    )}
+                  />
+                </button>
+
+                {/* Dropdown Panel */}
+                {isTierDropdownOpen && (
+                  <div
+                    id="creator-tier-options"
+                    role="listbox"
+                    className="absolute top-full left-0 right-0 z-30 mt-1 bg-white border border-[#e8e6f0] rounded-2xl overflow-hidden shadow-xl"
+                  >
+                    {(
+                      [
+                        { t: "Nano", range: "1K-10K", min: "Minimum $50" },
+                        { t: "Micro", range: "10K-200K", min: "Minimum $150" },
+                        { t: "Macro", range: "200K-1M", min: "Minimum $400" },
+                        { t: "Mega", range: "1M+", min: "Minimum $2,000" },
+                      ] as { t: string; range: string; min: string }[]
+                    ).map(({ t, range, min }) => {
+                      const isSelected = selectedTiers.includes(t);
+                      return (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => handleToggleTier(t)}
+                          className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-[#faf9fc] transition-colors text-left border-b border-[#f4f3f6] last:border-0 cursor-pointer"
+                        >
+                          {/* Checkbox */}
+                          <span
+                            className={cn(
+                              "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all",
+                              isSelected
+                                ? "border-brand-pink bg-brand-pink"
+                                : "border-[#c4c2d4] bg-white",
+                            )}
+                          >
+                            {isSelected && (
+                              <Check
+                                size={10}
+                                className="text-white stroke-[3]"
+                              />
+                            )}
+                          </span>
+                          {/* Tier name + follower range */}
+                          <span className="flex-1 flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-[#1a1a2e]">
+                              {t}
+                            </span>
+                            <span className="text-[11px] font-medium text-[#9a99b0]">
+                              {range}
+                            </span>
+                          </span>
+                          {/* Minimum budget */}
+                          <span className="text-[11px] font-medium text-[#9a99b0] whitespace-nowrap">
+                            {min}
+                          </span>
+                          <ChevronRight
+                            size={14}
+                            className="text-[#c4c2d4] shrink-0"
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
-              {/* Select Advertiser Panel */}
-              <div className="flex flex-col gap-2">
+              {/* Select Advertiser Dropdown */}
+              <div
+                className="flex flex-col gap-1.5 relative"
+                ref={advertiserDropdownRef}
+              >
                 <div className="flex items-center justify-between">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
                     Select Advertiser
@@ -691,146 +878,240 @@ export default function CreateCampaignPage() {
                     </span>
                   )}
                 </div>
-                <div className="border border-[#e8e6f0] rounded-2xl p-4 flex flex-col gap-3.5 bg-white">
-                  {/* Search input */}
-                  <div className="relative">
-                    <Search
-                      size={14}
-                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9a99b0]"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Search Brands..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="h-9.5 w-full bg-[#faf9fc] border border-[#e8e6f0] rounded-xl pl-9 pr-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/20 font-medium placeholder:text-[#c4c2d4]"
-                    />
-                  </div>
 
-                  {/* Select All Row */}
-                  {filteredAdvertisers.length > 0 && (
-                    <div className="flex items-center justify-between px-3.5 py-2 bg-[#faf9fc] border border-[#e8e6f0] rounded-xl text-xs font-bold text-[#1a1a2e]">
-                      <label className="flex items-center gap-2 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={
-                            filteredAdvertisers.length > 0 &&
-                            filteredAdvertisers.every((adv) =>
-                              selectedAdvertisers.includes(adv.id),
-                            )
-                          }
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              const allIds = Array.from(
-                                new Set([
-                                  ...selectedAdvertisers,
-                                  ...filteredAdvertisers.map((adv) => adv.id),
-                                ]),
-                              );
-                              setSelectedAdvertisers(allIds);
-                            } else {
-                              const filteredIds = new Set(
-                                filteredAdvertisers.map((adv) => adv.id),
-                              );
-                              setSelectedAdvertisers(
-                                selectedAdvertisers.filter(
-                                  (id) => !filteredIds.has(id),
-                                ),
-                              );
-                            }
-                          }}
-                          className="accent-brand-pink shrink-0 cursor-pointer"
-                        />
-                        <span>Select All ({filteredAdvertisers.length})</span>
-                      </label>
-                      {selectedAdvertisers.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setSelectedAdvertisers([])}
-                          className="text-[10px] font-bold text-[#7a7a9a] hover:text-brand-pink transition-colors cursor-pointer"
-                        >
-                          Clear Selection
-                        </button>
-                      )}
+                <button
+                  type="button"
+                  onClick={() => setIsAdvertiserDropdownOpen((prev) => !prev)}
+                  className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs font-medium text-[#1a1a2e] flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-brand-pink/30 cursor-pointer select-none"
+                >
+                  <span
+                    className={cn(
+                      selectedAdvertisers.length === 0
+                        ? "text-[#c4c2d4]"
+                        : "font-bold text-[#1a1a2e]",
+                    )}
+                  >
+                    {selectedAdvertisers.length === 0
+                      ? "Select Advertiser..."
+                      : selectedBrandObjs.length === 1
+                        ? selectedBrandObjs[0].name
+                        : `${selectedBrandObjs[0]?.name || "Advertiser"} (+${selectedBrandObjs.length - 1} more)`}
+                  </span>
+                  <ChevronDown
+                    size={16}
+                    className={cn(
+                      "text-[#7a7a9a] transition-transform duration-200",
+                      isAdvertiserDropdownOpen && "rotate-180 text-brand-pink",
+                    )}
+                  />
+                </button>
+
+                {isAdvertiserDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-white border border-[#e8e6f0] rounded-2xl p-3 shadow-xl flex flex-col gap-2.5">
+                    {/* Search input */}
+                    <div className="relative">
+                      <Search
+                        size={14}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9a99b0]"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Search Brands..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="h-9 w-full bg-[#faf9fc] border border-[#e8e6f0] rounded-xl pl-9 pr-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/20 font-medium placeholder:text-[#c4c2d4]"
+                      />
                     </div>
-                  )}
 
-                  {/* List */}
-                  <div className="flex flex-col gap-1.5 max-h-[240px] overflow-y-auto pr-0.5">
-                    {filteredAdvertisers.map((adv) => {
-                      const selected = selectedAdvertisers.includes(adv.id);
-                      const toggleSelect = () => {
-                        if (selected) {
-                          setSelectedAdvertisers(
-                            selectedAdvertisers.filter((id) => id !== adv.id),
-                          );
-                        } else {
-                          setSelectedAdvertisers([
-                            ...selectedAdvertisers,
-                            adv.id,
-                          ]);
-                        }
-                      };
-                      return (
-                        <div
-                          key={adv.id}
-                          onClick={toggleSelect}
-                          className={cn(
-                            "flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl border transition-all cursor-pointer select-none",
-                            selected
-                              ? "bg-[#fff0f5] border-[#fbcfe8]"
-                              : "bg-white border-transparent hover:bg-[#faf9fc]",
-                          )}
-                        >
+                    {/* Select All Row */}
+                    {filteredAdvertisers.length > 0 && (
+                      <div className="flex items-center justify-between px-3 py-1.5 bg-[#faf9fc] border border-[#e8e6f0] rounded-xl text-xs font-bold text-[#1a1a2e]">
+                        <label className="flex items-center gap-2 cursor-pointer select-none text-[11px]">
                           <input
                             type="checkbox"
-                            checked={selected}
-                            onChange={() => {}}
+                            checked={
+                              filteredAdvertisers.length > 0 &&
+                              filteredAdvertisers.every((adv) =>
+                                selectedAdvertisers.includes(adv.id),
+                              )
+                            }
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                const allIds = Array.from(
+                                  new Set([
+                                    ...selectedAdvertisers,
+                                    ...filteredAdvertisers.map((adv) => adv.id),
+                                  ]),
+                                );
+                                setSelectedAdvertisers(allIds);
+                              } else {
+                                const filteredIds = new Set(
+                                  filteredAdvertisers.map((adv) => adv.id),
+                                );
+                                setSelectedAdvertisers(
+                                  selectedAdvertisers.filter(
+                                    (id) => !filteredIds.has(id),
+                                  ),
+                                );
+                              }
+                            }}
                             className="accent-brand-pink shrink-0 cursor-pointer"
                           />
+                          <span>Select All ({filteredAdvertisers.length})</span>
+                        </label>
+                        {selectedAdvertisers.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedAdvertisers([])}
+                            className="text-[10px] font-bold text-[#7a7a9a] hover:text-brand-pink transition-colors cursor-pointer"
+                          >
+                            Clear Selection
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* List */}
+                    <div className="flex flex-col gap-1 max-h-[220px] overflow-y-auto pr-0.5">
+                      {filteredAdvertisers.map((adv) => {
+                        const selected = selectedAdvertisers.includes(adv.id);
+                        const toggleSelect = () => {
+                          if (selected) {
+                            setSelectedAdvertisers(
+                              selectedAdvertisers.filter((id) => id !== adv.id),
+                            );
+                          } else {
+                            setSelectedAdvertisers([
+                              ...selectedAdvertisers,
+                              adv.id,
+                            ]);
+                          }
+                        };
+                        return (
                           <div
+                            key={adv.id}
+                            onClick={toggleSelect}
                             className={cn(
-                              "w-7 h-7 rounded-full flex items-center justify-center text-[8px] font-bold text-white uppercase shrink-0",
-                              adv.logoColor,
+                              "flex items-center gap-3 px-3 py-2 rounded-xl border transition-all cursor-pointer select-none text-xs",
+                              selected
+                                ? "bg-[#fff0f5] border-[#fbcfe8]"
+                                : "bg-white border-transparent hover:bg-[#faf9fc]",
                             )}
                           >
-                            {adv.logoText}
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              onChange={() => {}}
+                              className="accent-brand-pink shrink-0 cursor-pointer"
+                            />
+                            <div
+                              className={cn(
+                                "w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold text-white uppercase shrink-0",
+                                adv.logoColor,
+                              )}
+                            >
+                              {adv.logoText}
+                            </div>
+                            <div className="flex flex-col text-left">
+                              <span className="text-xs font-bold text-[#1a1a2e]">
+                                {adv.name}
+                              </span>
+                              <span className="text-[10px] text-[#7a7a9a]">
+                                Current: {adv.rate}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex flex-col text-left">
-                            <span className="text-xs font-bold text-[#1a1a2e]">
-                              {adv.name}
-                            </span>
-                            <span className="text-[10px] text-[#7a7a9a] font-semibold mt-0.5">
-                              Current: {adv.rate}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {filteredAdvertisers.length === 0 && (
-                      <span className="text-xs text-[#7a7a9a] py-4 text-center">
-                        No brands found.
-                      </span>
-                    )}
+                        );
+                      })}
+                      {filteredAdvertisers.length === 0 && (
+                        <span className="text-xs text-[#7a7a9a] py-3 text-center">
+                          No brands found.
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
-              {/* Posting Platforms */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
-                  Posting Platforms
-                </label>
-                <select
-                  value={platform}
-                  onChange={(e) => setPlatform(e.target.value)}
-                  className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium cursor-pointer"
+              {/* Posting Platforms Dropdown (Multi-select) */}
+              <div
+                className="flex flex-col gap-1.5 relative"
+                ref={platformDropdownRef}
+              >
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
+                    Posting Platforms
+                  </label>
+                  {selectedPlatforms.length > 0 && (
+                    <span className="text-[10px] text-brand-pink font-bold">
+                      {selectedPlatforms.length} selected
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsPlatformDropdownOpen((prev) => !prev)}
+                  className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs font-medium text-[#1a1a2e] flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-brand-pink/30 cursor-pointer select-none"
                 >
-                  <option value="Instagram">Instagram</option>
-                  <option value="TikTok">TikTok</option>
-                  <option value="YouTube">YouTube</option>
-                  <option value="X">X (Twitter)</option>
-                </select>
+                  <span
+                    className={cn(
+                      selectedPlatforms.length === 0
+                        ? "text-[#c4c2d4]"
+                        : "font-bold text-[#1a1a2e]",
+                    )}
+                  >
+                    {selectedPlatforms.length === 0
+                      ? "Select Platforms..."
+                      : selectedPlatforms.length === 1
+                        ? selectedPlatforms[0]
+                        : `${selectedPlatforms[0]} (+${selectedPlatforms.length - 1} more)`}
+                  </span>
+                  <ChevronDown
+                    size={16}
+                    className={cn(
+                      "text-[#7a7a9a] transition-transform duration-200",
+                      isPlatformDropdownOpen && "rotate-180 text-brand-pink",
+                    )}
+                  />
+                </button>
+
+                {isPlatformDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-white border border-[#e8e6f0] rounded-2xl p-2.5 shadow-xl flex flex-col gap-1">
+                    {["Instagram", "TikTok", "YouTube", "X (Twitter)"].map(
+                      (plat) => {
+                        const isSelected = selectedPlatforms.includes(plat);
+                        return (
+                          <div
+                            key={plat}
+                            onClick={() => handleTogglePlatform(plat)}
+                            className={cn(
+                              "flex items-center justify-between px-3 py-2.5 rounded-xl border transition-all cursor-pointer select-none text-xs",
+                              isSelected
+                                ? "bg-[#fff0f5] border-[#fbcfe8] text-[#1a1a2e] font-bold"
+                                : "bg-white border-transparent text-[#5a5a7a] hover:bg-[#faf9fc]",
+                            )}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => {}}
+                                className="accent-brand-pink shrink-0 cursor-pointer"
+                              />
+                              <span>{plat}</span>
+                            </div>
+                            {isSelected && (
+                              <span className="text-[10px] text-brand-pink font-extrabold">
+                                Selected
+                              </span>
+                            )}
+                          </div>
+                        );
+                      },
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* End Date */}
@@ -1037,6 +1318,16 @@ export default function CreateCampaignPage() {
                     </span>
                     <span className="font-bold">{goal}</span>
                   </div>
+                  {goal === "Amplify Content" && contentLink && (
+                    <div className="flex justify-between">
+                      <span className="text-[#7a7a9a] uppercase tracking-wider text-[9px] font-bold">
+                        Content Link
+                      </span>
+                      <span className="font-bold truncate max-w-[200px]">
+                        {contentLink}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-[#7a7a9a] uppercase tracking-wider text-[9px] font-bold">
                       Advertiser

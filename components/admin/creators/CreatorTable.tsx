@@ -32,9 +32,9 @@ interface CreatorItem {
   handle: string;
   email: string;
   country: string;
-  tier: "Mega" | "Macro" | "Micro" | "Nano";
+  tier: "Mega" | "Macro" | "Micro" | "Nano" | "";
   niche: string;
-  gender: "Male" | "Female";
+  gender: "Male" | "Female" | "";
   platforms: ("IG" | "TikTok" | "YT" | "X" | "FB")[];
   completion: number;
   campaignsCount: number;
@@ -45,7 +45,7 @@ interface CreatorItem {
   lastLogin: string;
 }
 
-type FilterTab = "All" | "Active" | "Suspended" | "Pending";
+type FilterTab = "All" | "Onboarded" | "Suspended" | "Pending";
 
 const TIER_CLASSES: Record<string, string> = {
   Mega: "text-[#ea580c] bg-[#fff7ed] border-[#ffedd5]",
@@ -70,9 +70,6 @@ export default function CreatorTable() {
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
   const [search, setSearch] = useState("");
   const [selectedTier, setSelectedTier] = useState("");
-  const [selectedNiche, setSelectedNiche] = useState("");
-  const [selectedGender, setSelectedGender] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [fromDate, setFromDate] = useState("");
@@ -82,24 +79,22 @@ export default function CreatorTable() {
   );
   const [page, setPage] = useState(1);
 
-  // Sync tab status with dropdown status
-  const apiStatus = useMemo(() => {
-    if (activeTab !== "All") return activeTab.toLowerCase();
-    if (selectedStatus) return selectedStatus.toLowerCase();
-    return undefined;
-  }, [activeTab, selectedStatus]);
+  // activeTab is the single source of truth for status filtering
+  const apiStatus =
+    activeTab === "Onboarded"
+      ? "active"
+      : activeTab !== "All"
+        ? activeTab.toLowerCase()
+        : undefined;
 
   const { data: paginatedResponse, isLoading } = useAdminCreatorsList({
     q: search || undefined,
     status: apiStatus,
-    tier: selectedTier || undefined,
-    niche: selectedNiche || undefined,
     startDate: fromDate || undefined,
     endDate: toDate || undefined,
     fromDate: fromDate || undefined,
     toDate: toDate || undefined,
-    page,
-    limit: 10,
+    limit: 1000,
   });
 
   const listItems: CreatorItem[] = useMemo(() => {
@@ -108,26 +103,38 @@ export default function CreatorTable() {
         const rawDate = c.createdAt || c.joinedAt || c.dateJoined;
         const formattedDateJoined = formatDateOnly(rawDate);
 
-        const rawStatus = (c.status || "").toLowerCase();
-        const normalizedStatus: "Active" | "Pending" | "Suspended" =
+        // ── Status ────────────────────────────────────────────────────────────
+        // Check all known field-name variants (status, accountStatus, userStatus)
+        const rawStatus = String(
+          c.status || c.accountStatus || "",
+        ).toLowerCase();
+
+        let normalizedStatus: "Active" | "Pending" | "Suspended" = "Active";
+        if (
+          rawStatus === "suspended" ||
+          rawStatus === "blocked" ||
+          rawStatus === "inactive"
+        ) {
+          normalizedStatus = "Suspended";
+        } else if (rawStatus === "pending" || rawStatus === "unverified") {
+          normalizedStatus = "Pending";
+        } else if (
           rawStatus === "active" ||
           rawStatus === "verified" ||
-          rawStatus === "onboarded" ||
-          Boolean(rawDate)
-            ? "Active"
-            : rawStatus === "suspended" ||
-                rawStatus === "blocked" ||
-                rawStatus === "inactive"
-              ? "Suspended"
-              : "Pending";
+          rawStatus === "onboarded"
+        ) {
+          normalizedStatus = "Active";
+        }
 
+        // ── Profile Completion ────────────────────────────────────────────────
         const parsedCompletion =
           typeof c.profileCompletion === "number"
             ? c.profileCompletion
             : typeof c.profileCompletion === "string"
-              ? parseInt(c.profileCompletion.replace("%", ""), 10) || 100
-              : 100;
+              ? parseInt(c.profileCompletion.replace("%", ""), 10) || 0
+              : 0;
 
+        // ── Platforms ────────────────────────────────────────────────────────
         const rawPlatforms =
           c.platformsConnected ||
           c.platforms ||
@@ -159,9 +166,9 @@ export default function CreatorTable() {
                 parsedPlatforms.push("TikTok");
             } else if (pStr.includes("yt") || pStr.includes("youtube")) {
               if (!parsedPlatforms.includes("YT")) parsedPlatforms.push("YT");
-            } else if (pStr.includes("twitter") || pStr.includes("x")) {
+            } else if (pStr.includes("twitter") || pStr === "x") {
               if (!parsedPlatforms.includes("X")) parsedPlatforms.push("X");
-            } else if (pStr.includes("facebook") || pStr.includes("fb")) {
+            } else if (pStr.includes("facebook") || pStr === "fb") {
               if (!parsedPlatforms.includes("FB")) parsedPlatforms.push("FB");
             }
           });
@@ -186,27 +193,74 @@ export default function CreatorTable() {
           });
         }
 
-        const finalPlatforms: ("IG" | "TikTok" | "YT" | "X" | "FB")[] =
-          parsedPlatforms;
-
         const revCount =
           c.revisionCount ?? c.revisionsCount ?? c.revisions ?? 0;
+
+        // ── Country ───────────────────────────────────────────────────────────
+        // Checks: country → countryOfResidence → location (string/object)
+        let extractedCountry =
+          c.country ||
+          c.countryOfResidence ||
+          (typeof c.location === "string" ? c.location : "") ||
+          (c.location && typeof c.location === "object" && c.location.country
+            ? c.location.country
+            : "");
+
+        // Strip "City, Country" format — take last segment after comma
+        if (extractedCountry.includes(",")) {
+          const parts = extractedCountry.split(",");
+          extractedCountry = parts[parts.length - 1].trim();
+        }
+
+        // ── Gender ───────────────────────────────────────────────────────────
+        // Normalize "male"/"female"/"Male"/"Female"/"MALE"/"FEMALE" → display label
+        let extractedGender: "Male" | "Female" | "" = "";
+        const rawGender = (c.gender || "").toLowerCase().trim();
+        if (rawGender === "male" || rawGender === "m") {
+          extractedGender = "Male";
+        } else if (rawGender === "female" || rawGender === "f") {
+          extractedGender = "Female";
+        }
+
+        // ── Tier ─────────────────────────────────────────────────────────────
+        const rawTier =
+          c.tier ||
+          (c as unknown as { creatorTier?: string }).creatorTier ||
+          (c as unknown as { userTier?: string }).userTier ||
+          "";
+        let extractedTier: "Mega" | "Macro" | "Micro" | "Nano" | "" = "";
+        if (rawTier) {
+          const tLower = String(rawTier).toLowerCase().trim();
+          if (tLower.includes("mega")) extractedTier = "Mega";
+          else if (tLower.includes("macro")) extractedTier = "Macro";
+          else if (tLower.includes("micro")) extractedTier = "Micro";
+          else if (tLower.includes("nano")) extractedTier = "Nano";
+        }
+
+        // ── Niche ────────────────────────────────────────────────────────────
+        const extractedNiche = c.niche ?? "";
+
+        // ── Name & Handle ────────────────────────────────────────────────────
+        // Some endpoints return fullName/username instead of name/handle
+        const resolvedName = c.name || c.fullName || "Creator";
+        const rawHandle = c.handle || c.username || "";
+        const resolvedHandle = rawHandle
+          ? rawHandle.startsWith("@")
+            ? rawHandle
+            : `@${rawHandle}`
+          : "@creator";
 
         return {
           id: c.id || `creator-${idx}`,
           creatorId: `CRT-${(c.id || "0000").slice(0, 4).toUpperCase()}`,
-          name: c.name || "Creator",
-          handle: c.handle
-            ? c.handle.startsWith("@")
-              ? c.handle
-              : `@${c.handle}`
-            : "@creator",
+          name: resolvedName,
+          handle: resolvedHandle,
           email: c.email || "—",
-          country: "Nigeria",
-          tier: (c.tier as "Mega" | "Macro" | "Micro" | "Nano") || "Micro",
-          niche: c.niche || "General",
-          gender: "Female",
-          platforms: finalPlatforms,
+          country: extractedCountry,
+          tier: extractedTier,
+          niche: extractedNiche,
+          gender: extractedGender,
+          platforms: parsedPlatforms,
           completion: parsedCompletion,
           campaignsCount: c.completedCampaigns ?? c.campaignsCount ?? 0,
           totalEarnings: c.totalEarnings ?? 0,
@@ -220,21 +274,31 @@ export default function CreatorTable() {
     return [];
   }, [paginatedResponse]);
 
+  // Compile unique available countries dynamically from dataset
+  const availableCountries = useMemo(() => {
+    const set = new Set<string>([
+      "Nigeria",
+      "Ghana",
+      "Kenya",
+      "Togo",
+      "Benin Republic",
+      "Uganda",
+      "South Africa",
+      "United Kingdom",
+      "United States",
+      "Austria",
+      "Australia",
+    ]);
+    listItems.forEach((c) => {
+      if (c.country && c.country.trim()) set.add(c.country.trim());
+    });
+    return Array.from(set).sort();
+  }, [listItems]);
+
+  // Client-side filter — strictly filters listItems by Search, Year, Status, Tier, and Country
   const filtered = useMemo(() => {
     return listItems.filter((c) => {
-      const activeStatusFilterLower =
-        activeTab !== "All"
-          ? activeTab.toLowerCase()
-          : selectedStatus
-            ? selectedStatus.toLowerCase()
-            : "";
-
-      if (
-        activeStatusFilterLower &&
-        c.status.toLowerCase() !== activeStatusFilterLower
-      ) {
-        return false;
-      }
+      // 1. Search filter
       if (
         search &&
         !c.name.toLowerCase().includes(search.toLowerCase()) &&
@@ -244,48 +308,52 @@ export default function CreatorTable() {
       ) {
         return false;
       }
+
+      // 2. Year filter
+      if (selectedYear && !c.dateJoined.includes(selectedYear)) return false;
+
+      // 3. Status tab filter
+      if (activeTab === "Onboarded" && c.status !== "Active") return false;
+      if (activeTab === "Suspended" && c.status !== "Suspended") return false;
+      if (activeTab === "Pending" && c.status !== "Pending") return false;
+
+      // 4. Tier filter
       if (selectedTier && c.tier.toLowerCase() !== selectedTier.toLowerCase()) {
         return false;
       }
-      if (
-        selectedNiche &&
-        !c.niche.toLowerCase().includes(selectedNiche.toLowerCase())
-      ) {
-        return false;
+
+      // 5. Country filter (flexible matching)
+      if (selectedCountry) {
+        const cCountry = c.country.toLowerCase().trim();
+        const sCountry = selectedCountry.toLowerCase().trim();
+        if (!cCountry.includes(sCountry) && !sCountry.includes(cCountry)) {
+          return false;
+        }
       }
-      if (
-        selectedGender &&
-        c.gender.toLowerCase() !== selectedGender.toLowerCase()
-      ) {
-        return false;
-      }
-      if (
-        selectedCountry &&
-        !c.country.toLowerCase().includes(selectedCountry.toLowerCase())
-      ) {
-        return false;
-      }
-      if (selectedYear && !c.dateJoined.includes(selectedYear)) return false;
+
       return true;
     });
   }, [
     listItems,
-    activeTab,
-    selectedStatus,
     search,
-    selectedTier,
-    selectedNiche,
-    selectedGender,
-    selectedCountry,
     selectedYear,
+    activeTab,
+    selectedTier,
+    selectedCountry,
   ]);
+
+  const ITEMS_PER_PAGE = 10;
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
+  const safePage = Math.min(page, totalPages);
+
+  const paginatedList = useMemo(() => {
+    const start = (safePage - 1) * ITEMS_PER_PAGE;
+    return filtered.slice(start, start + ITEMS_PER_PAGE);
+  }, [filtered, safePage]);
 
   const hasActiveFilters =
     search !== "" ||
     selectedTier !== "" ||
-    selectedNiche !== "" ||
-    selectedGender !== "" ||
-    selectedStatus !== "" ||
     selectedCountry !== "" ||
     selectedYear !== "" ||
     activeTab !== "All";
@@ -294,9 +362,6 @@ export default function CreatorTable() {
     setActiveTab("All");
     setSearch("");
     setSelectedTier("");
-    setSelectedNiche("");
-    setSelectedGender("");
-    setSelectedStatus("");
     setSelectedCountry("");
     setSelectedYear("");
     setPage(1);
@@ -311,7 +376,6 @@ export default function CreatorTable() {
       "Email",
       "Country",
       "Tier",
-      "Niche",
       "Gender",
       "Platforms",
       "Profile",
@@ -328,7 +392,6 @@ export default function CreatorTable() {
       c.email,
       c.country,
       c.tier,
-      c.niche,
       c.gender,
       `"${c.platforms.join(", ")}"`,
       `${c.completion}%`,
@@ -356,42 +419,37 @@ export default function CreatorTable() {
     URL.revokeObjectURL(url);
   };
 
-  const totalPages = paginatedResponse?.totalPages || 1;
-  const totalItems = paginatedResponse?.total || filtered.length;
-
   return (
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5 shadow-sm">
       {/* Status Filter Tabs (Left) & Card Controls + Actions (Right) */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex items-center justify-between border-b border-[#e8e6f0]/40 pb-3 gap-4 flex-wrap">
         {/* Left: Status Filter Tabs */}
-        <div className="flex items-center gap-1.5 bg-[#f4f3f6] border border-[#e8e6f0]/80 p-1 rounded-xl max-w-xl overflow-x-auto no-scrollbar">
-          {(["All", "Active", "Suspended", "Pending"] as const).map((tab) => {
-            const active = activeTab === tab;
-            return (
+        <div className="flex items-center gap-6">
+          {(["All", "Onboarded", "Suspended", "Pending"] as const).map(
+            (tab) => (
               <button
                 key={tab}
                 onClick={() => {
                   setActiveTab(tab);
-                  if (tab !== "All") setSelectedStatus(tab);
-                  else setSelectedStatus("");
                   setPage(1);
                 }}
                 className={cn(
-                  "px-4.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0",
-                  active
-                    ? "bg-brand-pink text-white shadow-sm"
-                    : "bg-transparent text-[#5a5a7a] hover:text-[#1a1a2e]",
+                  "pb-1 text-xs font-bold border-b-2 transition-all cursor-pointer",
+                  activeTab === tab
+                    ? "border-brand-pink text-brand-pink"
+                    : "border-transparent text-[#9a99b0] hover:text-[#1a1a2e]",
                 )}
               >
                 {tab}
               </button>
-            );
-          })}
+            ),
+          )}
         </div>
 
         {/* Right: Time Controls, Clear Filters & Export */}
         <div className="flex items-center gap-3 flex-wrap shrink-0">
           <CardFilterHeaderControls
+            availablePeriods={[]}
             onYearChange={(yr) => {
               setSelectedYear(String(yr));
               setPage(1);
@@ -446,7 +504,7 @@ export default function CreatorTable() {
             )}
           </div>
 
-          {/* Unique Creator Demographic Filter Dropdowns */}
+          {/* Creator Filter Dropdowns: Tier, Status, Country */}
           {[
             {
               value: selectedTier,
@@ -458,39 +516,11 @@ export default function CreatorTable() {
               options: ["Mega", "Macro", "Micro", "Nano"],
             },
             {
-              value: selectedNiche,
+              value: activeTab !== "All" ? activeTab : "",
               onChange: (val: string) => {
-                setSelectedNiche(val);
-                setPage(1);
-              },
-              label: "Niche",
-              options: [
-                "Fashion",
-                "Tech",
-                "Beauty",
-                "Lifestyle",
-                "Food & Beverage",
-                "Finance",
-              ],
-            },
-            {
-              value: selectedGender,
-              onChange: (val: string) => {
-                setSelectedGender(val);
-                setPage(1);
-              },
-              label: "Gender",
-              options: ["Male", "Female"],
-            },
-            {
-              value: selectedStatus,
-              onChange: (val: string) => {
-                setSelectedStatus(val);
-                if (
-                  val === "Active" ||
-                  val === "Suspended" ||
-                  val === "Pending"
-                ) {
+                if (val === "Onboarded" || val === "Active") {
+                  setActiveTab("Onboarded");
+                } else if (val === "Suspended" || val === "Pending") {
                   setActiveTab(val);
                 } else {
                   setActiveTab("All");
@@ -498,7 +528,7 @@ export default function CreatorTable() {
                 setPage(1);
               },
               label: "Status",
-              options: ["Active", "Pending", "Suspended"],
+              options: ["Onboarded", "Pending", "Suspended"],
             },
             {
               value: selectedCountry,
@@ -507,14 +537,7 @@ export default function CreatorTable() {
                 setPage(1);
               },
               label: "Country",
-              options: [
-                "Lagos, Nigeria",
-                "Abuja, Nigeria",
-                "Enugu, Nigeria",
-                "Port Harcourt, Nigeria",
-                "Ghana",
-                "Kenya",
-              ],
+              options: availableCountries,
             },
           ].map(({ value, onChange, label, options }) => (
             <div key={label} className="relative">
@@ -582,36 +605,13 @@ export default function CreatorTable() {
               />
             </span>
           )}
-          {selectedNiche && (
+          {activeTab !== "All" && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 text-brand-pink border border-rose-100 text-[11px] font-semibold">
-              Niche: {selectedNiche}
+              Status: {activeTab}
               <X
                 size={12}
                 className="cursor-pointer hover:opacity-80"
-                onClick={() => setSelectedNiche("")}
-              />
-            </span>
-          )}
-          {selectedGender && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 text-brand-pink border border-rose-100 text-[11px] font-semibold">
-              Gender: {selectedGender}
-              <X
-                size={12}
-                className="cursor-pointer hover:opacity-80"
-                onClick={() => setSelectedGender("")}
-              />
-            </span>
-          )}
-          {selectedStatus && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 text-brand-pink border border-rose-100 text-[11px] font-semibold">
-              Status: {selectedStatus}
-              <X
-                size={12}
-                className="cursor-pointer hover:opacity-80"
-                onClick={() => {
-                  setSelectedStatus("");
-                  setActiveTab("All");
-                }}
+                onClick={() => setActiveTab("All")}
               />
             </span>
           )}
@@ -673,7 +673,7 @@ export default function CreatorTable() {
         </div>
       ) : (
         <div className="w-full overflow-x-auto no-scrollbar">
-          <table className="w-full min-w-[1380px] text-left border-collapse text-xs">
+          <table className="w-full min-w-[1280px] text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-[#e8e6f0]/40 text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
                 <th className="pb-3.5 pt-1 pl-2 pr-3 min-w-[110px] whitespace-nowrap">
@@ -690,9 +690,6 @@ export default function CreatorTable() {
                 </th>
                 <th className="pb-3.5 pt-1 px-3 min-w-[90px] whitespace-nowrap">
                   Tier
-                </th>
-                <th className="pb-3.5 pt-1 px-3 min-w-[110px] whitespace-nowrap">
-                  Niche
                 </th>
                 <th className="pb-3.5 pt-1 px-3 min-w-[90px] whitespace-nowrap">
                   Gender
@@ -721,7 +718,7 @@ export default function CreatorTable() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e8e6f0]/30 text-xs font-medium">
-              {filtered.map((c) => (
+              {paginatedList.map((c) => (
                 <tr
                   key={c.id}
                   onClick={() => setSelectedCreatorId(c.id)}
@@ -752,24 +749,25 @@ export default function CreatorTable() {
                   <td className="py-3 px-3 text-[#5a5a7a] whitespace-nowrap">
                     {c.email}
                   </td>
-                  <td className="py-3 px-3 text-[#5a5a7a] whitespace-nowrap">
+                  <td className="py-3 px-3 text-[#5a5a7a] whitespace-nowrap font-semibold">
                     {c.country}
                   </td>
                   <td className="py-3 px-3 whitespace-nowrap">
-                    <span
-                      className={cn(
-                        "px-2 py-0.5 rounded-md text-[10px] font-bold border capitalize",
-                        TIER_CLASSES[c.tier],
-                      )}
-                    >
-                      {c.tier}
-                    </span>
+                    {c.tier ? (
+                      <span
+                        className={cn(
+                          "px-2 py-0.5 rounded-md text-[10px] font-bold border capitalize",
+                          TIER_CLASSES[c.tier],
+                        )}
+                      >
+                        {c.tier}
+                      </span>
+                    ) : (
+                      <span className="text-[#9a99b0] text-[11px]">—</span>
+                    )}
                   </td>
-                  <td className="py-3 px-3 text-[#5a5a7a] whitespace-nowrap">
-                    {c.niche}
-                  </td>
-                  <td className="py-3 px-3 text-[#5a5a7a] whitespace-nowrap">
-                    {c.gender}
+                  <td className="py-3 px-3 text-[#5a5a7a] whitespace-nowrap font-medium">
+                    {c.gender || <span className="text-[#9a99b0]">—</span>}
                   </td>
                   <td className="py-3 px-3 whitespace-nowrap">
                     {c.platforms.length === 0 ? (
@@ -828,30 +826,23 @@ export default function CreatorTable() {
                     )}
                   </td>
                   <td className="py-3 px-3 whitespace-nowrap">
-                    <div className="flex items-center gap-2 min-w-[100px]">
-                      <div className="w-12 h-1.5 bg-[#f4f3f6] rounded-full overflow-hidden shrink-0">
+                    <div className="flex items-center gap-2 w-24">
+                      <div className="flex-1 h-1.5 bg-[#f4f3f6] rounded-full overflow-hidden">
                         <div
-                          className={cn(
-                            "h-full rounded-full",
-                            c.completion === 100
-                              ? "bg-[#16a34a]"
-                              : "bg-[#ca8a04]",
-                          )}
+                          className="h-full bg-brand-pink rounded-full transition-all duration-300"
                           style={{ width: `${c.completion}%` }}
                         />
                       </div>
-                      <span className="font-bold text-[#1a1a2e] text-[10px]">
+                      <span className="text-[10px] font-bold text-[#1a1a2e]">
                         {c.completion}%
                       </span>
                     </div>
                   </td>
-                  <td className="py-3 px-3 font-semibold text-[#1a1a2e] whitespace-nowrap">
+                  <td className="py-3 px-3 text-[#1a1a2e] font-bold whitespace-nowrap">
                     ₦{c.totalEarnings.toLocaleString()}
                   </td>
-                  <td className="py-3 px-3 text-center whitespace-nowrap">
-                    <span className="px-2 py-0.5 rounded-full bg-[#f4f3f6] text-[#5a5a7a] font-bold text-[10px]">
-                      {c.revisionCount}
-                    </span>
+                  <td className="py-3 px-3 text-[#5a5a7a] font-semibold text-center whitespace-nowrap">
+                    {c.revisionCount}
                   </td>
                   <td className="py-3 px-3 whitespace-nowrap">
                     <AdminStatusBadge status={c.status} />
@@ -859,8 +850,11 @@ export default function CreatorTable() {
                   <td className="py-3 px-3 text-[#5a5a7a] whitespace-nowrap">
                     {c.dateJoined}
                   </td>
-                  <td className="py-3 pl-3 pr-4 text-[#7a7a9a] whitespace-nowrap">
-                    {c.lastLogin}
+                  <td className="py-3 pl-3 pr-4 whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1 text-[11px] text-[#16a34a] font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a]" />
+                      {c.lastLogin}
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -870,43 +864,39 @@ export default function CreatorTable() {
       )}
 
       {/* Pagination Footer */}
-      {totalItems > 0 && (
-        <div className="flex items-center justify-between border-t border-[#e8e6f0]/60 pt-4 text-xs">
-          <span className="text-[#7a7a9a] font-medium">
-            Showing{" "}
-            <strong className="text-[#1a1a2e]">{(page - 1) * 10 + 1}</strong> to{" "}
-            <strong className="text-[#1a1a2e]">
-              {Math.min(page * 10, totalItems)}
-            </strong>{" "}
-            of <strong className="text-[#1a1a2e]">{totalItems}</strong> creators
+      <div className="flex items-center justify-between gap-4 pt-3 border-t border-[#e8e6f0]/40 flex-wrap">
+        <span className="text-xs text-[#9a99b0] font-medium">
+          Showing {filtered.length > 0 ? (page - 1) * ITEMS_PER_PAGE + 1 : 0} -{" "}
+          {Math.min(page * ITEMS_PER_PAGE, filtered.length)} of{" "}
+          {filtered.length} Creators
+        </span>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="p-1.5 rounded-lg border border-[#e8e6f0] text-[#5a5a7a] hover:bg-[#faf9fc] disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronLeft size={14} />
+          </button>
+          <span className="text-xs font-semibold text-[#1a1a2e] px-2">
+            Page {page} of {totalPages}
           </span>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(p - 1, 1))}
-              disabled={page === 1 || isLoading}
-              className="h-8 px-3 rounded-xl border border-[#e8e6f0] text-[#1a1a2e] font-semibold flex items-center gap-1 hover:bg-[#f4f3f6] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-            >
-              <ChevronLeft size={14} /> Previous
-            </button>
-            <span className="px-2 font-bold text-[#1a1a2e]">
-              Page {page} of {totalPages}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-              disabled={page >= totalPages || isLoading}
-              className="h-8 px-3 rounded-xl border border-[#e8e6f0] text-[#1a1a2e] font-semibold flex items-center gap-1 hover:bg-[#f4f3f6] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-            >
-              Next <ChevronRight size={14} />
-            </button>
-          </div>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages}
+            className="p-1.5 rounded-lg border border-[#e8e6f0] text-[#5a5a7a] hover:bg-[#faf9fc] disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronRight size={14} />
+          </button>
         </div>
-      )}
+      </div>
 
+      {/* Creator Profile Detail Drawer */}
       <CreatorProfileDrawer
-        isOpen={selectedCreatorId !== null}
-        onClose={() => setSelectedCreatorId(null)}
         creatorId={selectedCreatorId}
+        isOpen={Boolean(selectedCreatorId)}
+        onClose={() => setSelectedCreatorId(null)}
       />
     </section>
   );

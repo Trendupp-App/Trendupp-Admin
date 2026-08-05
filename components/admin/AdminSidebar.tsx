@@ -41,6 +41,12 @@ interface NavGroup {
 }
 
 const SUPER: AdminRole[] = ["super_admin", "owner"];
+const NON_FINANCE: AdminRole[] = [
+  "super_admin",
+  "owner",
+  "moderator",
+  "support_agent",
+];
 
 const NAV: NavGroup[] = [
   {
@@ -53,21 +59,36 @@ const NAV: NavGroup[] = [
     section: "USERS",
     items: [
       { label: "Creators", href: "/admin/users/creators", icon: Users },
-      { label: "Advertisers", href: "/admin/users/brands", icon: Building2 },
+      { label: "Brand", href: "/admin/users/brands", icon: Building2 },
     ],
   },
   {
     section: "CAMPAIGNS",
     items: [
       { label: "Paid", href: "/admin/campaigns", icon: ShoppingBag },
-      { label: "Social Impact", href: "/admin/campaigns/social", icon: Globe },
+      {
+        label: "Social Impact",
+        href: "/admin/campaigns/social",
+        icon: Globe,
+        roles: NON_FINANCE,
+      },
     ],
   },
   {
     section: "CONTENT",
     items: [
-      { label: "Trendupp News", href: "/admin/content/news", icon: TrendingUp },
-      { label: "Banner Ads", href: "/admin/content/banners", icon: Megaphone },
+      {
+        label: "Trendupp News",
+        href: "/admin/content/news",
+        icon: TrendingUp,
+        roles: NON_FINANCE,
+      },
+      {
+        label: "Banner Ads",
+        href: "/admin/content/banners",
+        icon: Megaphone,
+        roles: NON_FINANCE,
+      },
     ],
   },
   {
@@ -86,6 +107,7 @@ const NAV: NavGroup[] = [
       },
     ],
   },
+
   {
     section: "FINANCE",
     items: [
@@ -127,7 +149,7 @@ const NAV: NavGroup[] = [
         label: "Settings",
         href: "/admin/settings",
         icon: Settings,
-        roles: [...SUPER, "moderator"],
+        roles: [...SUPER, "finance_admin", "moderator"],
       },
     ],
   },

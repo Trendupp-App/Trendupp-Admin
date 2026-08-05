@@ -199,11 +199,15 @@ export default function CreatorProfileDrawer({
   const [successModalTitle, setSuccessModalTitle] = useState("");
   const [successModalMessage, setSuccessModalMessage] = useState("");
 
+  /* Campaign History Pagination state */
+  const [campaignPage, setCampaignPage] = useState(1);
+  const campaignLimit = 10;
+
   /* API Hooks */
   const { data: creatorProfile, isLoading: isLoadingDetails } =
     useCreatorDetails(creatorId, isOpen);
   const { data: campaignHistoryData, isLoading: isLoadingCampaigns } =
-    useCreatorCampaignHistory(creatorId, 1, 10, isOpen);
+    useCreatorCampaignHistory(creatorId, campaignPage, campaignLimit, isOpen);
   const { data: reviewsData, isLoading: isLoadingReviews } = useCreatorReviews(
     creatorId,
     isOpen,
@@ -353,24 +357,98 @@ export default function CreatorProfileDrawer({
     return [];
   }, [reviewsData]);
 
-  // Dynamic campaigns array
-  const displayCampaigns = useMemo(() => {
-    if (
-      campaignHistoryData?.data &&
-      Array.isArray(campaignHistoryData.data) &&
-      campaignHistoryData.data.length > 0
-    ) {
-      return campaignHistoryData.data.map((c) => ({
-        id: c.id,
-        name: c.campaignTitle || "Campaign",
-        brand: c.brandName || "Brand",
-        status: c.status || "COMPLETED",
-        fee: c.fee ? `₦${(c.fee / 1000).toFixed(0)}K` : "₦0",
-        date: formatDateOnly(c.submittedAt),
-      }));
-    }
-    return [];
-  }, [campaignHistoryData]);
+  // Dynamic campaigns array & pagination metadata
+  const { displayCampaigns, totalCampaignItems, totalCampaignPages } =
+    useMemo(() => {
+      const rawObj = campaignHistoryData as Record<string, unknown> | undefined;
+      let list: unknown[] = [];
+      let totalCount = 0;
+
+      if (Array.isArray(campaignHistoryData)) {
+        list = campaignHistoryData;
+        totalCount = campaignHistoryData.length;
+      } else if (rawObj && Array.isArray(rawObj.data)) {
+        list = rawObj.data;
+        totalCount =
+          typeof rawObj.total === "number"
+            ? rawObj.total
+            : typeof rawObj.totalCount === "number"
+              ? rawObj.totalCount
+              : list.length;
+      } else if (
+        rawObj &&
+        rawObj.data &&
+        typeof rawObj.data === "object" &&
+        Array.isArray((rawObj.data as Record<string, unknown>).data)
+      ) {
+        const inner = rawObj.data as Record<string, unknown>;
+        list = inner.data as unknown[];
+        totalCount =
+          typeof inner.total === "number" ? inner.total : list.length;
+      } else if (rawObj && Array.isArray(rawObj.campaigns)) {
+        list = rawObj.campaigns as unknown[];
+        totalCount =
+          typeof rawObj.total === "number" ? rawObj.total : list.length;
+      } else if (rawObj && Array.isArray(rawObj.items)) {
+        list = rawObj.items as unknown[];
+        totalCount =
+          typeof rawObj.total === "number" ? rawObj.total : list.length;
+      }
+
+      const items = list.map((item, idx) => {
+        const c = item as Record<string, unknown>;
+        const brandObj = c.brand as Record<string, unknown> | undefined;
+        const brandName =
+          (c.brandName as string) ??
+          (c.brand as string) ??
+          (brandObj?.companyName as string) ??
+          (brandObj?.name as string) ??
+          "Brand";
+        const feeVal =
+          (c.fee as number) ??
+          (c.amount as number) ??
+          (c.budget as number) ??
+          0;
+        const feeStr =
+          feeVal > 0
+            ? feeVal >= 1000
+              ? `₦${(feeVal / 1000).toFixed(0)}K`
+              : `₦${feeVal.toLocaleString()}`
+            : "₦0";
+
+        return {
+          id:
+            (c.id as string) ??
+            (c._id as string) ??
+            (c.campaignId as string) ??
+            String(idx),
+          name:
+            (c.campaignTitle as string) ??
+            (c.title as string) ??
+            (c.campaignName as string) ??
+            (c.name as string) ??
+            "Campaign",
+          brand: brandName,
+          status:
+            (c.status as string) ?? (c.campaignStatus as string) ?? "COMPLETED",
+          fee: feeStr,
+          date: formatDateOnly(
+            (c.submittedAt as string) ??
+              (c.createdAt as string) ??
+              (c.date as string),
+          ),
+        };
+      });
+
+      const calculatedTotal = totalCount > 0 ? totalCount : items.length;
+      const pages = Math.max(1, Math.ceil(calculatedTotal / campaignLimit));
+
+      return {
+        displayCampaigns: items,
+        totalCampaignItems: calculatedTotal,
+        totalCampaignPages: pages,
+      };
+    }, [campaignHistoryData, campaignLimit]);
 
   const avgRating = useMemo(() => {
     if (displayReviews.length > 0) {
@@ -950,9 +1028,16 @@ export default function CreatorProfileDrawer({
                 {/* CAMPAIGN HISTORY TAB */}
                 {activeTab === "Campaign History" && (
                   <div className="flex flex-col gap-4">
-                    <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
-                      Campaign History
-                    </h4>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
+                        Campaign History
+                      </h4>
+                      {totalCampaignItems > 0 && (
+                        <span className="text-[11px] font-semibold text-[#9a99b0]">
+                          Total: {totalCampaignItems}
+                        </span>
+                      )}
+                    </div>
 
                     {isLoadingCampaigns ? (
                       <div className="flex flex-col gap-3 py-2">
@@ -982,51 +1067,86 @@ export default function CreatorProfileDrawer({
                         </p>
                       </div>
                     ) : (
-                      <div className="overflow-x-auto border border-[#e8e6f0]/60 rounded-2xl">
-                        <table className="w-full text-left border-collapse text-xs">
-                          <thead>
-                            <tr className="border-b border-[#e8e6f0]/60 bg-[#faf9fc]">
-                              {[
-                                "Campaign",
-                                "Brand",
-                                "Status",
-                                "Fee",
-                                "Submitted",
-                              ].map((h) => (
-                                <th
-                                  key={h}
-                                  className="px-4 py-3 text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider whitespace-nowrap"
-                                >
-                                  {h}
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {displayCampaigns.map((c, i) => (
-                              <tr
-                                key={c.id || i}
-                                className="border-b border-[#e8e6f0]/40 last:border-0 hover:bg-[#faf9fc] transition-colors"
-                              >
-                                <td className="px-4 py-3 font-semibold text-[#1a1a2e]">
-                                  {c.name}
-                                </td>
-                                <td className="px-4 py-3 text-[#5a5a7a]">
-                                  {c.brand}
-                                </td>
-                                <td className="px-4 py-3">
-                                  <StatusChip status={c.status} />
-                                </td>
-                                <td className="px-4 py-3 text-[#5a5a7a] font-semibold">
-                                  {c.fee}
-                                </td>
-                                <td className="px-4 py-3 text-[#9a99b0] whitespace-nowrap">
-                                  {c.date}
-                                </td>
+                      <div className="flex flex-col gap-3">
+                        <div className="overflow-x-auto border border-[#e8e6f0]/60 rounded-2xl">
+                          <table className="w-full text-left border-collapse text-xs">
+                            <thead>
+                              <tr className="border-b border-[#e8e6f0]/60 bg-[#faf9fc]">
+                                {[
+                                  "Campaign",
+                                  "Brand",
+                                  "Status",
+                                  "Fee",
+                                  "Submitted",
+                                ].map((h) => (
+                                  <th
+                                    key={h}
+                                    className="px-4 py-3 text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider whitespace-nowrap"
+                                  >
+                                    {h}
+                                  </th>
+                                ))}
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            </thead>
+                            <tbody>
+                              {displayCampaigns.map((c, i) => (
+                                <tr
+                                  key={c.id || i}
+                                  className="border-b border-[#e8e6f0]/40 last:border-0 hover:bg-[#faf9fc] transition-colors"
+                                >
+                                  <td className="px-4 py-3 font-semibold text-[#1a1a2e]">
+                                    {c.name}
+                                  </td>
+                                  <td className="px-4 py-3 text-[#5a5a7a]">
+                                    {c.brand}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <StatusChip status={c.status} />
+                                  </td>
+                                  <td className="px-4 py-3 text-[#5a5a7a] font-semibold">
+                                    {c.fee}
+                                  </td>
+                                  <td className="px-4 py-3 text-[#9a99b0] whitespace-nowrap">
+                                    {c.date}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Pagination Controls */}
+                        {totalCampaignPages > 1 && (
+                          <div className="flex items-center justify-between px-1 pt-1 text-xs">
+                            <span className="text-[11px] font-medium text-[#9a99b0]">
+                              Page {campaignPage} of {totalCampaignPages}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                disabled={campaignPage <= 1}
+                                onClick={() =>
+                                  setCampaignPage((p) => Math.max(1, p - 1))
+                                }
+                                className="px-3 py-1 bg-white border border-[#e8e6f0] rounded-xl text-xs font-bold text-[#1a1a2e] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#faf9fc] cursor-pointer"
+                              >
+                                Previous
+                              </button>
+                              <button
+                                type="button"
+                                disabled={campaignPage >= totalCampaignPages}
+                                onClick={() =>
+                                  setCampaignPage((p) =>
+                                    Math.min(totalCampaignPages, p + 1),
+                                  )
+                                }
+                                className="px-3 py-1 bg-white border border-[#e8e6f0] rounded-xl text-xs font-bold text-[#1a1a2e] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#faf9fc] cursor-pointer"
+                              >
+                                Next
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

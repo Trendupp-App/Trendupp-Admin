@@ -11,9 +11,11 @@ import { AdminCreatorTiers } from "@/components/admin/AdminCreatorTiers";
 import { AdminRecentActivity } from "@/components/admin/AdminRecentActivity";
 import { AdminTopCreators } from "@/components/admin/AdminTopCreators";
 import { useAdminOverview } from "@/hooks/useAdminOverview";
+import { useAdminCampaignsSummary } from "@/hooks/useAdminCampaigns";
 
 export default function AdminDashboardPage() {
   const { data: overview, isLoading } = useAdminOverview();
+  const { data: campaignSummary } = useAdminCampaignsSummary();
 
   const topMetrics = overview?.topMetrics;
 
@@ -154,8 +156,8 @@ export default function AdminDashboardPage() {
       {/* Actions Required Callout Section */}
       <AdminActionsRequired actionsRequired={overview?.actionsRequired} />
 
-      {/* Campaign Overview Section (6 Cards) */}
-      <AdminCampaignOverview overview={overview?.campaignOverview} />
+      {/* Campaign Overview Section — data from /admin/campaigns/summary */}
+      <AdminCampaignOverview overview={campaignSummary} />
 
       {/* Creator Tiers Section (Full Width) */}
       <AdminCreatorTiers creatorTiers={overview?.creatorTiers} />

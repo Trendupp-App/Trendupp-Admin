@@ -13,6 +13,7 @@ const ALL: AdminRole[] = [
   "support_agent",
 ];
 const FINANCE: AdminRole[] = [...SUPER, "finance_admin"];
+const NON_FINANCE: AdminRole[] = [...SUPER, "moderator", "support_agent"];
 const CONTENT: AdminRole[] = [...SUPER, "moderator"];
 const DISPUTES: AdminRole[] = [...SUPER, "moderator", "support_agent"];
 
@@ -29,7 +30,7 @@ export const PERMISSIONS = {
   "page.support_tickets": [...SUPER, "support_agent"],
   "page.team": SUPER,
   "page.notifications": [...SUPER, "moderator"],
-  "page.settings": [...SUPER, "moderator"],
+  "page.settings": [...SUPER, "finance_admin", "moderator"],
 
   // User management
   "users.export": SUPER,
@@ -44,18 +45,21 @@ export const PERMISSIONS = {
   "campaigns.view_applications": [...SUPER, "moderator", "support_agent"],
 
   // Social Impact
+  "social.view": NON_FINANCE,
   "social.create": CONTENT,
   "social.edit": CONTENT,
   "social.publish": CONTENT,
   "social.end": CONTENT,
 
   // Trendupp News
+  "news.view": NON_FINANCE,
   "news.create": CONTENT,
   "news.edit": CONTENT,
   "news.publish": CONTENT,
   "news.archive": CONTENT,
 
   // Banner Ads
+  "ads.view": NON_FINANCE,
   "ads.create": CONTENT,
   "ads.edit": CONTENT,
   "ads.publish": CONTENT,
@@ -74,7 +78,7 @@ export const PERMISSIONS = {
 
   // Settings
   "settings.contact_info": SUPER,
-  "settings.commission": SUPER,
+  "settings.commission": FINANCE,
   "settings.faqs": [...SUPER, "moderator"],
 } as const;
 

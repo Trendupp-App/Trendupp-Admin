@@ -161,6 +161,18 @@ export interface PaginatedEscrowBalances {
 
 // ── Creator Payouts ────────────────────────────────────────────────────────────
 
+export interface EscrowMetricDetail {
+  count?: number;
+  totalAmount?: number;
+}
+
+export interface EscrowMetrics {
+  pending?: EscrowMetricDetail;
+  successful?: EscrowMetricDetail;
+  failed?: EscrowMetricDetail;
+  onHold?: EscrowMetricDetail;
+}
+
 export type PayoutStatus =
   "pending" | "processing" | "successful" | "failed" | "paid" | "unpaid";
 
@@ -193,11 +205,27 @@ export interface CreatorPayoutItem {
   paidAt?: string;
   createdAt?: string;
   dateInitiated?: string;
+  lastUpdated?: string;
+  updatedAt?: string;
+  failureReason?: string;
+}
+
+export interface EscrowSummaryDto {
+  totalAdvertisersSpend?: number;
+  totalAgencyCommission?: number;
+  totalCreatorPayout?: number;
+  totalEscrowBalance?: number;
+  totalEscrowValue?: number;
+  totalInEscrow?: number;
+  totalPayouts?: number;
+  totalRefunds?: number;
 }
 
 export interface PaginatedCreatorPayouts {
   data: CreatorPayoutItem[];
   meta: PaginationMeta;
+  metrics?: EscrowMetrics;
+  summary?: EscrowSummaryDto;
   total?: number;
 }
 
@@ -217,6 +245,8 @@ export interface AdvertiserRefundItem {
   brand?: {
     id?: string;
     name?: string;
+    logo?: string;
+    avatar?: string;
   };
   campaign?: {
     id?: string;
@@ -229,12 +259,17 @@ export interface AdvertiserRefundItem {
   refundedAt?: string;
   createdAt?: string;
   dateInitiated?: string;
+  lastUpdated?: string;
+  updatedAt?: string;
   account?: string;
   transactionTrigger?: string;
+  failureReason?: string;
 }
 
 export interface PaginatedAdvertiserRefunds {
   data: AdvertiserRefundItem[];
   meta: PaginationMeta;
+  metrics?: EscrowMetrics;
+  summary?: EscrowSummaryDto;
   total?: number;
 }

@@ -51,7 +51,7 @@ export function CardFilterHeaderControls({
   onPeriodChange,
   onYearChange,
   onMonthChange,
-  availablePeriods = ["daily", "weekly", "monthly", "yearly"],
+  availablePeriods = [],
   defaultPeriod = "monthly",
   defaultYear = new Date().getFullYear(),
 }: CardFilterHeaderControlsProps) {

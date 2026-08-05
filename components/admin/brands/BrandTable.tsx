@@ -33,24 +33,14 @@ export default function BrandTable() {
     return undefined;
   }, [activeTab, selectedStatus]);
 
-  const queryCompletion = useMemo(() => {
-    if (selectedCompletion !== "All") {
-      return selectedCompletion;
-    }
-    return undefined;
-  }, [selectedCompletion]);
-
   const { data: apiData, isLoading } = useAdminBrandsList({
     search: searchQuery || undefined,
     status: queryStatus,
-    completion: queryCompletion,
-    country: selectedCountry !== "All" ? selectedCountry : undefined,
     startDate: fromDate || undefined,
     endDate: toDate || undefined,
     fromDate: fromDate || undefined,
     toDate: toDate || undefined,
-    page: currentPage,
-    limit: 10,
+    limit: 1000,
   });
 
   const formatDateOnly = (dateStr?: string | null) => {
@@ -80,9 +70,9 @@ export default function BrandTable() {
     return "Nigeria";
   };
 
-  const brandsList = useMemo(() => {
+  const rawBrandsList = useMemo(() => {
     if (apiData?.data && Array.isArray(apiData.data)) {
-      let mapped = apiData.data.map((b) => {
+      return apiData.data.map((b) => {
         const brandName = b.advertiser?.brandName || b.brandName || "Brand";
         const logoUrl = b.advertiser?.logoUrl || b.logoUrl || null;
         const repName =
@@ -128,25 +118,90 @@ export default function BrandTable() {
           joined: formatDateOnly(joinedDate || undefined),
         };
       });
-
-      if (activeTab === "Onboarded") {
-        mapped = mapped.filter((b) => b.status === "active");
-      } else if (activeTab === "Suspended") {
-        mapped = mapped.filter((b) => b.status === "suspended");
-      } else if (activeTab === "Pending") {
-        mapped = mapped.filter((b) => b.status === "pending");
-      }
-
-      if (selectedStatus !== "All") {
-        mapped = mapped.filter(
-          (b) => b.status === selectedStatus.toLowerCase(),
-        );
-      }
-
-      return mapped;
     }
     return [];
-  }, [apiData, activeTab, selectedStatus]);
+  }, [apiData]);
+
+  const availableCountries = useMemo(() => {
+    const set = new Set<string>([
+      "Nigeria",
+      "Ghana",
+      "Kenya",
+      "Togo",
+      "Benin Republic",
+      "South Africa",
+      "United Kingdom",
+      "United States",
+      "Austria",
+      "Australia",
+    ]);
+    rawBrandsList.forEach((b) => {
+      if (b.location && b.location.trim()) {
+        const parts = b.location.split(",");
+        const countryStr = parts[parts.length - 1].trim();
+        if (countryStr) set.add(countryStr);
+      }
+    });
+    return Array.from(set).sort();
+  }, [rawBrandsList]);
+
+  const filteredBrands = useMemo(() => {
+    return rawBrandsList.filter((b) => {
+      if (
+        searchQuery &&
+        !b.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !b.repName.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !b.email.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !b.advertiserId.toLowerCase().includes(searchQuery.toLowerCase())
+      ) {
+        return false;
+      }
+
+      if (activeTab === "Onboarded" && b.status !== "active") return false;
+      if (activeTab === "Suspended" && b.status !== "suspended") return false;
+      if (activeTab === "Pending" && b.status !== "pending") return false;
+
+      if (
+        selectedStatus !== "All" &&
+        b.status !== selectedStatus.toLowerCase()
+      ) {
+        return false;
+      }
+
+      if (selectedCountry !== "All") {
+        const locLower = b.location.toLowerCase().trim();
+        const cLower = selectedCountry.toLowerCase().trim();
+        if (!locLower.includes(cLower) && !cLower.includes(locLower)) {
+          return false;
+        }
+      }
+
+      if (selectedCompletion !== "All") {
+        const reqComp = parseInt(selectedCompletion, 10);
+        if (!isNaN(reqComp) && b.completion < reqComp) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [
+    rawBrandsList,
+    searchQuery,
+    activeTab,
+    selectedStatus,
+    selectedCountry,
+    selectedCompletion,
+  ]);
+
+  const ITEMS_PER_PAGE = 10;
+  const totalPages = Math.ceil(filteredBrands.length / ITEMS_PER_PAGE) || 1;
+  const safePage = Math.min(currentPage, totalPages);
+
+  const paginatedBrands = useMemo(() => {
+    const start = (safePage - 1) * ITEMS_PER_PAGE;
+    return filteredBrands.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredBrands, safePage]);
 
   const handleRowClick = (brandId: string) => {
     setSelectedBrandId(brandId);
@@ -154,9 +209,9 @@ export default function BrandTable() {
   };
 
   const handleExportCSV = () => {
-    if (brandsList.length === 0) return;
+    if (filteredBrands.length === 0) return;
     const headers = [
-      "Advertiser ID",
+      "Brand ID",
       "Brand Name",
       "Representative Name",
       "Email",
@@ -168,7 +223,7 @@ export default function BrandTable() {
       "Date Joined",
     ];
 
-    const rows = brandsList.map((b) => [
+    const rows = filteredBrands.map((b) => [
       b.advertiserId,
       `"${b.name.replace(/"/g, '""')}"`,
       `"${b.repName.replace(/"/g, '""')}"`,
@@ -192,7 +247,7 @@ export default function BrandTable() {
     link.setAttribute("href", url);
     link.setAttribute(
       "download",
-      `advertisers_export_${new Date().toISOString().split("T")[0]}.csv`,
+      `brands_export_${new Date().toISOString().split("T")[0]}.csv`,
     );
     document.body.appendChild(link);
     link.click();
@@ -205,7 +260,9 @@ export default function BrandTable() {
     selectedCompletion !== "All" ||
     selectedStatus !== "All" ||
     selectedCountry !== "All" ||
-    activeTab !== "All";
+    activeTab !== "All" ||
+    fromDate !== "" ||
+    toDate !== "";
 
   const clearAllFilters = () => {
     setActiveTab("All");
@@ -213,6 +270,8 @@ export default function BrandTable() {
     setSelectedCompletion("All");
     setSelectedStatus("All");
     setSelectedCountry("All");
+    setFromDate("");
+    setToDate("");
     setCurrentPage(1);
   };
 
@@ -323,13 +382,18 @@ export default function BrandTable() {
 
           <select
             value={selectedCountry}
-            onChange={(e) => setSelectedCountry(e.target.value)}
+            onChange={(e) => {
+              setSelectedCountry(e.target.value);
+              setCurrentPage(1);
+            }}
             className="h-9 px-3 bg-[#faf9fc] border border-[#e8e6f0]/60 text-[#1a1a2e] text-xs font-semibold rounded-xl outline-none cursor-pointer"
           >
             <option value="All">Country</option>
-            <option value="Nigeria">Nigeria</option>
-            <option value="Ghana">Ghana</option>
-            <option value="Kenya">Kenya</option>
+            {availableCountries.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
           </select>
 
           <CardDateRangeBar
@@ -347,8 +411,8 @@ export default function BrandTable() {
         <table className="w-full min-w-[1100px] text-left border-collapse text-xs">
           <thead>
             <tr className="bg-[#faf9fc] border-b border-[#e8e6f0]/60 text-[10px] font-extrabold uppercase tracking-wider text-[#7a7a9a]">
-              <th className="py-3.5 px-4 whitespace-nowrap">Advertisers ID</th>
-              <th className="py-3.5 px-4 whitespace-nowrap">Advertiser</th>
+              <th className="py-3.5 px-4 whitespace-nowrap">Brand ID</th>
+              <th className="py-3.5 px-4 whitespace-nowrap">Brand</th>
               <th className="py-3.5 px-4 whitespace-nowrap">Representative</th>
               <th className="py-3.5 px-4 whitespace-nowrap">Industry</th>
               <th className="py-3.5 px-4 whitespace-nowrap">Location</th>
@@ -406,17 +470,17 @@ export default function BrandTable() {
                   </td>
                 </tr>
               ))
-            ) : brandsList.length === 0 ? (
+            ) : filteredBrands.length === 0 ? (
               <tr>
                 <td
                   colSpan={10}
                   className="py-8 text-center text-[#9a99b0] text-xs"
                 >
-                  No advertisers found matching your criteria.
+                  No brands found matching your criteria.
                 </td>
               </tr>
             ) : (
-              brandsList.map((brand) => (
+              paginatedBrands.map((brand) => (
                 <tr
                   key={brand.id}
                   onClick={() => handleRowClick(brand.id)}
@@ -491,30 +555,35 @@ export default function BrandTable() {
       </div>
 
       {/* Pagination Footer */}
-      {apiData?.meta && (
-        <div className="flex items-center justify-between pt-2 text-xs text-[#7a7a9a]">
-          <span>
-            Page {apiData.meta.page} of {apiData.meta.totalPages} (
-            {apiData.meta.total} advertisers)
+      <div className="flex items-center justify-between pt-2 text-xs text-[#7a7a9a]">
+        <span>
+          Showing{" "}
+          {filteredBrands.length > 0
+            ? (currentPage - 1) * ITEMS_PER_PAGE + 1
+            : 0}{" "}
+          - {Math.min(currentPage * ITEMS_PER_PAGE, filteredBrands.length)} of{" "}
+          {filteredBrands.length} brands
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            disabled={currentPage <= 1}
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            className="px-3 py-1.5 border border-[#e8e6f0]/60 rounded-xl font-bold disabled:opacity-40 cursor-pointer"
+          >
+            Previous
+          </button>
+          <span className="text-xs font-semibold text-[#1a1a2e] px-2">
+            Page {currentPage} of {totalPages}
           </span>
-          <div className="flex items-center gap-2">
-            <button
-              disabled={currentPage <= 1}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className="px-3 py-1.5 border border-[#e8e6f0]/60 rounded-xl font-bold disabled:opacity-40 cursor-pointer"
-            >
-              Previous
-            </button>
-            <button
-              disabled={currentPage >= apiData.meta.totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
-              className="px-3 py-1.5 border border-[#e8e6f0]/60 rounded-xl font-bold disabled:opacity-40 cursor-pointer"
-            >
-              Next
-            </button>
-          </div>
+          <button
+            disabled={currentPage >= totalPages}
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            className="px-3 py-1.5 border border-[#e8e6f0]/60 rounded-xl font-bold disabled:opacity-40 cursor-pointer"
+          >
+            Next
+          </button>
         </div>
-      )}
+      </div>
 
       {/* Brand Profile Drawer */}
       {isDrawerOpen && (

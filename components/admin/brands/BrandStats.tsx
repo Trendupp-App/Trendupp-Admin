@@ -35,7 +35,7 @@ export default function BrandStats() {
         summary?.totalBrands ??
         0
       ).toLocaleString(),
-      label: "Total Advertisers",
+      label: "Brand",
       icon: Users,
       iconBg: "bg-[#fdf2f6]",
       iconColor: "text-[#d7176f]",

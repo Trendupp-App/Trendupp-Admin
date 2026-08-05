@@ -30,6 +30,7 @@ interface CampaignDetailsData {
   directions: string[];
   success: string;
   usageRights: string;
+  status?: string;
 }
 
 const MOCK_CAMPAIGN_DETAILS: Record<
@@ -276,6 +277,7 @@ const mapCampaignToDetails = (
       : ["No content direction specified."],
     success: campaign.successLooksLike || "Not specified.",
     usageRights: campaign.usageRights || "Not specified.",
+    status: campaign.status,
   };
 };
 
@@ -325,11 +327,16 @@ export default function CampaignDetailsTab({
               { label: "Niche", val: details.niche },
               { label: "Creator Tiers", val: details.creatorTiers },
               { label: "Preferred Platforms", val: details.platforms },
-              {
-                label: isSocial ? "Tokens Distributed" : "Total Budget",
-                val: details.tokens,
-                highlight: true,
-              },
+              ...(!isSocial ||
+              String(details.status || "").toLowerCase() === "completed"
+                ? [
+                    {
+                      label: isSocial ? "Tokens Distributed" : "Total Budget",
+                      val: details.tokens,
+                      highlight: true,
+                    },
+                  ]
+                : []),
               {
                 label: "Escrow Status",
                 val: details.escrowStatus,
@@ -447,26 +454,6 @@ export default function CampaignDetailsTab({
             )}
           </div>
         </div>
-
-        {/* Success Looks Like */}
-        <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-3">
-          <h3 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
-            Success Looks Like
-          </h3>
-          <p className="text-xs text-[#5a5a7a] leading-relaxed font-medium">
-            {details.success}
-          </p>
-        </div>
-      </div>
-
-      {/* Bottom Full-width: Usage Rights */}
-      <div className="col-span-1 lg:col-span-12 bg-white border border-[#e8e6f0]/60 rounded-3xl p-5 flex flex-col gap-3">
-        <h3 className="text-xs font-bold text-[#1a1a2e] uppercase tracking-wider">
-          Usage Rights
-        </h3>
-        <p className="text-xs text-[#5a5a7a] leading-relaxed font-medium">
-          {details.usageRights}
-        </p>
       </div>
     </div>
   );

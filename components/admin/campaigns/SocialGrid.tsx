@@ -297,18 +297,32 @@ export default function SocialGrid({ searchQuery = "" }: SocialGridProps) {
                   </span>
 
                   {/* Stats Row */}
-                  <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-brand-pink">
-                      <Ticket
-                        size={14}
-                        className="text-brand-pink rotate-[-10deg]"
-                      />
-                      <span>{tokensVal} Tokens</span>
-                    </div>
+                  <div
+                    className={cn(
+                      "flex items-center mt-2",
+                      String(c.status || "").toLowerCase() === "completed"
+                        ? "justify-between"
+                        : "justify-end",
+                    )}
+                  >
+                    {String(c.status || "").toLowerCase() === "completed" && (
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-brand-pink">
+                        <Ticket
+                          size={14}
+                          className="text-brand-pink rotate-[-10deg]"
+                        />
+                        <span>{tokensVal} Tokens</span>
+                      </div>
+                    )}
 
                     <div className="flex items-center gap-1 text-xs font-semibold text-[#7a7a9a]">
                       <Users size={14} className="text-[#9a99b0]" />
-                      <span>{participantsVal} applied</span>
+                      <span>
+                        {participantsVal}{" "}
+                        {String(c.status || "").toLowerCase() === "completed"
+                          ? "participants"
+                          : "applied"}
+                      </span>
                     </div>
                   </div>
 
