@@ -1,10 +1,16 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Eye, Check, X, MessageSquare } from "lucide-react";
-import { cn } from "@/lib/utils";
+import {
+  cn,
+  getInitials,
+  formatFollowers,
+  formatCurrency,
+  convertForDisplay,
+} from "@/lib/utils";
 import UserAvatar from "@/shared/UserAvatar";
-import { useCampaign, useReviewApplication } from "@/hooks/useCampaign";
+import { useCampaign } from "@/hooks/useCampaign";
+import { useUsdToNgnRate } from "@/hooks/useExchangeRate";
 import type { CreatorDrawerData } from "./CampaignCreatorDrawer";
 
 interface CampaignApplicationsTabProps {
@@ -33,18 +39,6 @@ const STATUS_LABEL: Record<string, string> = {
   rejected: "Rejected",
 };
 
-const getInitials = (firstName?: string, lastName?: string) => {
-  const initials =
-    `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase();
-  return initials || "?";
-};
-
-const formatFollowers = (n: number) => {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return `${n}`;
-};
-
 export default function CampaignApplicationsTab({
   isSocial,
   campaignId,
@@ -58,15 +52,10 @@ export default function CampaignApplicationsTab({
   onViewDetails = () => {},
   onViewApplicationDetails = () => {},
 }: CampaignApplicationsTabProps) {
-  const queryClient = useQueryClient();
   const { data: campaign, isLoading } = useCampaign(
     !isSocial && campaignId ? campaignId : null,
   );
-  const reviewApplication = useReviewApplication(campaignId ?? "", () => {
-    if (campaignId) {
-      queryClient.invalidateQueries({ queryKey: ["campaign", campaignId] });
-    }
-  });
+  const { data: usdToNgnRate } = useUsdToNgnRate(!isSocial);
 
   if (isSocial) {
     const defaultApps = [
@@ -218,7 +207,6 @@ export default function CampaignApplicationsTab({
   }
 
   const applications = campaign?.applications ?? [];
-  const currencySymbol = currency === "USD" ? "$" : "₦";
 
   return (
     <div className="flex flex-col gap-4 text-left">
@@ -267,6 +255,14 @@ export default function CampaignApplicationsTab({
             ]
               .filter(Boolean)
               .join(", ");
+            const fee = convertForDisplay(
+              app.feeRequest,
+              currency,
+              usdToNgnRate,
+            );
+            const feeRequestedText = fee.secondary
+              ? `${formatCurrency(fee.amount, fee.currency)} (≈ ${formatCurrency(fee.secondary.amount, fee.secondary.currency)})`
+              : formatCurrency(fee.amount, fee.currency);
 
             return (
               <div
@@ -323,42 +319,13 @@ export default function CampaignApplicationsTab({
                       )}
                       <span className="w-1.5 h-1.5 rounded-full bg-[#9a99b0] shrink-0" />
                       <span className="text-[10px] font-bold text-[#1a1a2e]">
-                        {currencySymbol}
-                        {app.feeRequest.toLocaleString()} requested
+                        {feeRequestedText} requested
                       </span>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  {app.status === "pending" && (
-                    <>
-                      <button
-                        onClick={() =>
-                          reviewApplication.mutate({
-                            appId: app.id,
-                            status: "accepted",
-                          })
-                        }
-                        disabled={reviewApplication.isPending}
-                        className="h-9 px-3.5 bg-[#f0fdf4] hover:bg-[#dcfce7] border border-[#dcfce7]/60 text-xs font-bold text-[#16a34a] rounded-xl flex items-center justify-center gap-1 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Check size={14} /> Accept
-                      </button>
-                      <button
-                        onClick={() =>
-                          reviewApplication.mutate({
-                            appId: app.id,
-                            status: "rejected",
-                          })
-                        }
-                        disabled={reviewApplication.isPending}
-                        className="h-9 px-3.5 bg-[#fef2f2] hover:bg-[#fee2e2] border border-[#fee2e2]/60 text-xs font-bold text-[#dc2626] rounded-xl flex items-center justify-center gap-1 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <X size={14} /> Reject
-                      </button>
-                    </>
-                  )}
                   <button
                     onClick={() => {
                       const pastWorkLink = Array.isArray(app.pastWorkLink)
@@ -382,7 +349,7 @@ export default function CampaignApplicationsTab({
                         tier: creator.assignedTier,
                         totalFollowers: formatFollowers(totalFollowers),
                         pastWorkLink: pastWorkLink || undefined,
-                        feeRequested: `${currencySymbol}${app.feeRequest.toLocaleString()}`,
+                        feeRequested: feeRequestedText,
                         applicationStatus: app.status,
                       });
                     }}

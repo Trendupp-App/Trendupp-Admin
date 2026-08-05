@@ -421,10 +421,9 @@ export default function CampaignDetailsPage() {
         )}
         {activeTab === "Selected Creators" && (
           <SelectedCreatorsTab
-            confirmedIds={confirmedCreatorIds}
-            creators={creatorsList}
-            onViewDetails={handleOpenDrawer}
-            onReject={handleRejectCreator}
+            campaignId={!isSocial ? id : undefined}
+            currency={campaign?.currency}
+            onViewApplicationDetails={setSelectedCreatorForDrawer}
           />
         )}
         {activeTab === "Deliverables" && (
