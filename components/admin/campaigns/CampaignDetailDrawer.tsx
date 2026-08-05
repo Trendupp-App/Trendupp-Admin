@@ -17,6 +17,7 @@ import CampaignDeliverablesTab from "./CampaignDeliverablesTab";
 import CampaignAnalyticsTab from "./CampaignAnalyticsTab";
 import CampaignTimelineTab from "./CampaignTimelineTab";
 import CampaignActionsTab from "./CampaignActionsTab";
+import CampaignAuditLogTab from "./CampaignAuditLogTab";
 import CampaignCreatorDrawer, {
   type CreatorDrawerData,
 } from "./CampaignCreatorDrawer";
@@ -34,7 +35,8 @@ type TabType =
   | "Deliverables"
   | "Analytics"
   | "Activity Timeline"
-  | "Admin Actions";
+  | "Admin Actions"
+  | "Audit Log";
 
 const TABS: TabType[] = [
   "Campaign Details",
@@ -44,6 +46,7 @@ const TABS: TabType[] = [
   "Analytics",
   "Activity Timeline",
   "Admin Actions",
+  "Audit Log",
 ];
 
 export default function CampaignDetailDrawer({
