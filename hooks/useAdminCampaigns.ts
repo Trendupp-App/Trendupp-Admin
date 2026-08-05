@@ -2,7 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { AxiosError } from "axios";
 import { adminCampaignsApi } from "@/services/adminCampaignsApi";
+import { adminBrandsApi } from "@/services/adminBrandsApi";
 import type { CampaignListQueryParams } from "@/types/adminCampaigns";
+import type { AdminBrandListItem } from "@/types/adminBrands";
 
 // ── Campaign Management Hooks ──────────────────────────────────────────
 
@@ -535,28 +537,70 @@ export function useBudgetByIndustry(
   return useQuery({
     queryKey: ["admin-budget-by-industry", params],
     queryFn: async () => {
-      // Derive from /admin/campaigns directly — no analytics sub-endpoint call
-      const campaignsRes = await adminCampaignsApi.getCampaigns({
-        limit: 1000,
-      });
-      let campaigns = campaignsRes.data?.data || [];
-      campaigns = filterCampaignsByRange(
-        campaigns,
-        params?.range,
-        params?.fromDate,
-        params?.toDate,
-      );
+      // 1. Extract industry & total spend directly from /admin/brands
+      let brands: AdminBrandListItem[] = [];
+      try {
+        const brandsRes = await adminBrandsApi.getBrands({ limit: 1000 });
+        brands = brandsRes.data?.data || [];
+      } catch {
+        brands = [];
+      }
+
+      // /admin/brands totalSpend is a lifetime aggregate and isn't tied to joinedAt/joinDate.
+      // Avoid filtering brands by join date when a spend date range is requested.
+      // (If date-range spend is required, it should be computed from campaign-level data instead.)
 
       const budgetMap: Record<string, number> = {};
-      campaigns.forEach((c) => {
-        const industry =
-          c.postingPlatform ||
-          (c as unknown as { industry?: string }).industry ||
-          c.brand?.name ||
+      brands.forEach((b) => {
+        const rawIndustry =
+          b.industry ||
+          (b as unknown as { advertiser?: { industry?: string } }).advertiser
+            ?.industry ||
           "General";
-        const amount = Number(c.budget) || 0;
-        budgetMap[industry] = (budgetMap[industry] || 0) + amount;
+        const industry = rawIndustry.trim() || "General";
+
+        const spend =
+          Number(
+            b.totalSpend ??
+              (b as unknown as { totalSpent?: number }).totalSpent ??
+              (b as unknown as { spend?: number }).spend ??
+              (b as unknown as { totalBudget?: number }).totalBudget ??
+              0,
+          ) || 0;
+
+        budgetMap[industry] = (budgetMap[industry] || 0) + spend;
       });
+
+      // Secondary fallback to campaign budgets if total brand spend sum is 0
+      const totalBrandSpend = Object.values(budgetMap).reduce(
+        (a, b) => a + b,
+        0,
+      );
+      if (totalBrandSpend === 0) {
+        try {
+          const campaignsRes = await adminCampaignsApi.getCampaigns({
+            limit: 1000,
+          });
+          let campaigns = campaignsRes.data?.data || [];
+          campaigns = filterCampaignsByRange(
+            campaigns,
+            params?.range,
+            params?.fromDate,
+            params?.toDate,
+          );
+          campaigns.forEach((c) => {
+            const industry =
+              c.postingPlatform ||
+              (c as unknown as { industry?: string }).industry ||
+              c.brand?.name ||
+              "General";
+            const amount = Number(c.budget) || 0;
+            budgetMap[industry] = (budgetMap[industry] || 0) + amount;
+          });
+        } catch {
+          // ignore
+        }
+      }
 
       const entries = Object.entries(budgetMap);
       if (entries.length === 0) return [];

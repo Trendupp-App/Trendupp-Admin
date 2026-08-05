@@ -42,11 +42,6 @@ function fmtDate(d?: string) {
   });
 }
 
-function formatTrigger(trigger?: string) {
-  if (!trigger) return "Normal Automatic Release";
-  return trigger.replace(/Refund to Advertiser/gi, "Refund to Brand");
-}
-
 // ── Metric Card Component ─────────────────────────────────────────────────────
 
 interface MetricCardProps {
@@ -215,9 +210,8 @@ function CreatorPayoutsView({ exportTrigger }: { exportTrigger?: number }) {
       "Brand",
       "Creator",
       "Amount",
-      "Transaction Trigger",
       "Status",
-      "Failure Reason",
+      "Reason",
       "Date Initiated",
     ];
     const rows = filtered.map((item) => [
@@ -225,9 +219,10 @@ function CreatorPayoutsView({ exportTrigger }: { exportTrigger?: number }) {
       item.brand?.name ?? item.brandName ?? "",
       item.creator?.name ?? item.creatorName ?? "",
       item.amount ?? 0,
-      formatTrigger(item.transactionTrigger ?? item.triggeredBy),
       item.status ?? "pending",
-      item.failureReason ?? "—",
+      item.failureReason ??
+        (item as unknown as { reason?: string }).reason ??
+        "—",
       item.lastUpdated ??
         item.updatedAt ??
         item.paidAt ??
@@ -422,13 +417,10 @@ function CreatorPayoutsView({ exportTrigger }: { exportTrigger?: number }) {
                   Amount
                 </th>
                 <th className="px-4 py-3.5 text-[11px] font-bold text-[#7a7a9a] uppercase tracking-wider">
-                  Transaction Trigger
-                </th>
-                <th className="px-4 py-3.5 text-[11px] font-bold text-[#7a7a9a] uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-4 py-3.5 text-[11px] font-bold text-[#7a7a9a] uppercase tracking-wider">
-                  Failure Reason
+                  Reason
                 </th>
                 <th className="px-4 py-3.5 text-[11px] font-bold text-[#7a7a9a] uppercase tracking-wider">
                   Date (Last Updated)
@@ -439,7 +431,7 @@ function CreatorPayoutsView({ exportTrigger }: { exportTrigger?: number }) {
               {isLoading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="border-b border-[#f4f3f6]">
-                    {Array.from({ length: 8 }).map((_, j) => (
+                    {Array.from({ length: 7 }).map((_, j) => (
                       <td key={j} className="px-4 py-3.5">
                         <div className="h-3.5 bg-[#f4f3f6] rounded animate-pulse w-full" />
                       </td>
@@ -449,7 +441,7 @@ function CreatorPayoutsView({ exportTrigger }: { exportTrigger?: number }) {
               ) : filtered.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={7}
                     className="px-5 py-12 text-center text-[#9a99b0] text-xs font-medium"
                   >
                     No payout records found
@@ -467,9 +459,6 @@ function CreatorPayoutsView({ exportTrigger }: { exportTrigger?: number }) {
                       : undefined) ??
                     item.creatorName ??
                     "—";
-                  const trigger = formatTrigger(
-                    item.transactionTrigger ?? item.triggeredBy,
-                  );
                   const failureReason = item.failureReason ?? "—";
                   const dateStr = fmtDate(
                     item.lastUpdated ??
@@ -515,9 +504,6 @@ function CreatorPayoutsView({ exportTrigger }: { exportTrigger?: number }) {
                       </td>
                       <td className="px-4 py-3.5 font-extrabold text-[#1a1a2e]">
                         {fmtExact(item.amount)}
-                      </td>
-                      <td className="px-4 py-3.5 text-[#5a5a7a] font-medium">
-                        {trigger}
                       </td>
                       <td className="px-4 py-3.5">
                         <StatusBadge status={item.status} />
@@ -661,15 +647,13 @@ function BrandRefundsView({ exportTrigger }: { exportTrigger?: number }) {
     const headers = [
       "Campaign",
       "Amount",
-      "Transaction Trigger",
       "Status",
-      "Failure Reason",
+      "Reason",
       "Date Initiated",
     ];
     const rows = filtered.map((item) => [
       item.campaign?.title ?? item.campaignTitle ?? "",
       item.amount ?? 0,
-      formatTrigger(item.transactionTrigger),
       item.status ?? "pending",
       item.failureReason ?? item.reason ?? "—",
       item.lastUpdated ??
@@ -859,13 +843,10 @@ function BrandRefundsView({ exportTrigger }: { exportTrigger?: number }) {
                   Amount
                 </th>
                 <th className="px-4 py-3.5 text-[11px] font-bold text-[#7a7a9a] uppercase tracking-wider">
-                  Transaction Trigger
-                </th>
-                <th className="px-4 py-3.5 text-[11px] font-bold text-[#7a7a9a] uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-4 py-3.5 text-[11px] font-bold text-[#7a7a9a] uppercase tracking-wider">
-                  Failure Reason
+                  Reason
                 </th>
                 <th className="px-4 py-3.5 text-[11px] font-bold text-[#7a7a9a] uppercase tracking-wider">
                   Date (Last Updated)
@@ -876,7 +857,7 @@ function BrandRefundsView({ exportTrigger }: { exportTrigger?: number }) {
               {isLoading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="border-b border-[#f4f3f6]">
-                    {Array.from({ length: 6 }).map((_, j) => (
+                    {Array.from({ length: 5 }).map((_, j) => (
                       <td key={j} className="px-4 py-3.5">
                         <div className="h-3.5 bg-[#f4f3f6] rounded animate-pulse w-full" />
                       </td>
@@ -886,7 +867,7 @@ function BrandRefundsView({ exportTrigger }: { exportTrigger?: number }) {
               ) : filtered.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={5}
                     className="px-5 py-12 text-center text-[#9a99b0] text-xs font-medium"
                   >
                     No refund records found
@@ -896,7 +877,6 @@ function BrandRefundsView({ exportTrigger }: { exportTrigger?: number }) {
                 filtered.map((item, idx) => {
                   const campaignTitle =
                     item.campaign?.title ?? item.campaignTitle ?? "—";
-                  const trigger = formatTrigger(item.transactionTrigger);
                   const failureReason =
                     item.failureReason ?? item.reason ?? "—";
                   const dateStr = fmtDate(
@@ -919,9 +899,6 @@ function BrandRefundsView({ exportTrigger }: { exportTrigger?: number }) {
                       </td>
                       <td className="px-4 py-3.5 font-extrabold text-[#1a1a2e]">
                         {fmtExact(item.amount)}
-                      </td>
-                      <td className="px-4 py-3.5 text-[#5a5a7a] font-medium">
-                        {trigger}
                       </td>
                       <td className="px-4 py-3.5">
                         <StatusBadge status={item.status} />

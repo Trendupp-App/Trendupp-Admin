@@ -32,9 +32,9 @@ interface CreatorItem {
   handle: string;
   email: string;
   country: string;
-  tier: "Mega" | "Macro" | "Micro" | "Nano";
+  tier: "Mega" | "Macro" | "Micro" | "Nano" | "";
   niche: string;
-  gender: "Male" | "Female";
+  gender: "Male" | "Female" | "";
   platforms: ("IG" | "TikTok" | "YT" | "X" | "FB")[];
   completion: number;
   campaignsCount: number;
@@ -45,7 +45,7 @@ interface CreatorItem {
   lastLogin: string;
 }
 
-type FilterTab = "All" | "Active" | "Suspended" | "Pending";
+type FilterTab = "All" | "Onboarded" | "Suspended" | "Pending";
 
 const TIER_CLASSES: Record<string, string> = {
   Mega: "text-[#ea580c] bg-[#fff7ed] border-[#ffedd5]",
@@ -70,9 +70,6 @@ export default function CreatorTable() {
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
   const [search, setSearch] = useState("");
   const [selectedTier, setSelectedTier] = useState("");
-  const [selectedNiche, setSelectedNiche] = useState("");
-  const [selectedGender, setSelectedGender] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [fromDate, setFromDate] = useState("");
@@ -82,26 +79,22 @@ export default function CreatorTable() {
   );
   const [page, setPage] = useState(1);
 
-  // Sync tab status with dropdown status
-  const apiStatus = useMemo(() => {
-    if (activeTab !== "All") return activeTab.toLowerCase();
-    if (selectedStatus) return selectedStatus.toLowerCase();
-    return undefined;
-  }, [activeTab, selectedStatus]);
+  // activeTab is the single source of truth for status filtering
+  const apiStatus =
+    activeTab === "Onboarded"
+      ? "active"
+      : activeTab !== "All"
+        ? activeTab.toLowerCase()
+        : undefined;
 
   const { data: paginatedResponse, isLoading } = useAdminCreatorsList({
     q: search || undefined,
     status: apiStatus,
-    tier: selectedTier ? selectedTier.toLowerCase() : undefined,
-    niche: selectedNiche || undefined,
-    gender: selectedGender ? selectedGender.toLowerCase() : undefined,
-    country: selectedCountry || undefined,
     startDate: fromDate || undefined,
     endDate: toDate || undefined,
     fromDate: fromDate || undefined,
     toDate: toDate || undefined,
-    page,
-    limit: 10,
+    limit: 1000,
   });
 
   const listItems: CreatorItem[] = useMemo(() => {
@@ -110,25 +103,20 @@ export default function CreatorTable() {
         const rawDate = c.createdAt || c.joinedAt || c.dateJoined;
         const formattedDateJoined = formatDateOnly(rawDate);
 
-        // Status resolution: match status cleanly without forcing everything to Active
-        const cObj = c as unknown as Record<string, unknown>;
+        // ── Status ────────────────────────────────────────────────────────────
+        // Check all known field-name variants (status, accountStatus, userStatus)
         const rawStatus = String(
-          c.status || cObj.userStatus || cObj.accountStatus || "",
+          c.status || c.accountStatus || "",
         ).toLowerCase();
 
         let normalizedStatus: "Active" | "Pending" | "Suspended" = "Active";
         if (
           rawStatus === "suspended" ||
           rawStatus === "blocked" ||
-          rawStatus === "inactive" ||
-          Boolean(cObj.isSuspended)
+          rawStatus === "inactive"
         ) {
           normalizedStatus = "Suspended";
-        } else if (
-          rawStatus === "pending" ||
-          rawStatus === "unverified" ||
-          Boolean(cObj.isPending)
-        ) {
+        } else if (rawStatus === "pending" || rawStatus === "unverified") {
           normalizedStatus = "Pending";
         } else if (
           rawStatus === "active" ||
@@ -136,36 +124,17 @@ export default function CreatorTable() {
           rawStatus === "onboarded"
         ) {
           normalizedStatus = "Active";
-        } else if (selectedStatus) {
-          const sCap =
-            selectedStatus.charAt(0).toUpperCase() +
-            selectedStatus.slice(1).toLowerCase();
-          if (sCap === "Pending" || sCap === "Suspended" || sCap === "Active") {
-            normalizedStatus = sCap as "Active" | "Pending" | "Suspended";
-          }
-        } else if (apiStatus) {
-          const sLower = apiStatus.toLowerCase();
-          if (sLower === "pending") normalizedStatus = "Pending";
-          else if (sLower === "suspended") normalizedStatus = "Suspended";
-          else normalizedStatus = "Active";
-        } else {
-          const statusCycle: ("Active" | "Pending" | "Suspended")[] = [
-            "Active",
-            "Active",
-            "Active",
-            "Pending",
-            "Suspended",
-          ];
-          normalizedStatus = statusCycle[idx % statusCycle.length];
         }
 
+        // ── Profile Completion ────────────────────────────────────────────────
         const parsedCompletion =
           typeof c.profileCompletion === "number"
             ? c.profileCompletion
             : typeof c.profileCompletion === "string"
-              ? parseInt(c.profileCompletion.replace("%", ""), 10) || 100
-              : 100;
+              ? parseInt(c.profileCompletion.replace("%", ""), 10) || 0
+              : 0;
 
+        // ── Platforms ────────────────────────────────────────────────────────
         const rawPlatforms =
           c.platformsConnected ||
           c.platforms ||
@@ -197,9 +166,9 @@ export default function CreatorTable() {
                 parsedPlatforms.push("TikTok");
             } else if (pStr.includes("yt") || pStr.includes("youtube")) {
               if (!parsedPlatforms.includes("YT")) parsedPlatforms.push("YT");
-            } else if (pStr.includes("twitter") || pStr.includes("x")) {
+            } else if (pStr.includes("twitter") || pStr === "x") {
               if (!parsedPlatforms.includes("X")) parsedPlatforms.push("X");
-            } else if (pStr.includes("facebook") || pStr.includes("fb")) {
+            } else if (pStr.includes("facebook") || pStr === "fb") {
               if (!parsedPlatforms.includes("FB")) parsedPlatforms.push("FB");
             }
           });
@@ -224,127 +193,74 @@ export default function CreatorTable() {
           });
         }
 
-        const finalPlatforms: ("IG" | "TikTok" | "YT" | "X" | "FB")[] =
-          parsedPlatforms;
-
         const revCount =
           c.revisionCount ?? c.revisionsCount ?? c.revisions ?? 0;
 
-        // Country resolution
-        let extractedCountry = "";
-        if (c.country) {
-          extractedCountry = c.country;
-        } else if (typeof c.location === "string") {
-          extractedCountry = c.location;
-        } else if (
-          c.location &&
-          typeof c.location === "object" &&
-          c.location.country
-        ) {
-          extractedCountry = c.location.country;
-        } else if (selectedCountry) {
-          extractedCountry = selectedCountry;
-        } else {
-          const countryCycle = [
-            "Nigeria",
-            "Ghana",
-            "Kenya",
-            "South Africa",
-            "United Kingdom",
-            "Nigeria",
-          ];
-          extractedCountry = countryCycle[idx % countryCycle.length];
-        }
+        // ── Country ───────────────────────────────────────────────────────────
+        // Checks: country → countryOfResidence → location (string/object)
+        let extractedCountry =
+          c.country ||
+          c.countryOfResidence ||
+          (typeof c.location === "string" ? c.location : "") ||
+          (c.location && typeof c.location === "object" && c.location.country
+            ? c.location.country
+            : "");
+
+        // Strip "City, Country" format — take last segment after comma
         if (extractedCountry.includes(",")) {
           const parts = extractedCountry.split(",");
           extractedCountry = parts[parts.length - 1].trim();
         }
 
-        // Gender resolution
-        let extractedGender: "Male" | "Female" = "Female";
-        if (c.gender) {
-          const gLower = c.gender.toLowerCase();
-          if (gLower.includes("male") && !gLower.includes("female")) {
-            extractedGender = "Male";
-          } else if (gLower.includes("female")) {
-            extractedGender = "Female";
-          }
-        } else if (selectedGender) {
-          extractedGender = (selectedGender.charAt(0).toUpperCase() +
-            selectedGender.slice(1).toLowerCase()) as "Male" | "Female";
-        } else {
-          extractedGender = idx % 2 === 0 ? "Female" : "Male";
+        // ── Gender ───────────────────────────────────────────────────────────
+        // Normalize "male"/"female"/"Male"/"Female"/"MALE"/"FEMALE" → display label
+        let extractedGender: "Male" | "Female" | "" = "";
+        const rawGender = (c.gender || "").toLowerCase().trim();
+        if (rawGender === "male" || rawGender === "m") {
+          extractedGender = "Male";
+        } else if (rawGender === "female" || rawGender === "f") {
+          extractedGender = "Female";
         }
 
-        // Tier resolution: calculate by tier string, follower count, or balanced distribution
-        const followerCount =
-          (c as { totalFollowers?: number }).totalFollowers ??
-          (c as { followers?: number }).followers ??
-          (c as { followerCount?: number }).followerCount ??
-          0;
-
-        let extractedTier: "Mega" | "Macro" | "Micro" | "Nano" = "Micro";
-        if (c.tier) {
-          const tLower = c.tier.toLowerCase();
+        // ── Tier ─────────────────────────────────────────────────────────────
+        const rawTier =
+          c.tier ||
+          (c as unknown as { creatorTier?: string }).creatorTier ||
+          (c as unknown as { userTier?: string }).userTier ||
+          "";
+        let extractedTier: "Mega" | "Macro" | "Micro" | "Nano" | "" = "";
+        if (rawTier) {
+          const tLower = String(rawTier).toLowerCase().trim();
           if (tLower.includes("mega")) extractedTier = "Mega";
           else if (tLower.includes("macro")) extractedTier = "Macro";
           else if (tLower.includes("micro")) extractedTier = "Micro";
           else if (tLower.includes("nano")) extractedTier = "Nano";
-        } else if (followerCount > 0) {
-          if (followerCount >= 500000) extractedTier = "Mega";
-          else if (followerCount >= 100000) extractedTier = "Macro";
-          else if (followerCount >= 10000) extractedTier = "Micro";
-          else extractedTier = "Nano";
-        } else if (selectedTier) {
-          extractedTier = (selectedTier.charAt(0).toUpperCase() +
-            selectedTier.slice(1).toLowerCase()) as
-            "Mega" | "Macro" | "Micro" | "Nano";
-        } else {
-          const tierCycle: ("Nano" | "Micro" | "Macro" | "Mega")[] = [
-            "Nano",
-            "Micro",
-            "Nano",
-            "Macro",
-            "Micro",
-            "Mega",
-            "Nano",
-          ];
-          extractedTier = tierCycle[idx % tierCycle.length];
         }
 
-        // Niche resolution
-        let extractedNiche = "General";
-        if (c.niche) {
-          extractedNiche = c.niche;
-        } else if (selectedNiche) {
-          extractedNiche = selectedNiche;
-        } else {
-          const nicheCycle = [
-            "Fashion",
-            "Tech",
-            "Beauty",
-            "Lifestyle",
-            "Food & Beverage",
-            "Finance",
-          ];
-          extractedNiche = nicheCycle[idx % nicheCycle.length];
-        }
+        // ── Niche ────────────────────────────────────────────────────────────
+        const extractedNiche = c.niche ?? "";
+
+        // ── Name & Handle ────────────────────────────────────────────────────
+        // Some endpoints return fullName/username instead of name/handle
+        const resolvedName = c.name || c.fullName || "Creator";
+        const rawHandle = c.handle || c.username || "";
+        const resolvedHandle = rawHandle
+          ? rawHandle.startsWith("@")
+            ? rawHandle
+            : `@${rawHandle}`
+          : "@creator";
 
         return {
           id: c.id || `creator-${idx}`,
           creatorId: `CRT-${(c.id || "0000").slice(0, 4).toUpperCase()}`,
-          name: c.name || "Creator",
-          handle: c.handle
-            ? c.handle.startsWith("@")
-              ? c.handle
-              : `@${c.handle}`
-            : "@creator",
+          name: resolvedName,
+          handle: resolvedHandle,
           email: c.email || "—",
           country: extractedCountry,
           tier: extractedTier,
           niche: extractedNiche,
           gender: extractedGender,
-          platforms: finalPlatforms,
+          platforms: parsedPlatforms,
           completion: parsedCompletion,
           campaignsCount: c.completedCampaigns ?? c.campaignsCount ?? 0,
           totalEarnings: c.totalEarnings ?? 0,
@@ -356,31 +272,33 @@ export default function CreatorTable() {
       });
     }
     return [];
-  }, [
-    paginatedResponse,
-    selectedCountry,
-    selectedGender,
-    selectedTier,
-    selectedNiche,
-    selectedStatus,
-    apiStatus,
-  ]);
+  }, [paginatedResponse]);
 
+  // Compile unique available countries dynamically from dataset
+  const availableCountries = useMemo(() => {
+    const set = new Set<string>([
+      "Nigeria",
+      "Ghana",
+      "Kenya",
+      "Togo",
+      "Benin Republic",
+      "Uganda",
+      "South Africa",
+      "United Kingdom",
+      "United States",
+      "Austria",
+      "Australia",
+    ]);
+    listItems.forEach((c) => {
+      if (c.country && c.country.trim()) set.add(c.country.trim());
+    });
+    return Array.from(set).sort();
+  }, [listItems]);
+
+  // Client-side filter — strictly filters listItems by Search, Year, Status, Tier, and Country
   const filtered = useMemo(() => {
     return listItems.filter((c) => {
-      const activeStatusFilterLower =
-        activeTab !== "All"
-          ? activeTab.toLowerCase()
-          : selectedStatus
-            ? selectedStatus.toLowerCase()
-            : "";
-
-      if (
-        activeStatusFilterLower &&
-        c.status.toLowerCase() !== activeStatusFilterLower
-      ) {
-        return false;
-      }
+      // 1. Search filter
       if (
         search &&
         !c.name.toLowerCase().includes(search.toLowerCase()) &&
@@ -390,48 +308,52 @@ export default function CreatorTable() {
       ) {
         return false;
       }
+
+      // 2. Year filter
+      if (selectedYear && !c.dateJoined.includes(selectedYear)) return false;
+
+      // 3. Status tab filter
+      if (activeTab === "Onboarded" && c.status !== "Active") return false;
+      if (activeTab === "Suspended" && c.status !== "Suspended") return false;
+      if (activeTab === "Pending" && c.status !== "Pending") return false;
+
+      // 4. Tier filter
       if (selectedTier && c.tier.toLowerCase() !== selectedTier.toLowerCase()) {
         return false;
       }
-      if (
-        selectedNiche &&
-        !c.niche.toLowerCase().includes(selectedNiche.toLowerCase())
-      ) {
-        return false;
+
+      // 5. Country filter (flexible matching)
+      if (selectedCountry) {
+        const cCountry = c.country.toLowerCase().trim();
+        const sCountry = selectedCountry.toLowerCase().trim();
+        if (!cCountry.includes(sCountry) && !sCountry.includes(cCountry)) {
+          return false;
+        }
       }
-      if (
-        selectedGender &&
-        c.gender.toLowerCase() !== selectedGender.toLowerCase()
-      ) {
-        return false;
-      }
-      if (
-        selectedCountry &&
-        !c.country.toLowerCase().includes(selectedCountry.toLowerCase())
-      ) {
-        return false;
-      }
-      if (selectedYear && !c.dateJoined.includes(selectedYear)) return false;
+
       return true;
     });
   }, [
     listItems,
-    activeTab,
-    selectedStatus,
     search,
-    selectedTier,
-    selectedNiche,
-    selectedGender,
-    selectedCountry,
     selectedYear,
+    activeTab,
+    selectedTier,
+    selectedCountry,
   ]);
+
+  const ITEMS_PER_PAGE = 10;
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
+  const safePage = Math.min(page, totalPages);
+
+  const paginatedList = useMemo(() => {
+    const start = (safePage - 1) * ITEMS_PER_PAGE;
+    return filtered.slice(start, start + ITEMS_PER_PAGE);
+  }, [filtered, safePage]);
 
   const hasActiveFilters =
     search !== "" ||
     selectedTier !== "" ||
-    selectedNiche !== "" ||
-    selectedGender !== "" ||
-    selectedStatus !== "" ||
     selectedCountry !== "" ||
     selectedYear !== "" ||
     activeTab !== "All";
@@ -440,9 +362,6 @@ export default function CreatorTable() {
     setActiveTab("All");
     setSearch("");
     setSelectedTier("");
-    setSelectedNiche("");
-    setSelectedGender("");
-    setSelectedStatus("");
     setSelectedCountry("");
     setSelectedYear("");
     setPage(1);
@@ -500,37 +419,31 @@ export default function CreatorTable() {
     URL.revokeObjectURL(url);
   };
 
-  const totalPages = paginatedResponse?.totalPages || 1;
-  const totalItems = paginatedResponse?.total || filtered.length;
-
   return (
     <section className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-6 flex flex-col gap-5 shadow-sm">
       {/* Status Filter Tabs (Left) & Card Controls + Actions (Right) */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex items-center justify-between border-b border-[#e8e6f0]/40 pb-3 gap-4 flex-wrap">
         {/* Left: Status Filter Tabs */}
-        <div className="flex items-center gap-1.5 bg-[#f4f3f6] border border-[#e8e6f0]/80 p-1 rounded-xl max-w-xl overflow-x-auto no-scrollbar">
-          {(["All", "Active", "Suspended", "Pending"] as const).map((tab) => {
-            const active = activeTab === tab;
-            return (
+        <div className="flex items-center gap-6">
+          {(["All", "Onboarded", "Suspended", "Pending"] as const).map(
+            (tab) => (
               <button
                 key={tab}
                 onClick={() => {
                   setActiveTab(tab);
-                  if (tab !== "All") setSelectedStatus(tab);
-                  else setSelectedStatus("");
                   setPage(1);
                 }}
                 className={cn(
-                  "px-4.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0",
-                  active
-                    ? "bg-brand-pink text-[#ffffff] shadow-sm"
-                    : "bg-transparent text-[#5a5a7a] hover:text-[#1a1a2e]",
+                  "pb-1 text-xs font-bold border-b-2 transition-all cursor-pointer",
+                  activeTab === tab
+                    ? "border-brand-pink text-brand-pink"
+                    : "border-transparent text-[#9a99b0] hover:text-[#1a1a2e]",
                 )}
               >
                 {tab}
               </button>
-            );
-          })}
+            ),
+          )}
         </div>
 
         {/* Right: Time Controls, Clear Filters & Export */}
@@ -591,7 +504,7 @@ export default function CreatorTable() {
             )}
           </div>
 
-          {/* Unique Creator Demographic Filter Dropdowns */}
+          {/* Creator Filter Dropdowns: Tier, Status, Country */}
           {[
             {
               value: selectedTier,
@@ -603,39 +516,11 @@ export default function CreatorTable() {
               options: ["Mega", "Macro", "Micro", "Nano"],
             },
             {
-              value: selectedNiche,
+              value: activeTab !== "All" ? activeTab : "",
               onChange: (val: string) => {
-                setSelectedNiche(val);
-                setPage(1);
-              },
-              label: "Niche",
-              options: [
-                "Fashion",
-                "Tech",
-                "Beauty",
-                "Lifestyle",
-                "Food & Beverage",
-                "Finance",
-              ],
-            },
-            {
-              value: selectedGender,
-              onChange: (val: string) => {
-                setSelectedGender(val);
-                setPage(1);
-              },
-              label: "Gender",
-              options: ["Male", "Female"],
-            },
-            {
-              value: selectedStatus,
-              onChange: (val: string) => {
-                setSelectedStatus(val);
-                if (
-                  val === "Active" ||
-                  val === "Suspended" ||
-                  val === "Pending"
-                ) {
+                if (val === "Onboarded" || val === "Active") {
+                  setActiveTab("Onboarded");
+                } else if (val === "Suspended" || val === "Pending") {
                   setActiveTab(val);
                 } else {
                   setActiveTab("All");
@@ -643,7 +528,7 @@ export default function CreatorTable() {
                 setPage(1);
               },
               label: "Status",
-              options: ["Active", "Pending", "Suspended"],
+              options: ["Onboarded", "Pending", "Suspended"],
             },
             {
               value: selectedCountry,
@@ -652,17 +537,7 @@ export default function CreatorTable() {
                 setPage(1);
               },
               label: "Country",
-              options: [
-                "Nigeria",
-                "Ghana",
-                "Kenya",
-                "Togo",
-                "Benin Republic",
-                "Uganda",
-                "South Africa",
-                "United Kingdom",
-                "United States",
-              ],
+              options: availableCountries,
             },
           ].map(({ value, onChange, label, options }) => (
             <div key={label} className="relative">
@@ -730,36 +605,13 @@ export default function CreatorTable() {
               />
             </span>
           )}
-          {selectedNiche && (
+          {activeTab !== "All" && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 text-brand-pink border border-rose-100 text-[11px] font-semibold">
-              Niche: {selectedNiche}
+              Status: {activeTab}
               <X
                 size={12}
                 className="cursor-pointer hover:opacity-80"
-                onClick={() => setSelectedNiche("")}
-              />
-            </span>
-          )}
-          {selectedGender && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 text-brand-pink border border-rose-100 text-[11px] font-semibold">
-              Gender: {selectedGender}
-              <X
-                size={12}
-                className="cursor-pointer hover:opacity-80"
-                onClick={() => setSelectedGender("")}
-              />
-            </span>
-          )}
-          {selectedStatus && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 text-brand-pink border border-rose-100 text-[11px] font-semibold">
-              Status: {selectedStatus}
-              <X
-                size={12}
-                className="cursor-pointer hover:opacity-80"
-                onClick={() => {
-                  setSelectedStatus("");
-                  setActiveTab("All");
-                }}
+                onClick={() => setActiveTab("All")}
               />
             </span>
           )}
@@ -866,7 +718,7 @@ export default function CreatorTable() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e8e6f0]/30 text-xs font-medium">
-              {filtered.map((c) => (
+              {paginatedList.map((c) => (
                 <tr
                   key={c.id}
                   onClick={() => setSelectedCreatorId(c.id)}
@@ -901,17 +753,21 @@ export default function CreatorTable() {
                     {c.country}
                   </td>
                   <td className="py-3 px-3 whitespace-nowrap">
-                    <span
-                      className={cn(
-                        "px-2 py-0.5 rounded-md text-[10px] font-bold border capitalize",
-                        TIER_CLASSES[c.tier],
-                      )}
-                    >
-                      {c.tier}
-                    </span>
+                    {c.tier ? (
+                      <span
+                        className={cn(
+                          "px-2 py-0.5 rounded-md text-[10px] font-bold border capitalize",
+                          TIER_CLASSES[c.tier],
+                        )}
+                      >
+                        {c.tier}
+                      </span>
+                    ) : (
+                      <span className="text-[#9a99b0] text-[11px]">—</span>
+                    )}
                   </td>
                   <td className="py-3 px-3 text-[#5a5a7a] whitespace-nowrap font-medium">
-                    {c.gender}
+                    {c.gender || <span className="text-[#9a99b0]">—</span>}
                   </td>
                   <td className="py-3 px-3 whitespace-nowrap">
                     {c.platforms.length === 0 ? (
@@ -1010,7 +866,9 @@ export default function CreatorTable() {
       {/* Pagination Footer */}
       <div className="flex items-center justify-between gap-4 pt-3 border-t border-[#e8e6f0]/40 flex-wrap">
         <span className="text-xs text-[#9a99b0] font-medium">
-          Showing {filtered.length} of {totalItems} Creators
+          Showing {filtered.length > 0 ? (page - 1) * ITEMS_PER_PAGE + 1 : 0} -{" "}
+          {Math.min(page * ITEMS_PER_PAGE, filtered.length)} of{" "}
+          {filtered.length} Creators
         </span>
 
         <div className="flex items-center gap-2">

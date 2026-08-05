@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CampaignOverviewDto } from "@/types/adminOverview";
+import { AdminCampaignSummaryResponseDto } from "@/types/adminCampaigns";
 
 interface StatusCard {
   count: number;
@@ -15,7 +15,7 @@ interface StatusCard {
 }
 
 interface AdminCampaignOverviewProps {
-  overview?: CampaignOverviewDto;
+  overview?: AdminCampaignSummaryResponseDto;
 }
 
 export function AdminCampaignOverview({
@@ -25,7 +25,7 @@ export function AdminCampaignOverview({
 
   const statusCards: StatusCard[] = [
     {
-      count: overview?.total ?? 0,
+      count: overview?.totalCampaigns ?? 0,
       label: "Total Campaigns",
       status: "",
       color: "text-[#2f63eb]",
@@ -53,11 +53,11 @@ export function AdminCampaignOverview({
       bg: "bg-[#f0fdf4]",
     },
     {
-      count: overview?.postPending ?? 0,
-      label: "Post Pending",
-      status: "post_pending",
-      color: "text-[#7c3aed]",
-      bg: "bg-[#f5f3ff]",
+      count: overview?.cancelled ?? 0,
+      label: "Cancelled",
+      status: "cancelled",
+      color: "text-[#dc2626]",
+      bg: "bg-[#fef2f2]",
     },
     {
       count: overview?.completed ?? 0,

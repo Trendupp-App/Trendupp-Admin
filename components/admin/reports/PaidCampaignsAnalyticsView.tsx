@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { ChevronDown } from "lucide-react";
 import {
-  useAdminCampaignSummary,
+  useAdminCampaignsSummary,
   useCampaignParticipationByTier,
   useCampaignTypes,
   useCampaignVolume,
@@ -58,11 +58,8 @@ export default function PaidCampaignsAnalyticsView() {
     ? parseInt(selectedYear)
     : parseInt(volumeYear);
 
-  const { data: summaryRes, isLoading: isLoadingSummary } =
-    useAdminCampaignSummary({
-      fromDate: fromDate || undefined,
-      toDate: toDate || undefined,
-    });
+  const { data: campaignSummary, isLoading: isLoadingSummary } =
+    useAdminCampaignsSummary();
 
   const { data: participationByTier = [], isLoading: isLoadingTier } =
     useCampaignParticipationByTier({
@@ -87,14 +84,6 @@ export default function PaidCampaignsAnalyticsView() {
       fromDate: budgetFromDate || fromDate || undefined,
       toDate: budgetToDate || toDate || undefined,
     });
-
-  const summary = summaryRes?.summary;
-
-  const totalCampaigns = summary?.totalCampaigns ?? 0;
-  const avgApplicants = summary?.avgApplicantsPerCampaign ?? 0;
-  const creatorsSelectedRate = summary?.creatorsSelectedRate ?? 0;
-  const totalCompleted = summary?.totalCompleted ?? 0;
-  const campaignCompletionRate = summary?.campaignCompletionRate ?? 0;
 
   const displayTiers = participationByTier;
   const displayTypes = campaignTypes;
@@ -131,77 +120,58 @@ export default function PaidCampaignsAnalyticsView() {
         </div>
       </div>
 
-      {/* Top 5 Stat Cards Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-        {/* Total Campaigns */}
-        <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-4 sm:p-5 flex flex-col gap-1 shadow-xs">
-          <span className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
-            Total Campaigns
-          </span>
-          <span className="text-2xl font-extrabold text-[#1a1a2e]">
+      {/* Campaign Status Cards — data from /admin/campaigns/summary */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+        {(
+          [
+            {
+              label: "Total Campaigns",
+              value: campaignSummary?.totalCampaigns ?? 0,
+              color: "text-[#2f63eb]",
+            },
+            {
+              label: "Draft",
+              value: campaignSummary?.draft ?? 0,
+              color: "text-[#7a7a9a]",
+            },
+            {
+              label: "Live",
+              value: campaignSummary?.live ?? 0,
+              color: "text-[#d7176f]",
+            },
+            {
+              label: "Active",
+              value: campaignSummary?.active ?? 0,
+              color: "text-[#16a34a]",
+            },
+            {
+              label: "Cancelled",
+              value: campaignSummary?.cancelled ?? 0,
+              color: "text-[#dc2626]",
+            },
+            {
+              label: "Completed",
+              value: campaignSummary?.completed ?? 0,
+              color: "text-[#2f63eb]",
+            },
+          ] as { label: string; value: number; color: string }[]
+        ).map(({ label, value, color }) => (
+          <div
+            key={label}
+            className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-4 sm:p-5 flex flex-col gap-1 shadow-xs"
+          >
+            <span className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
+              {label}
+            </span>
             {isLoadingSummary ? (
-              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-8 w-20 mt-1" />
             ) : (
-              totalCampaigns.toLocaleString()
+              <span className={`text-2xl font-extrabold ${color}`}>
+                {value.toLocaleString()}
+              </span>
             )}
-          </span>
-        </div>
-
-        {/* Avg. Applicants / Campaign */}
-        <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-4 sm:p-5 flex flex-col gap-1 shadow-xs">
-          <span className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
-            Avg. Applicants / Campaign
-          </span>
-          <span className="text-2xl font-extrabold text-[#1a1a2e]">
-            {isLoadingSummary ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              avgApplicants.toFixed(1)
-            )}
-          </span>
-        </div>
-
-        {/* Creators Selected Rate */}
-        <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-4 sm:p-5 flex flex-col gap-1 shadow-xs">
-          <span className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
-            Creators Selected Rate
-          </span>
-          <span className="text-2xl font-extrabold text-[#10b981]">
-            {isLoadingSummary ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              `${creatorsSelectedRate}%`
-            )}
-          </span>
-        </div>
-
-        {/* Total Completed */}
-        <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-4 sm:p-5 flex flex-col gap-1 shadow-xs">
-          <span className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
-            Total Completed
-          </span>
-          <span className="text-2xl font-extrabold text-[#1a1a2e]">
-            {isLoadingSummary ? (
-              <Skeleton className="h-8 w-20" />
-            ) : (
-              totalCompleted.toLocaleString()
-            )}
-          </span>
-        </div>
-
-        {/* Campaign Completion Rate */}
-        <div className="bg-white border border-[#e8e6f0]/60 rounded-3xl p-4 sm:p-5 flex flex-col gap-1 shadow-xs">
-          <span className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
-            Campaign Completion Rate
-          </span>
-          <span className="text-2xl font-extrabold text-[#d92662]">
-            {isLoadingSummary ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              `${campaignCompletionRate}%`
-            )}
-          </span>
-        </div>
+          </div>
+        ))}
       </div>
 
       {/* Middle Row: Campaign Participation by Tier & Campaign Type */}

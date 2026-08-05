@@ -93,29 +93,45 @@ export interface CreatorListQueryParams {
 
 export interface AdminCreatorListItem {
   id: string;
+  // Name variants
   name?: string;
-  handle?: string;
+  fullName?: string | null;
+  // Handle variants
+  handle?: string | null;
+  username?: string | null;
   email?: string;
   avatarUrl?: string | null;
+  // Tier
   tier?: string;
+  // Niche
   niche?: string | null;
+  // Gender
   gender?: string | null;
+  // Country variants
   country?: string | null;
+  countryOfResidence?: string | null;
   state?: string | null;
+  nationality?: string | null;
   location?: string | { country?: string; state?: string } | null;
+  // Status variants
   status?: string;
+  accountStatus?: string | null;
+  // Profile & financials
   completedCampaigns?: number;
   campaignsCount?: number;
   totalEarnings?: number;
   earningsStatus?: string;
   profileCompletion?: number | string;
+  // Platforms / socials
   platformsConnected?: string[] | Record<string, unknown>;
   platforms?: string[] | Record<string, unknown>;
   connectedSocials?: ConnectedSocialsDto | ConnectedSocialsCountsDto;
   socialAccounts?: CreatorSocialAccountDto[];
+  // Revisions
   revisionCount?: number;
   revisionsCount?: number;
   revisions?: number;
+  // Dates
   joinedAt?: string;
   createdAt?: string;
   dateJoined?: string;

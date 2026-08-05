@@ -35,14 +35,30 @@ function AdminShell({ children }: { children: React.ReactNode }) {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const isPublic = PUBLIC_ADMIN_PATHS.some((p) => pathname.startsWith(p));
 
-  const { accessToken, hasHydrated } = useAuthStore();
+  const { accessToken, user, hasHydrated } = useAuthStore();
   const isAuthenticated = hasHydrated && !!accessToken;
 
   useEffect(() => {
     if (!isPublic && hasHydrated && !accessToken) {
       router.replace(`/admin/signin?redirect=${encodeURIComponent(pathname)}`);
+    } else if (
+      isAuthenticated &&
+      user?.role === "finance_admin" &&
+      (pathname.startsWith("/admin/campaigns/social") ||
+        pathname.startsWith("/admin/content/news") ||
+        pathname.startsWith("/admin/content/banners"))
+    ) {
+      router.replace("/admin/finance/escrow");
     }
-  }, [isPublic, hasHydrated, accessToken, pathname, router]);
+  }, [
+    isPublic,
+    hasHydrated,
+    accessToken,
+    user,
+    pathname,
+    router,
+    isAuthenticated,
+  ]);
 
   if (isPublic) return <>{children}</>;
 
