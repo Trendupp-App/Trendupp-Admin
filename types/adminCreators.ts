@@ -48,7 +48,8 @@ export interface TopCreatorDto {
   handle: string;
   avatarUrl?: string | null;
   tier: string;
-  completedCampaigns: number;
+  completedCampaigns?: number;
+  campaignsCount?: number;
   totalEarnings: number;
 }
 

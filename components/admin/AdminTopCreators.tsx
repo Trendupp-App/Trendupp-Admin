@@ -44,7 +44,7 @@ export function AdminTopCreators({ creators }: AdminTopCreatorsProps) {
           item.totalEarnings >= 1000000
             ? `₦${(item.totalEarnings / 1000000).toFixed(1)}M`
             : `₦${(item.totalEarnings / 1000).toFixed(0)}K`,
-        campaigns: item.completedCampaigns,
+        campaigns: item.campaignsCount ?? item.completedCampaigns ?? 0,
       }))
     : [];
 
