@@ -2,13 +2,21 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Dispute, ResolveDisputePayload } from "@/types/dispute";
-import { X, Send, Paperclip, CheckCircle, ExternalLink } from "lucide-react";
+import {
+  X,
+  Send,
+  Paperclip,
+  CheckCircle,
+  ExternalLink,
+  Settings2,
+} from "lucide-react";
 import EscrowConfirmModal, { EscrowActionType } from "./EscrowConfirmModal";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/authStore";
 import { useUpdateDisputeNotes } from "@/hooks/useDisputes";
 import { useUserById } from "@/hooks/useUsers";
 import { useSubmissions } from "@/hooks/useCampaign";
+import { Portal } from "@/components/ui/portal";
 
 interface StreamMessage {
   id: string;
@@ -120,6 +128,8 @@ export default function DisputeDetailView({
   // Resolution summary drawer state
   const [showResolutionSummary, setShowResolutionSummary] = useState(false);
   const [resolutionNotes, setResolutionNotes] = useState("");
+  // Admin controls drawer (notes + escrow), toggled so chat can use full width
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -201,6 +211,14 @@ export default function DisputeDetailView({
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowAdminPanel(true)}
+            title="Admin Notes & Escrow Controls"
+            className="w-9 h-9 rounded-full bg-[#f4f3f6] flex items-center justify-center text-[#5a5a7a] hover:bg-[#ebe9f1] transition-colors cursor-pointer"
+          >
+            <Settings2 size={15} />
+          </button>
           <span
             className={`px-3 py-1 rounded-full text-xs font-bold border ${statusBadge.className}`}
           >
@@ -208,7 +226,10 @@ export default function DisputeDetailView({
           </span>
           {dispute.status !== "resolved" && (
             <button
-              onClick={() => setShowResolutionSummary(true)}
+              onClick={() => {
+                setShowResolutionSummary(true);
+                setShowAdminPanel(true);
+              }}
               className="flex items-center gap-1.5 h-9 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm"
             >
               <CheckCircle size={14} /> Mark Resolved
@@ -310,15 +331,15 @@ export default function DisputeDetailView({
           </div>
         </div>
 
-        {/* Center Column: Sub-tabs & Main View Area (6 cols) */}
-        <div className="lg:col-span-6 flex flex-col gap-4">
+        {/* Center Column: Sub-tabs & Main View Area (9 cols) */}
+        <div className="lg:col-span-9 flex flex-col gap-4">
           {/* Sub-tabs Header */}
           <div className="flex items-center gap-3 border-b border-[#e8e6f0] pb-2">
             <button
               onClick={() => setCenterTab("chat")}
               className={`h-8 px-4 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 centerTab === "chat"
-                  ? "bg-[#c0185c] text-white"
+                  ? "bg-emerald-600 text-white"
                   : "text-[#5a5a7a] hover:bg-[#f4f3f6]"
               }`}
             >
@@ -348,11 +369,11 @@ export default function DisputeDetailView({
 
           {/* Sub-tab 1: Chat Thread */}
           {centerTab === "chat" && (
-            <div className="flex flex-col gap-4 bg-[#f8f7fa] border border-[#e8e6f0] rounded-3xl p-4 min-h-112.5 justify-between">
+            <div className="flex flex-col gap-4 bg-gradient-to-b from-emerald-50/50 to-[#f8f7fa] border border-emerald-100 rounded-3xl p-4 min-h-112.5 justify-between">
               {/* Message List */}
               <div className="flex flex-col gap-4 overflow-y-auto max-h-95 pr-2">
                 {/* System Banner */}
-                <div className="bg-[#efedf3] text-[#5a5a7a] rounded-2xl p-3 text-center text-[11px] font-medium max-w-md mx-auto">
+                <div className="bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-2xl p-3 text-center text-[11px] font-medium max-w-md mx-auto">
                   {dispute.activatedAt
                     ? `This chat was activated on ${formatDate(dispute.activatedAt)}. All messages are recorded and monitored.`
                     : "All messages in this chat are recorded and monitored."}
@@ -382,13 +403,16 @@ export default function DisputeDetailView({
                       return (
                         <div
                           key={msg.id}
-                          className="flex flex-col items-center gap-1"
+                          className="flex gap-2 items-start justify-end"
                         >
-                          <div className="bg-purple-50 text-[#1a1a2e] rounded-2xl p-3 text-xs max-w-sm flex flex-col gap-1 items-center text-center">
+                          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-2xl rounded-tr-sm p-3 text-xs max-w-[70%] flex flex-col gap-1 shadow-sm shadow-emerald-500/20">
                             <p>{msg.text}</p>
-                            <span className="text-[9px] text-[#9a99b0]">
+                            <span className="text-[9px] text-emerald-50/80">
                               {userName} · Admin (mediator)
                             </span>
+                          </div>
+                          <div className="w-7 h-7 rounded-full bg-emerald-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
+                            {userName.slice(0, 2).toUpperCase()}
                           </div>
                         </div>
                       );
@@ -400,7 +424,7 @@ export default function DisputeDetailView({
                           <div className="w-7 h-7 rounded-full bg-brand-pink text-white font-bold text-[10px] flex items-center justify-center shrink-0">
                             {userName.slice(0, 2).toUpperCase()}
                           </div>
-                          <div className="bg-[#f0eff4] text-[#1a1a2e] rounded-2xl p-3 text-xs max-w-[70%] flex flex-col gap-1">
+                          <div className="bg-white border border-[#e8e6f0] text-[#1a1a2e] rounded-2xl rounded-tl-sm p-3 text-xs max-w-[70%] flex flex-col gap-1 shadow-sm">
                             <p>{msg.text}</p>
                             <span className="text-[9px] text-[#9a99b0]">
                               {userName} · Brand
@@ -411,18 +435,15 @@ export default function DisputeDetailView({
                     }
 
                     return (
-                      <div
-                        key={msg.id}
-                        className="flex gap-2 items-start justify-end"
-                      >
-                        <div className="bg-rose-50 text-[#c0185c] rounded-2xl p-3 text-xs max-w-[70%] flex flex-col gap-1 text-right">
-                          <p>{msg.text}</p>
-                          <span className="text-[9px] text-rose-400">
-                            {userName} · Creator
-                          </span>
-                        </div>
+                      <div key={msg.id} className="flex gap-2 items-start">
                         <div className="w-7 h-7 rounded-full bg-blue-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
                           {userName.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="bg-white border border-[#e8e6f0] text-[#1a1a2e] rounded-2xl rounded-tl-sm p-3 text-xs max-w-[70%] flex flex-col gap-1 shadow-sm">
+                          <p>{msg.text}</p>
+                          <span className="text-[9px] text-[#9a99b0]">
+                            {userName} · Creator
+                          </span>
                         </div>
                       </div>
                     );
@@ -434,7 +455,7 @@ export default function DisputeDetailView({
               {/* Chat Input Bar */}
               <form
                 onSubmit={handleSend}
-                className="flex flex-col gap-2 bg-white rounded-2xl p-3 border border-[#e8e6f0] shadow-sm"
+                className="flex flex-col gap-2 bg-white rounded-2xl p-3 border border-emerald-100 shadow-sm focus-within:ring-1 focus-within:ring-emerald-400/40 transition-shadow"
               >
                 <div className="flex items-center gap-2">
                   <textarea
@@ -446,14 +467,14 @@ export default function DisputeDetailView({
                   />
                   <button
                     type="button"
-                    className="p-2 text-[#9a99b0] hover:text-[#1a1a2e] transition-colors"
+                    className="p-2 text-[#9a99b0] hover:text-emerald-600 transition-colors"
                   >
                     <Paperclip size={16} />
                   </button>
                   <button
                     type="submit"
                     disabled={!inputText.trim() || isSending}
-                    className="w-8 h-8 rounded-full bg-[#c0185c] text-white flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer shrink-0"
+                    className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 text-white flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer shrink-0 shadow-sm shadow-emerald-500/30"
                   >
                     <Send size={14} />
                   </button>
@@ -579,137 +600,170 @@ export default function DisputeDetailView({
             </div>
           )}
         </div>
-
-        {/* Right Column: Admin Notes & Escrow Controls (3 cols) */}
-        <div className="lg:col-span-3 flex flex-col gap-6">
-          {/* Admin Notes */}
-          <div className="flex flex-col gap-3">
-            <h4 className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
-              ADMIN NOTES
-            </h4>
-            <textarea
-              rows={4}
-              placeholder="Internal notes (not visible to parties)…"
-              value={adminNotes}
-              onChange={(e) => setAdminNotes(e.target.value)}
-              className="w-full bg-[#f8f7fa] border border-[#e8e6f0] rounded-2xl p-3 text-xs text-[#1a1a2e] placeholder-[#9a99b0] focus:outline-none focus:ring-1 focus:ring-brand-pink/30 resize-none font-medium"
-            />
-            <button
-              onClick={() => {
-                if (!adminNotes.trim()) return;
-                updateNotesMutation.mutate({
-                  id: dispute.id,
-                  notes: adminNotes.trim(),
-                });
-              }}
-              disabled={updateNotesMutation.isPending}
-              className="h-8 px-4 bg-[#1a1a2e] hover:bg-[#2a2a4e] text-white text-xs font-bold rounded-xl transition-all cursor-pointer w-fit disabled:opacity-50"
-            >
-              {updateNotesMutation.isPending ? "Saving..." : "Save Note"}
-            </button>
-          </div>
-
-          {/* Escrow Controls */}
-          {dispute.status === "resolved" ? (
-            <div className="bg-[#f8f7fa] border border-[#e8e6f0] rounded-3xl p-4 flex flex-col gap-2">
-              <h4 className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
-                RESOLUTION
-              </h4>
-              <span className="text-xs font-bold text-[#1a1a2e]">
-                {dispute.escrowAction
-                  ? dispute.escrowAction.replace(/_/g, " ")
-                  : "Resolved"}
-              </span>
-              {dispute.resolutionNotes && (
-                <p className="text-[11px] text-[#7a7a9a] leading-relaxed">
-                  {dispute.resolutionNotes}
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="bg-[#f8f7fa] border border-[#e8e6f0] rounded-3xl p-4 flex flex-col gap-3">
-              <h4 className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
-                ESCROW CONTROLS
-              </h4>
-              <span className="text-xs font-bold text-[#1a1a2e]">
-                {budget} held
-              </span>
-
-              <button
-                onClick={() => setEscrowAction("release_to_creator")}
-                className="h-9 w-full bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm"
-              >
-                Release to Creator
-              </button>
-
-              <button
-                onClick={() => setEscrowAction("refund_to_brand")}
-                className="h-9 w-full bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm"
-              >
-                Return to Brand
-              </button>
-
-              <button
-                onClick={() => setEscrowAction("split")}
-                className="h-9 w-full bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm"
-              >
-                50/50 Split Escrow
-              </button>
-
-              <button
-                onClick={() => setEscrowAction("allow_content_submission")}
-                className="h-8 w-full bg-white hover:bg-[#ebe9f1] text-[#5a5a7a] text-[11px] font-bold rounded-xl border border-[#e8e6f0] transition-all cursor-pointer"
-              >
-                Allow content submission
-              </button>
-
-              <button
-                onClick={() => setEscrowAction("allow_content_review")}
-                className="h-8 w-full bg-white hover:bg-[#ebe9f1] text-[#5a5a7a] text-[11px] font-bold rounded-xl border border-[#e8e6f0] transition-all cursor-pointer"
-              >
-                Allow content review
-              </button>
-
-              <button
-                onClick={() => setEscrowAction("allow_revised_submission")}
-                className="h-8 w-full bg-white hover:bg-[#ebe9f1] text-[#5a5a7a] text-[11px] font-bold rounded-xl border border-[#e8e6f0] transition-all cursor-pointer"
-              >
-                Allow revised submission
-              </button>
-
-              <button
-                onClick={() => setEscrowAction("allow_revised_review")}
-                className="h-8 w-full bg-white hover:bg-[#ebe9f1] text-[#5a5a7a] text-[11px] font-bold rounded-xl border border-[#e8e6f0] transition-all cursor-pointer"
-              >
-                Allow revised review
-              </button>
-            </div>
-          )}
-
-          {/* Resolution Summary Drawer */}
-          {showResolutionSummary && (
-            <div className="bg-white border border-[#c0185c] rounded-3xl p-4 flex flex-col gap-3 shadow-md animate-fade-in">
-              <h4 className="text-xs font-bold text-[#1a1a2e]">
-                Resolution Summary
-              </h4>
-              <textarea
-                rows={3}
-                placeholder="Resolution notes (sent to both parties)…"
-                value={resolutionNotes}
-                onChange={(e) => setResolutionNotes(e.target.value)}
-                className="w-full bg-[#f8f7fa] border border-[#e8e6f0] rounded-xl p-2.5 text-xs text-[#1a1a2e] placeholder-[#9a99b0] focus:outline-none focus:ring-1 focus:ring-brand-pink/30 resize-none font-medium"
-              />
-              <button
-                onClick={handleConfirmResolve}
-                disabled={isResolving}
-                className="h-9 w-full bg-[#c0185c] hover:opacity-90 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm disabled:opacity-50"
-              >
-                {isResolving ? "Resolving…" : "Confirm & Close Dispute"}
-              </button>
-            </div>
-          )}
-        </div>
       </div>
+
+      {/* Admin Notes & Escrow Controls Drawer */}
+      {showAdminPanel && (
+        <Portal>
+          <div className="fixed inset-0 z-50 flex justify-end">
+            <div
+              className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+              onClick={() => setShowAdminPanel(false)}
+            />
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Admin controls"
+              className="relative z-10 w-full max-w-[380px] h-full bg-white shadow-2xl flex flex-col overflow-y-auto animate-fade-in"
+            >
+              <div className="flex items-center justify-between p-5 border-b border-[#e8e6f0] shrink-0">
+                <h3 className="text-sm font-extrabold text-[#1a1a2e]">
+                  Admin Controls
+                </h3>
+                <button
+                  onClick={() => setShowAdminPanel(false)}
+                  className="w-8 h-8 rounded-full bg-[#f4f3f6] flex items-center justify-center text-[#5a5a7a] hover:bg-[#ebe9f1] transition-colors cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="p-5 flex flex-col gap-6 text-left">
+                {/* Admin Notes */}
+                <div className="flex flex-col gap-3">
+                  <h4 className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
+                    ADMIN NOTES
+                  </h4>
+                  <textarea
+                    rows={4}
+                    placeholder="Internal notes (not visible to parties)…"
+                    value={adminNotes}
+                    onChange={(e) => setAdminNotes(e.target.value)}
+                    className="w-full bg-[#f8f7fa] border border-[#e8e6f0] rounded-2xl p-3 text-xs text-[#1a1a2e] placeholder-[#9a99b0] focus:outline-none focus:ring-1 focus:ring-brand-pink/30 resize-none font-medium"
+                  />
+                  <button
+                    onClick={() => {
+                      if (!adminNotes.trim()) return;
+                      updateNotesMutation.mutate({
+                        id: dispute.id,
+                        notes: adminNotes.trim(),
+                      });
+                    }}
+                    disabled={updateNotesMutation.isPending}
+                    className="h-8 px-4 bg-[#1a1a2e] hover:bg-[#2a2a4e] text-white text-xs font-bold rounded-xl transition-all cursor-pointer w-fit disabled:opacity-50"
+                  >
+                    {updateNotesMutation.isPending ? "Saving..." : "Save Note"}
+                  </button>
+                </div>
+
+                {/* Escrow Controls */}
+                {dispute.status === "resolved" ? (
+                  <div className="bg-[#f8f7fa] border border-[#e8e6f0] rounded-3xl p-4 flex flex-col gap-2">
+                    <h4 className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
+                      RESOLUTION
+                    </h4>
+                    <span className="text-xs font-bold text-[#1a1a2e]">
+                      {dispute.escrowAction
+                        ? dispute.escrowAction.replace(/_/g, " ")
+                        : "Resolved"}
+                    </span>
+                    {dispute.resolutionNotes && (
+                      <p className="text-[11px] text-[#7a7a9a] leading-relaxed">
+                        {dispute.resolutionNotes}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-[#f8f7fa] border border-[#e8e6f0] rounded-3xl p-4 flex flex-col gap-3">
+                    <h4 className="text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
+                      ESCROW CONTROLS
+                    </h4>
+                    <span className="text-xs font-bold text-[#1a1a2e]">
+                      {budget} held
+                    </span>
+
+                    <button
+                      onClick={() => setEscrowAction("release_to_creator")}
+                      className="h-9 w-full bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm"
+                    >
+                      Release to Creator
+                    </button>
+
+                    <button
+                      onClick={() => setEscrowAction("refund_to_brand")}
+                      className="h-9 w-full bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm"
+                    >
+                      Return to Brand
+                    </button>
+
+                    <button
+                      onClick={() => setEscrowAction("split")}
+                      className="h-9 w-full bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm"
+                    >
+                      50/50 Split Escrow
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        setEscrowAction("allow_content_submission")
+                      }
+                      className="h-8 w-full bg-white hover:bg-[#ebe9f1] text-[#5a5a7a] text-[11px] font-bold rounded-xl border border-[#e8e6f0] transition-all cursor-pointer"
+                    >
+                      Allow content submission
+                    </button>
+
+                    <button
+                      onClick={() => setEscrowAction("allow_content_review")}
+                      className="h-8 w-full bg-white hover:bg-[#ebe9f1] text-[#5a5a7a] text-[11px] font-bold rounded-xl border border-[#e8e6f0] transition-all cursor-pointer"
+                    >
+                      Allow content review
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        setEscrowAction("allow_revised_submission")
+                      }
+                      className="h-8 w-full bg-white hover:bg-[#ebe9f1] text-[#5a5a7a] text-[11px] font-bold rounded-xl border border-[#e8e6f0] transition-all cursor-pointer"
+                    >
+                      Allow revised submission
+                    </button>
+
+                    <button
+                      onClick={() => setEscrowAction("allow_revised_review")}
+                      className="h-8 w-full bg-white hover:bg-[#ebe9f1] text-[#5a5a7a] text-[11px] font-bold rounded-xl border border-[#e8e6f0] transition-all cursor-pointer"
+                    >
+                      Allow revised review
+                    </button>
+                  </div>
+                )}
+
+                {/* Resolution Summary */}
+                {showResolutionSummary && (
+                  <div className="bg-white border border-[#c0185c] rounded-3xl p-4 flex flex-col gap-3 shadow-md animate-fade-in">
+                    <h4 className="text-xs font-bold text-[#1a1a2e]">
+                      Resolution Summary
+                    </h4>
+                    <textarea
+                      rows={3}
+                      placeholder="Resolution notes (sent to both parties)…"
+                      value={resolutionNotes}
+                      onChange={(e) => setResolutionNotes(e.target.value)}
+                      className="w-full bg-[#f8f7fa] border border-[#e8e6f0] rounded-xl p-2.5 text-xs text-[#1a1a2e] placeholder-[#9a99b0] focus:outline-none focus:ring-1 focus:ring-brand-pink/30 resize-none font-medium"
+                    />
+                    <button
+                      onClick={handleConfirmResolve}
+                      disabled={isResolving}
+                      className="h-9 w-full bg-[#c0185c] hover:opacity-90 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                    >
+                      {isResolving ? "Resolving…" : "Confirm & Close Dispute"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </Portal>
+      )}
 
       {/* Escrow Action Confirmation Modal */}
       <EscrowConfirmModal

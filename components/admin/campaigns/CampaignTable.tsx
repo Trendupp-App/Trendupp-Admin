@@ -476,11 +476,8 @@ export default function CampaignTable({
               <th className="pb-3.5 pt-1 px-3 min-w-[100px] whitespace-nowrap">
                 Escrow
               </th>
-              <th className="pb-3.5 pt-1 px-3 min-w-[100px] whitespace-nowrap">
-                End Date
-              </th>
               <th className="pb-3.5 pt-1 pr-3 px-3 min-w-[100px] whitespace-nowrap">
-                Created
+                End Date
               </th>
             </tr>
           </thead>
@@ -488,7 +485,7 @@ export default function CampaignTable({
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <tr key={i} className="animate-pulse">
-                  <td className="py-3.5 pl-2" colSpan={8}>
+                  <td className="py-3.5 pl-2" colSpan={7}>
                     <div className="w-full h-4 bg-[#e8e6f0]/50 rounded-md" />
                   </td>
                 </tr>
@@ -496,7 +493,7 @@ export default function CampaignTable({
             ) : campaigns.length === 0 ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={7}
                   className="py-10 text-center text-[#9a99b0] text-xs"
                 >
                   No campaigns found matching your criteria.
@@ -528,7 +525,7 @@ export default function CampaignTable({
                       {c.brand?.name ? truncateBrandName(c.brand.name) : ""}
                     </td>
                     <td className="py-3.5 px-3 font-bold text-brand-pink whitespace-nowrap">
-                      ₦{c.budget.toLocaleString()}
+                      {c.budget.toLocaleString()}
                     </td>
                     <td className="py-3.5 px-3 font-bold text-[#1a1a2e] text-center whitespace-nowrap">
                       {c.applicationsCount}
@@ -539,11 +536,8 @@ export default function CampaignTable({
                     <td className="py-3.5 px-3 whitespace-nowrap">
                       {getEscrowChip(escrow)}
                     </td>
-                    <td className="py-3.5 px-3 text-[#5a5a7a] whitespace-nowrap">
+                    <td className="py-3.5 pr-3 px-3 text-[#5a5a7a] whitespace-nowrap">
                       {formatDate(c.endDate)}
-                    </td>
-                    <td className="py-3.5 pr-3 px-3 text-[#9a99b0] whitespace-nowrap">
-                      {formatDate(c.createdAt)}
                     </td>
                   </tr>
                 );

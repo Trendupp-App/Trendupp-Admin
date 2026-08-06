@@ -251,28 +251,15 @@ export default function CampaignDetailDrawer({
                 {activeTab === "Applications" && (
                   <CampaignApplicationsTab
                     campaignId={campaign.id}
+                    currency={campaign.currency}
                     onViewApplicationDetails={setSelectedCreatorForDrawer}
                   />
                 )}
                 {activeTab === "Selected Creators" && (
                   <SelectedCreatorsTab
-                    confirmedIds={[]}
-                    creators={[]}
-                    onViewDetails={(id) => {
-                      setSelectedCreatorForDrawer({
-                        id,
-                        name: "Creator",
-                        handle: "@creator",
-                        rating: "4.9",
-                        location: "Nigeria",
-                        role: "Impact Advocate",
-                        initials: "CR",
-                        pitch: "",
-                        contentIdea: "",
-                        platforms: "Instagram",
-                        questionComment: "",
-                      });
-                    }}
+                    campaignId={campaign.id}
+                    currency={campaign.currency}
+                    onViewApplicationDetails={setSelectedCreatorForDrawer}
                   />
                 )}
                 {activeTab === "Deliverables" && (
