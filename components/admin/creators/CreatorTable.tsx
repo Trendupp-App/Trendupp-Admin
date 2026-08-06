@@ -262,7 +262,7 @@ export default function CreatorTable() {
           gender: extractedGender,
           platforms: parsedPlatforms,
           completion: parsedCompletion,
-          campaignsCount: c.completedCampaigns ?? c.campaignsCount ?? 0,
+          campaignsCount: c.campaignsCount ?? c.completedCampaigns ?? 0,
           totalEarnings: c.totalEarnings ?? 0,
           revisionCount: revCount,
           status: normalizedStatus,
