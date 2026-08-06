@@ -418,8 +418,11 @@ export default function CampaignDetailsPage() {
         )}
         {activeTab === "Selected Creators" && (
           <SelectedCreatorsTab
+            isSocial={isSocial}
             campaignId={!isSocial ? id : undefined}
             currency={campaign?.currency}
+            creators={creatorsList}
+            confirmedIds={confirmedCreatorIds}
             onViewApplicationDetails={setSelectedCreatorForDrawer}
           />
         )}

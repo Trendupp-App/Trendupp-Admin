@@ -40,15 +40,6 @@ export function convertUsdToNgn(amountUsd: number, usdToNgnRate: number) {
   return Math.round(amountUsd * usdToNgnRate);
 }
 
-// Admin has no "current user" to gate display currency on (unlike the
-// creator app, which shows NGN when the logged-in creator is Nigerian) and
-// applications carry no per-row currency of their own — only the parent
-// campaign's `currency` says what a fee request was submitted in. Since
-// Admin is a Nigeria-based back office, always display in NGN, and keep the
-// original submitted amount alongside as a secondary value so nothing is
-// hidden. Only convert once a live rate is available — an unconverted USD
-// number under a ₦ symbol is silently wrong, not a safe fallback (see
-// currency-conversion.md).
 export function convertForDisplay(
   amount: number,
   sourceCurrency: string | undefined,

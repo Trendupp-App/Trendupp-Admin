@@ -212,6 +212,7 @@ export default function DisputeDetailView({
 
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={() => setShowAdminPanel(true)}
             title="Admin Notes & Escrow Controls"
             className="w-9 h-9 rounded-full bg-[#f4f3f6] flex items-center justify-center text-[#5a5a7a] hover:bg-[#ebe9f1] transition-colors cursor-pointer"
@@ -609,7 +610,12 @@ export default function DisputeDetailView({
               className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
               onClick={() => setShowAdminPanel(false)}
             />
-            <div className="relative z-10 w-full max-w-[380px] h-full bg-white shadow-2xl flex flex-col overflow-y-auto animate-fade-in">
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Admin controls"
+              className="relative z-10 w-full max-w-[380px] h-full bg-white shadow-2xl flex flex-col overflow-y-auto animate-fade-in"
+            >
               <div className="flex items-center justify-between p-5 border-b border-[#e8e6f0] shrink-0">
                 <h3 className="text-sm font-extrabold text-[#1a1a2e]">
                   Admin Controls
