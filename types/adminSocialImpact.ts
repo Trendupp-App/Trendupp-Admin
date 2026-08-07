@@ -50,6 +50,7 @@ export interface CreateSocialImpactCampaignDto {
   goal: string;
   brandId: string;
   creatorTiers: string[];
+  coverImage?: File;
   coverImageUrl?: string;
   campaignBrief?: string;
   deliverables?: string[];
@@ -69,6 +70,7 @@ export interface UpdateSocialImpactCampaignDto {
   goal?: string;
   brandId?: string;
   creatorTiers?: string[];
+  coverImage?: File;
   coverImageUrl?: string;
   campaignBrief?: string;
   deliverables?: string[];
