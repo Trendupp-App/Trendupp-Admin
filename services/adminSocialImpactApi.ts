@@ -21,6 +21,45 @@ export interface SocialImpactListQueryParams {
   limit?: number;
 }
 
+function appendIfDefined(form: FormData, key: string, value: unknown) {
+  if (value === undefined || value === null || value === "") return;
+  form.append(key, value as string | Blob);
+}
+
+// POST/PATCH /admin/social-impact take multipart/form-data so coverImage can
+// be uploaded as a real file instead of inlined as a data URL.
+function buildSocialImpactFormData(
+  data: CreateSocialImpactCampaignDto | UpdateSocialImpactCampaignDto,
+): FormData {
+  const formData = new FormData();
+
+  appendIfDefined(formData, "title", data.title);
+  appendIfDefined(formData, "goal", data.goal);
+  appendIfDefined(formData, "brandId", data.brandId);
+  appendIfDefined(formData, "campaignBrief", data.campaignBrief);
+  if (data.currentStep !== undefined) {
+    formData.append("currentStep", String(data.currentStep));
+  }
+  if ("isDraft" in data && data.isDraft !== undefined) {
+    formData.append("isDraft", String(data.isDraft));
+  }
+  (data.creatorTiers || []).forEach((v) => formData.append("creatorTiers", v));
+  (data.deliverables || []).forEach((v) => formData.append("deliverables", v));
+  (data.contentDirection || []).forEach((v) =>
+    formData.append("contentDirection", v),
+  );
+  (data.dos || []).forEach((v) => formData.append("dos", v));
+  (data.donts || []).forEach((v) => formData.append("donts", v));
+
+  if (data.coverImage instanceof File) {
+    formData.append("coverImage", data.coverImage);
+  } else {
+    appendIfDefined(formData, "coverImageUrl", data.coverImageUrl);
+  }
+
+  return formData;
+}
+
 export const adminSocialImpactApi = {
   // 1. Get Summary Metrics
   getSummary: () =>
@@ -37,7 +76,11 @@ export const adminSocialImpactApi = {
 
   // 3. Create Campaign (Draft or Initial Step)
   createCampaign: (payload: CreateSocialImpactCampaignDto) =>
-    apiClient.post<SocialImpactCampaign>("/admin/social-impact", payload),
+    apiClient.post<SocialImpactCampaign>(
+      "/admin/social-impact",
+      buildSocialImpactFormData(payload),
+      { headers: { "Content-Type": undefined } },
+    ),
 
   // 4. Get Campaign Details by ID
   getCampaignById: (id: string) =>
@@ -47,7 +90,8 @@ export const adminSocialImpactApi = {
   updateCampaign: (id: string, payload: UpdateSocialImpactCampaignDto) =>
     apiClient.patch<SocialImpactCampaign>(
       `/admin/social-impact/${id}`,
-      payload,
+      buildSocialImpactFormData(payload),
+      { headers: { "Content-Type": undefined } },
     ),
 
   // 6. Delete Campaign
