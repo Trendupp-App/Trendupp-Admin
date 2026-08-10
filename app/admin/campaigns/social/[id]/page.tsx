@@ -110,7 +110,7 @@ export default function SocialImpactDetailsPage({
       await extendDeadlineMutation.mutateAsync({
         id,
         payload: {
-          endDate: newDeadline || undefined,
+          newDeadline: newDeadline || "",
           reason: reason || undefined,
         },
       });
