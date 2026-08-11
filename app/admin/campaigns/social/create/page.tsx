@@ -1101,38 +1101,42 @@ export default function CreateCampaignPage() {
 
                 {isPlatformDropdownOpen && (
                   <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-white border border-[#e8e6f0] rounded-2xl p-2.5 shadow-xl flex flex-col gap-1">
-                    {["Instagram", "TikTok", "YouTube", "X (Twitter)"].map(
-                      (plat) => {
-                        const isSelected = selectedPlatforms.includes(plat);
-                        return (
-                          <div
-                            key={plat}
-                            onClick={() => handleTogglePlatform(plat)}
-                            className={cn(
-                              "flex items-center justify-between px-3 py-2.5 rounded-xl border transition-all cursor-pointer select-none text-xs",
-                              isSelected
-                                ? "bg-[#fff0f5] border-[#fbcfe8] text-[#1a1a2e] font-bold"
-                                : "bg-white border-transparent text-[#5a5a7a] hover:bg-[#faf9fc]",
-                            )}
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={() => {}}
-                                className="accent-brand-pink shrink-0 cursor-pointer"
-                              />
-                              <span>{plat}</span>
-                            </div>
-                            {isSelected && (
-                              <span className="text-[10px] text-brand-pink font-extrabold">
-                                Selected
-                              </span>
-                            )}
+                    {[
+                      "Instagram",
+                      "TikTok",
+                      "YouTube",
+                      "X (Twitter)",
+                      "Facebook",
+                    ].map((plat) => {
+                      const isSelected = selectedPlatforms.includes(plat);
+                      return (
+                        <div
+                          key={plat}
+                          onClick={() => handleTogglePlatform(plat)}
+                          className={cn(
+                            "flex items-center justify-between px-3 py-2.5 rounded-xl border transition-all cursor-pointer select-none text-xs",
+                            isSelected
+                              ? "bg-[#fff0f5] border-[#fbcfe8] text-[#1a1a2e] font-bold"
+                              : "bg-white border-transparent text-[#5a5a7a] hover:bg-[#faf9fc]",
+                          )}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {}}
+                              className="accent-brand-pink shrink-0 cursor-pointer"
+                            />
+                            <span>{plat}</span>
                           </div>
-                        );
-                      },
-                    )}
+                          {isSelected && (
+                            <span className="text-[10px] text-brand-pink font-extrabold">
+                              Selected
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1497,7 +1501,7 @@ export default function CreateCampaignPage() {
             </button>
             <button
               onClick={handleContinue}
-              className="h-10 px-5 bg-brand-pink text-white text-xs font-bold rounded-xl hover:opacity-90 transition-all cursor-pointer flex items-center gap-1.5 select-none font-sans"
+              className="h-10 px-5 bg-brand-pink text-white text-xs font-bold rounded-xl hover:opacity-90 transition-all cursor-pointer flex items-center gap-1.5 select-none"
             >
               {step === 3 ? "Publish" : "Continue"} <ArrowRight size={13} />
             </button>
