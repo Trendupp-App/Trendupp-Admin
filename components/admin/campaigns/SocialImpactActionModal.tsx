@@ -48,8 +48,7 @@ export default function SocialImpactActionModal({
     actionType === "reject-participant";
 
   const requiresDeadline = actionType === "extend-deadline";
-  const allowsDeadline =
-    actionType === "pause" || actionType === "extend-deadline";
+  const allowsDeadline = actionType === "extend-deadline";
 
   const getActionConfig = () => {
     switch (actionType) {

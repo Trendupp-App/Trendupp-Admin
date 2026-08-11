@@ -118,7 +118,7 @@ export interface CancelCampaignDto {
 }
 
 export interface ExtendDeadlineDto {
-  endDate?: string;
+  newDeadline: string;
   reason?: string;
 }
 

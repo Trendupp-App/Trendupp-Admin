@@ -130,30 +130,104 @@ export const adminSocialImpactApi = {
     ),
 
   // 11. Pause Campaign
-  pauseCampaign: (id: string, payload: PauseCampaignDto) =>
-    apiClient.post<SocialImpactCampaign>(
-      `/admin/social-impact/${id}/pause`,
-      payload,
-    ),
+  pauseCampaign: async (id: string, payload: PauseCampaignDto) => {
+    try {
+      return await apiClient.patch<SocialImpactCampaign>(
+        `/admin/social-impact/${id}/pause`,
+        payload,
+      );
+    } catch {
+      try {
+        return await apiClient.post<SocialImpactCampaign>(
+          `/admin/social-impact/${id}/pause`,
+          payload,
+        );
+      } catch {
+        try {
+          return await apiClient.patch<SocialImpactCampaign>(
+            `/admin/campaigns/${id}/pause`,
+            payload,
+          );
+        } catch {
+          return await apiClient.post<SocialImpactCampaign>(
+            `/admin/campaigns/${id}/pause`,
+            payload,
+          );
+        }
+      }
+    }
+  },
 
   // 12. Cancel Campaign
-  cancelCampaign: (id: string, payload: CancelCampaignDto) =>
-    apiClient.post<SocialImpactCampaign>(
-      `/admin/social-impact/${id}/cancel`,
-      payload,
-    ),
+  cancelCampaign: async (id: string, payload: CancelCampaignDto) => {
+    try {
+      return await apiClient.patch<SocialImpactCampaign>(
+        `/admin/social-impact/${id}/cancel`,
+        payload,
+      );
+    } catch {
+      try {
+        return await apiClient.post<SocialImpactCampaign>(
+          `/admin/social-impact/${id}/cancel`,
+          payload,
+        );
+      } catch {
+        try {
+          return await apiClient.patch<SocialImpactCampaign>(
+            `/admin/campaigns/${id}/cancel`,
+            payload,
+          );
+        } catch {
+          return await apiClient.post<SocialImpactCampaign>(
+            `/admin/campaigns/${id}/cancel`,
+            payload,
+          );
+        }
+      }
+    }
+  },
 
   // 13. Extend Deadline
-  extendDeadline: (id: string, payload: ExtendDeadlineDto) =>
-    apiClient.post<SocialImpactCampaign>(
-      `/admin/social-impact/${id}/extend-deadline`,
-      payload,
-    ),
+  extendDeadline: async (id: string, payload: ExtendDeadlineDto) => {
+    try {
+      return await apiClient.patch<SocialImpactCampaign>(
+        `/admin/social-impact/${id}/extend-deadline`,
+        payload,
+      );
+    } catch {
+      try {
+        return await apiClient.post<SocialImpactCampaign>(
+          `/admin/social-impact/${id}/extend-deadline`,
+          payload,
+        );
+      } catch {
+        return await apiClient.put<SocialImpactCampaign>(
+          `/admin/social-impact/${id}/extend-deadline`,
+          payload,
+        );
+      }
+    }
+  },
 
   // 14. Close Applications
-  closeApplications: (id: string, payload: CloseApplicationsDto) =>
-    apiClient.post<SocialImpactCampaign>(
-      `/admin/social-impact/${id}/close-applications`,
-      payload,
-    ),
+  closeApplications: async (id: string, payload: CloseApplicationsDto) => {
+    try {
+      return await apiClient.patch<SocialImpactCampaign>(
+        `/admin/social-impact/${id}/close-applications`,
+        payload,
+      );
+    } catch {
+      try {
+        return await apiClient.post<SocialImpactCampaign>(
+          `/admin/social-impact/${id}/close-applications`,
+          payload,
+        );
+      } catch {
+        return await apiClient.put<SocialImpactCampaign>(
+          `/admin/social-impact/${id}/close-applications`,
+          payload,
+        );
+      }
+    }
+  },
 };
