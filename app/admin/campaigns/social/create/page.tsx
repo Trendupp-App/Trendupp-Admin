@@ -83,6 +83,16 @@ export default function CreateCampaignPage() {
 
   // Step 1 state
   const [preview, setPreview] = useState<string>("");
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+
+  // preview is a local blob: URL while a new file is staged (never sent to
+  // the server — only the File itself is); release it when replaced/unmounted.
+  useEffect(() => {
+    return () => {
+      if (preview.startsWith("blob:")) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
+
   const [title, setTitle] = useState("");
   const [goal, setGoal] = useState("Amplify Content");
   const [contentLink, setContentLink] = useState("");
@@ -175,9 +185,14 @@ export default function CreateCampaignPage() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    setPreview(url);
+
+    // /admin/social-impact now accepts multipart/form-data, so the actual
+    // File is sent as coverImage and the server returns a real hosted URL.
+    // The blob: URL here is only a local preview and is never submitted.
+    setCoverImageFile(file);
+    setPreview(URL.createObjectURL(file));
   };
 
   const filteredAdvertisers = liveBrands.filter((adv) =>
@@ -226,7 +241,9 @@ export default function CreateCampaignPage() {
         goal,
         selectedAdvertisers,
         tier,
-        preview,
+        // blob: URLs only resolve in this tab's memory — don't cache a dead
+        // reference that would render broken after a reload.
+        preview: preview.startsWith("http") ? preview : "",
         desc,
         deliverables,
         directions,
@@ -257,7 +274,9 @@ export default function CreateCampaignPage() {
         goal,
         selectedAdvertisers,
         tier,
-        preview,
+        // blob: URLs only resolve in this tab's memory — don't cache a dead
+        // reference that would render broken after a reload.
+        preview: preview.startsWith("http") ? preview : "",
         desc,
         deliverables,
         directions,
@@ -470,7 +489,9 @@ export default function CreateCampaignPage() {
             .map((t) => t.trim())
             .filter(Boolean)
         : ["Micro", "Nano"],
-      coverImageUrl: preview || undefined,
+      coverImage: coverImageFile || undefined,
+      coverImageUrl:
+        !coverImageFile && preview.startsWith("http") ? preview : undefined,
       campaignBrief: desc || undefined,
       deliverables: deliverables.filter(Boolean),
       contentDirection: directions.filter(Boolean),
@@ -493,7 +514,9 @@ export default function CreateCampaignPage() {
             .map((t) => t.trim())
             .filter(Boolean)
         : ["Micro", "Nano"],
-      coverImageUrl: preview || undefined,
+      coverImage: coverImageFile || undefined,
+      coverImageUrl:
+        !coverImageFile && preview.startsWith("http") ? preview : undefined,
       campaignBrief: desc || undefined,
       deliverables: deliverables.filter(Boolean),
       contentDirection: directions.filter(Boolean),

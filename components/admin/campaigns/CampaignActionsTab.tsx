@@ -7,10 +7,10 @@ import {
   Pause,
   Play,
   X,
-  Lock,
-  Unlock,
-  Calendar,
-  Check,
+  // Lock,
+  // Unlock,
+  // Calendar,
+  // Check,
   CheckCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -47,14 +47,15 @@ const ACTION_DEFS: ActionDef[] = [
     color: "text-[#16a34a] bg-[#f0fdf4]",
     visibleFor: (s) => s === "submitted",
   },
-  {
-    key: "pause",
-    title: "Pause Campaign",
-    desc: "Temporarily suspend all campaign activity",
-    icon: Pause,
-    color: "text-[#f59e0b] bg-[#fff7ed]",
-    visibleFor: (s) => s === "live" || s === "active",
-  },
+  // Commented out for now — using Cancel Campaign instead. Revisit later.
+  // {
+  //   key: "pause",
+  //   title: "Pause Campaign",
+  //   desc: "Temporarily suspend all campaign activity",
+  //   icon: Pause,
+  //   color: "text-[#f59e0b] bg-[#fff7ed]",
+  //   visibleFor: (s) => s === "live" || s === "active",
+  // },
   {
     key: "resume",
     title: "Resume Campaign",
@@ -69,42 +70,43 @@ const ACTION_DEFS: ActionDef[] = [
     desc: "Permanently cancel this campaign",
     icon: X,
     color: "text-[#dc2626] bg-[#fef2f2]",
-    visibleFor: (s) => !!s && !["completed", "cancelled"].includes(s),
+    visibleFor: (s) =>
+      !!s && !["completed", "cancelled", "active", "live"].includes(s),
   },
 ];
 
-const UNAVAILABLE_ACTIONS = [
-  {
-    title: "Hold Escrow Funds",
-    desc: "Freeze escrow pending investigation",
-    icon: Lock,
-    color: "text-[#7c3aed] bg-[#f5f3ff]",
-  },
-  {
-    title: "Release Escrow Funds",
-    desc: "Manually release funds to creator",
-    icon: Unlock,
-    color: "text-[#2563eb] bg-[#eff6ff]",
-  },
-  {
-    title: "Refund Campaign",
-    desc: "Initiate refund to brand",
-    icon: RefreshCw,
-    color: "text-[#92400e] bg-[#fff7ed]",
-  },
-  {
-    title: "Extend Application Deadline",
-    desc: "Give more time for applications",
-    icon: Calendar,
-    color: "text-brand-pink bg-[#fff1f2]",
-  },
-  {
-    title: "Trigger Manual Verification",
-    desc: "Manually verify posted content",
-    icon: Check,
-    color: "text-[#16a34a] bg-[#f0fdf4]",
-  },
-];
+// const UNAVAILABLE_ACTIONS = [
+//   {
+//     title: "Hold Escrow Funds",
+//     desc: "Freeze escrow pending investigation",
+//     icon: Lock,
+//     color: "text-[#7c3aed] bg-[#f5f3ff]",
+//   },
+//   {
+//     title: "Release Escrow Funds",
+//     desc: "Manually release funds to creator",
+//     icon: Unlock,
+//     color: "text-[#2563eb] bg-[#eff6ff]",
+//   },
+//   {
+//     title: "Refund Campaign",
+//     desc: "Initiate refund to brand",
+//     icon: RefreshCw,
+//     color: "text-[#92400e] bg-[#fff7ed]",
+//   },
+//   {
+//     title: "Extend Application Deadline",
+//     desc: "Give more time for applications",
+//     icon: Calendar,
+//     color: "text-brand-pink bg-[#fff1f2]",
+//   },
+//   {
+//     title: "Trigger Manual Verification",
+//     desc: "Manually verify posted content",
+//     icon: Check,
+//     color: "text-[#16a34a] bg-[#f0fdf4]",
+//   },
+// ];
 
 export default function CampaignActionsTab({
   campaignId,
@@ -199,6 +201,7 @@ export default function CampaignActionsTab({
           </button>
         ))}
 
+        {/* Not implemented yet — revisit later.
         {UNAVAILABLE_ACTIONS.map((act, i) => (
           <div
             key={i}
@@ -227,6 +230,7 @@ export default function CampaignActionsTab({
             </span>
           </div>
         ))}
+        */}
       </div>
 
       <AdminActionModal
