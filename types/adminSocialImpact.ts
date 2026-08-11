@@ -107,7 +107,8 @@ export interface PaginatedParticipantsResponse {
   totalPages: number;
 }
 
-export interface PauseCampaignDto {
+export interface UpdateSocialImpactStatusDto {
+  action: "pause" | "resume";
   reason: string;
 }
 

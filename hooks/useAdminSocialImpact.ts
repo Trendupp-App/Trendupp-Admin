@@ -5,9 +5,10 @@ import {
 } from "@/services/adminSocialImpactApi";
 import type {
   SocialImpactSummaryDto,
+  SocialImpactCampaign,
   CreateSocialImpactCampaignDto,
   UpdateSocialImpactCampaignDto,
-  PauseCampaignDto,
+  UpdateSocialImpactStatusDto,
   CancelCampaignDto,
   ExtendDeadlineDto,
   CloseApplicationsDto,
@@ -59,7 +60,17 @@ export function useAdminSocialImpactDetails(
     queryKey: ["admin-social-impact-details", id],
     queryFn: async () => {
       const res = await adminSocialImpactApi.getCampaignById(id);
-      return res.data;
+      const data = res.data as
+        SocialImpactCampaign | { data: SocialImpactCampaign };
+      if (
+        data &&
+        typeof data === "object" &&
+        "data" in data &&
+        !("id" in data)
+      ) {
+        return (data as { data: SocialImpactCampaign }).data;
+      }
+      return data as SocialImpactCampaign;
     },
     enabled: Boolean(id) && enabled,
   });
@@ -234,12 +245,36 @@ export function useRejectParticipant() {
   });
 }
 
-export function usePauseSocialImpactCampaign() {
+export function useUpdateSocialImpactStatus() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: PauseCampaignDto }) =>
-      adminSocialImpactApi.pauseCampaign(id, payload),
-    onSuccess: (_, { id }) => {
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: UpdateSocialImpactStatusDto;
+    }) => adminSocialImpactApi.updateStatus(id, payload),
+    onSuccess: (res, { id, payload }) => {
+      const nextStatus = payload.action === "resume" ? "Live" : "Paused";
+      const body = res.data as
+        SocialImpactCampaign | { data: SocialImpactCampaign } | undefined;
+      const updated =
+        body && typeof body === "object" && "data" in body && !("id" in body)
+          ? (body as { data: SocialImpactCampaign }).data
+          : (body as SocialImpactCampaign | undefined);
+
+      queryClient.setQueryData(
+        ["admin-social-impact-details", id],
+        (prev: SocialImpactCampaign | undefined) => {
+          if (!prev) return updated;
+          return {
+            ...prev,
+            ...(updated || {}),
+            status: updated?.status || nextStatus,
+          };
+        },
+      );
       queryClient.invalidateQueries({
         queryKey: ["admin-social-impact-summary"],
       });
@@ -249,10 +284,19 @@ export function usePauseSocialImpactCampaign() {
       queryClient.invalidateQueries({
         queryKey: ["admin-social-impact-details", id],
       });
-      toast.success("Campaign paused successfully");
+      toast.success(
+        payload.action === "resume"
+          ? "Campaign resumed successfully"
+          : "Campaign paused successfully",
+      );
     },
-    onError: (err: AxiosError<{ message?: string }>) => {
-      toast.error(err.response?.data?.message || "Failed to pause campaign");
+    onError: (err: AxiosError<{ message?: string }>, { payload }) => {
+      toast.error(
+        err.response?.data?.message ||
+          (payload.action === "resume"
+            ? "Failed to resume campaign"
+            : "Failed to pause campaign"),
+      );
     },
   });
 }

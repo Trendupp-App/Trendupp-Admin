@@ -203,7 +203,7 @@ export default function AdminSidebar() {
     }
   };
 
-  const roleLabel = formatRole(user?.role);
+  const roleLabel = user?.displayName || formatRole(user?.role);
 
   const handleLogout = () => {
     useAuthStore.setState({ accessToken: null, user: null });

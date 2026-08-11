@@ -7,7 +7,7 @@ import type {
   UpdateSocialImpactCampaignDto,
   SocialImpactParticipant,
   PaginatedParticipantsResponse,
-  PauseCampaignDto,
+  UpdateSocialImpactStatusDto,
   CancelCampaignDto,
   ExtendDeadlineDto,
   CloseApplicationsDto,
@@ -85,34 +85,12 @@ export const adminSocialImpactApi = {
       payload,
     ),
 
-  // 11. Pause Campaign
-  pauseCampaign: async (id: string, payload: PauseCampaignDto) => {
-    try {
-      return await apiClient.patch<SocialImpactCampaign>(
-        `/admin/social-impact/${id}/pause`,
-        payload,
-      );
-    } catch {
-      try {
-        return await apiClient.post<SocialImpactCampaign>(
-          `/admin/social-impact/${id}/pause`,
-          payload,
-        );
-      } catch {
-        try {
-          return await apiClient.patch<SocialImpactCampaign>(
-            `/admin/campaigns/${id}/pause`,
-            payload,
-          );
-        } catch {
-          return await apiClient.post<SocialImpactCampaign>(
-            `/admin/campaigns/${id}/pause`,
-            payload,
-          );
-        }
-      }
-    }
-  },
+  // 11. Pause / Resume Campaign
+  updateStatus: (id: string, payload: UpdateSocialImpactStatusDto) =>
+    apiClient.post<SocialImpactCampaign>(
+      `/admin/social-impact/${id}/status`,
+      payload,
+    ),
 
   // 12. Cancel Campaign
   cancelCampaign: async (id: string, payload: CancelCampaignDto) => {

@@ -10,6 +10,8 @@ export interface AuthUser {
   firstName: string;
   lastName: string;
   role: UserRole;
+  displayName?: string;
+  isActive?: boolean;
   isEmailVerified: boolean;
   onboardingPercentage?: number;
   onboardingStepsCompleted?: Record<string, boolean>;
