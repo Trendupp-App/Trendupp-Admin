@@ -50,6 +50,7 @@ export interface CreateSocialImpactCampaignDto {
   goal: string;
   brandId: string;
   creatorTiers: string[];
+  coverImage?: File;
   coverImageUrl?: string;
   campaignBrief?: string;
   deliverables?: string[];
@@ -69,6 +70,7 @@ export interface UpdateSocialImpactCampaignDto {
   goal?: string;
   brandId?: string;
   creatorTiers?: string[];
+  coverImage?: File;
   coverImageUrl?: string;
   campaignBrief?: string;
   deliverables?: string[];
@@ -107,7 +109,8 @@ export interface PaginatedParticipantsResponse {
   totalPages: number;
 }
 
-export interface PauseCampaignDto {
+export interface UpdateSocialImpactStatusDto {
+  action: "pause" | "resume";
   reason: string;
 }
 
@@ -116,7 +119,7 @@ export interface CancelCampaignDto {
 }
 
 export interface ExtendDeadlineDto {
-  endDate?: string;
+  newDeadline: string;
   reason?: string;
 }
 

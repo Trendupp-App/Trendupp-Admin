@@ -8,7 +8,7 @@ import {
   ArrowRight,
   Check,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 import UserAvatar from "@/shared/UserAvatar";
 import {
   useSubmissions,
@@ -92,12 +92,6 @@ const formatRelativeTime = (dateStr: string) => {
     day: "numeric",
     year: "numeric",
   })}`;
-};
-
-const getInitials = (firstName?: string, lastName?: string) => {
-  const initials =
-    `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase();
-  return initials || "?";
 };
 
 const getContentLink = (sub: CampaignSubmission) => {

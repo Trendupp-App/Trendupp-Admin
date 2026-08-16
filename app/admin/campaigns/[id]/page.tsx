@@ -3,13 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import {
-  ArrowLeft,
-  Download,
-  ChevronDown,
-  Image as ImageIcon,
-  AlertTriangle,
-} from "lucide-react";
+import { ArrowLeft, Image as ImageIcon, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCampaign } from "@/hooks/useCampaign";
 
@@ -21,7 +15,6 @@ import CampaignDeliverablesTab from "@/components/admin/campaigns/CampaignDelive
 import CampaignAnalyticsTab from "@/components/admin/campaigns/CampaignAnalyticsTab";
 import CampaignTimelineTab from "@/components/admin/campaigns/CampaignTimelineTab";
 import CampaignActionsTab from "@/components/admin/campaigns/CampaignActionsTab";
-import CampaignAuditLogTab from "@/components/admin/campaigns/CampaignAuditLogTab";
 import CampaignCreatorDrawer, {
   type CreatorDrawerData,
 } from "@/components/admin/campaigns/CampaignCreatorDrawer";
@@ -36,8 +29,7 @@ type TabType =
   | "Analytics"
   | "Activity Timeline"
   | "Admin Actions"
-  | "Admin Action"
-  | "Audit Log";
+  | "Admin Action";
 
 const MOCK_SOCIAL_CAMPAIGNS = [
   {
@@ -275,7 +267,6 @@ export default function CampaignDetailsPage() {
         { key: "Analytics", label: "Analytics" },
         { key: "Activity Timeline", label: "Activity Timeline" },
         { key: "Admin Actions", label: "Admin Actions" },
-        { key: "Audit Log", label: "Audit Log" },
       ];
 
   const STATUS_LABELS: Record<string, string> = {
@@ -346,7 +337,7 @@ export default function CampaignDetailsPage() {
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6 md:p-8 relative min-h-screen animate-fade-in-up w-full max-w-full overflow-x-hidden">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between items-start gap-4">
+      <div className="flex items-start gap-4">
         <div className="flex items-center gap-3">
           <Link
             href={isSocial ? "/admin/campaigns/social" : "/admin/campaigns"}
@@ -384,15 +375,6 @@ export default function CampaignDetailsPage() {
               {subtitle}
             </span>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
-          <button className="h-9 px-4 border border-[#e8e6f0] text-xs font-bold text-[#5a5a7a] rounded-xl hover:bg-[#faf9fc] transition-colors cursor-pointer flex items-center gap-1.5">
-            <Download size={13} /> Export
-          </button>
-          <button className="h-9 px-4 bg-brand-pink text-white text-xs font-bold rounded-xl hover:opacity-90 transition-all cursor-pointer flex items-center gap-1">
-            Admin Actions <ChevronDown size={13} />
-          </button>
         </div>
       </div>
 
@@ -436,10 +418,12 @@ export default function CampaignDetailsPage() {
         )}
         {activeTab === "Selected Creators" && (
           <SelectedCreatorsTab
-            confirmedIds={confirmedCreatorIds}
+            isSocial={isSocial}
+            campaignId={!isSocial ? id : undefined}
+            currency={campaign?.currency}
             creators={creatorsList}
-            onViewDetails={handleOpenDrawer}
-            onReject={handleRejectCreator}
+            confirmedIds={confirmedCreatorIds}
+            onViewApplicationDetails={setSelectedCreatorForDrawer}
           />
         )}
         {activeTab === "Deliverables" && (
@@ -469,7 +453,9 @@ export default function CampaignDetailsPage() {
             ))}
           </div>
         )}
-        {activeTab === "Analytics" && <CampaignAnalyticsTab campaignId={id} />}
+        {activeTab === "Analytics" && (
+          <CampaignAnalyticsTab campaignId={id} isSocial={isSocial} />
+        )}
         {activeTab === "Activity Timeline" && (
           <CampaignTimelineTab campaignId={id} />
         )}
@@ -479,7 +465,6 @@ export default function CampaignDetailsPage() {
             campaignStatus={campaign?.status}
           />
         )}
-        {activeTab === "Audit Log" && <CampaignAuditLogTab campaignId={id} />}
       </div>
 
       {/* Creator Details Drawer */}

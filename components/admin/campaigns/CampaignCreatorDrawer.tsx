@@ -256,18 +256,24 @@ export default function CampaignCreatorDrawer({
                       <label className="text-[10px] font-bold text-[#5a5a7a]">
                         Reply to creator
                       </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
+                      <div className="flex gap-2 items-end">
+                        <textarea
                           value={replyText}
                           onChange={(e) => setReplyText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSend();
+                            }
+                          }}
                           placeholder="Write a response..."
-                          className="flex-1 h-9 px-3 text-xs bg-white border border-[#e8e6f0] rounded-xl outline-none focus:border-brand-pink transition-colors"
+                          rows={2}
+                          className="flex-1 px-3 py-2 text-xs bg-white border border-[#e8e6f0] rounded-xl outline-none focus:border-brand-pink transition-colors resize-none"
                         />
                         <button
                           onClick={handleSend}
                           disabled={!replyText.trim()}
-                          className="h-9 px-3 bg-brand-pink text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 hover:opacity-90 disabled:opacity-50 transition-all cursor-pointer"
+                          className="h-9 px-3 bg-brand-pink text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 hover:opacity-90 disabled:opacity-50 transition-all cursor-pointer shrink-0"
                         >
                           <Send size={12} /> Send
                         </button>

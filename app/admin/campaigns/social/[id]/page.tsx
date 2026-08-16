@@ -10,6 +10,7 @@ import {
   Ticket,
   Users,
   PauseCircle,
+  PlayCircle,
   Ban,
   Clock,
   XCircle,
@@ -28,7 +29,7 @@ import {
   useAdminSocialImpactParticipants,
   useApproveParticipant,
   useRejectParticipant,
-  usePauseSocialImpactCampaign,
+  useUpdateSocialImpactStatus,
   useCancelSocialImpactCampaign,
   useExtendSocialImpactDeadline,
   useCloseSocialImpactApplications,
@@ -74,7 +75,7 @@ export default function SocialImpactDetailsPage({
 
   const approveMutation = useApproveParticipant();
   const rejectMutation = useRejectParticipant();
-  const pauseMutation = usePauseSocialImpactCampaign();
+  const statusMutation = useUpdateSocialImpactStatus();
   const cancelMutation = useCancelSocialImpactCampaign();
   const extendDeadlineMutation = useExtendSocialImpactDeadline();
   const closeApplicationsMutation = useCloseSocialImpactApplications();
@@ -90,16 +91,26 @@ export default function SocialImpactDetailsPage({
   const handleActionConfirm = async ({
     reason,
     newDeadline,
+    action,
   }: {
     reason?: string;
     newDeadline?: string;
+    action?: "pause" | "resume";
   }) => {
     const type = actionModal.type;
 
-    if (type === "pause") {
-      await pauseMutation.mutateAsync({
+    if (type === "pause" || type === "resume") {
+      const statusAction = action || type;
+      await statusMutation.mutateAsync({
         id,
-        payload: { reason: reason || "Paused by admin" },
+        payload: {
+          action: statusAction,
+          reason:
+            reason ||
+            (statusAction === "resume"
+              ? "Resumed by admin"
+              : "Paused by admin"),
+        },
       });
     } else if (type === "cancel") {
       await cancelMutation.mutateAsync({
@@ -110,7 +121,7 @@ export default function SocialImpactDetailsPage({
       await extendDeadlineMutation.mutateAsync({
         id,
         payload: {
-          endDate: newDeadline || undefined,
+          newDeadline: newDeadline || "",
           reason: reason || undefined,
         },
       });
@@ -266,6 +277,9 @@ export default function SocialImpactDetailsPage({
   };
 
   const statusStyle = getStatusBadgeStyle(campaignData.status);
+  const normalizedStatus = (campaignData.status || "Live").toLowerCase();
+  const canPause = normalizedStatus === "live" || normalizedStatus === "active";
+  const canResume = normalizedStatus === "paused";
 
   return (
     <div className="flex flex-col gap-6 p-6 md:p-8 text-left animate-fade-in-up">
@@ -324,15 +338,28 @@ export default function SocialImpactDetailsPage({
             {/* Dropdown Menu */}
             {showAdminDropdown && (
               <div className="absolute right-0 top-11 w-48 bg-white border border-[#e8e6f0] rounded-2xl shadow-lg p-1.5 flex flex-col gap-1 z-50 animate-fade-in-up text-xs font-bold">
-                <button
-                  onClick={() => {
-                    setShowAdminDropdown(false);
-                    setActionModal({ isOpen: true, type: "pause" });
-                  }}
-                  className="px-3 py-2 text-left rounded-xl hover:bg-[#fff7ed] text-[#ea580c] transition-colors flex items-center gap-2 cursor-pointer"
-                >
-                  <PauseCircle size={14} /> Pause Campaign
-                </button>
+                {canPause && (
+                  <button
+                    onClick={() => {
+                      setShowAdminDropdown(false);
+                      setActionModal({ isOpen: true, type: "pause" });
+                    }}
+                    className="px-3 py-2 text-left rounded-xl hover:bg-[#fff7ed] text-[#ea580c] transition-colors flex items-center gap-2 cursor-pointer"
+                  >
+                    <PauseCircle size={14} /> Pause Campaign
+                  </button>
+                )}
+                {canResume && (
+                  <button
+                    onClick={() => {
+                      setShowAdminDropdown(false);
+                      setActionModal({ isOpen: true, type: "resume" });
+                    }}
+                    className="px-3 py-2 text-left rounded-xl hover:bg-[#f0fdf4] text-[#16a34a] transition-colors flex items-center gap-2 cursor-pointer"
+                  >
+                    <PlayCircle size={14} /> Resume Campaign
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     setShowAdminDropdown(false);
@@ -415,7 +442,12 @@ export default function SocialImpactDetailsPage({
                     }}
                     className="w-full h-full object-cover"
                   />
-                  <span className="absolute bottom-3 right-3 bg-[#16a34a] text-white text-[10px] font-bold px-3 py-1 rounded-full">
+                  <span
+                    className={cn(
+                      "absolute bottom-3 right-3 text-white text-[10px] font-bold px-3 py-1 rounded-full",
+                      statusStyle.dot,
+                    )}
+                  >
                     {campaignData.status || "Live"}
                   </span>
                 </div>
@@ -536,15 +568,18 @@ export default function SocialImpactDetailsPage({
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center pt-2">
-                  <span className="text-[#7a7a9a] font-semibold">
-                    Token Reward
-                  </span>
-                  <span className="font-bold text-brand-pink flex items-center gap-1">
-                    <Ticket size={14} />
-                    {campaignData?.tokensReward ?? 100} Tokens
-                  </span>
-                </div>
+                {String(campaignData?.status || "").toLowerCase() ===
+                  "completed" && (
+                  <div className="flex justify-between items-center pt-2">
+                    <span className="text-[#7a7a9a] font-semibold">
+                      Token Reward
+                    </span>
+                    <span className="font-bold text-brand-pink flex items-center gap-1">
+                      <Ticket size={14} />
+                      {campaignData?.tokensReward ?? 100} Tokens
+                    </span>
+                  </div>
+                )}
 
                 <div className="flex justify-between items-center pt-2">
                   <span className="text-[#7a7a9a] font-semibold">
@@ -751,20 +786,37 @@ export default function SocialImpactDetailsPage({
       {/* TAB CONTENT: Admin Action Cards Grid (Mockup Image 3) */}
       {activeTab === "Admin Action" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
-          {/* Pause Campaign Card */}
-          <div
-            onClick={() => setActionModal({ isOpen: true, type: "pause" })}
-            className="bg-white border border-[#fef08a] hover:border-[#fde047] rounded-3xl p-6 flex items-center gap-4 transition-all cursor-pointer shadow-xs hover:shadow-md group"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-[#fefce8] text-[#ca8a04] flex items-center justify-center shrink-0 border border-[#fef9c3]">
-              <PauseCircle size={20} />
+          {canPause && (
+            <div
+              onClick={() => setActionModal({ isOpen: true, type: "pause" })}
+              className="bg-white border border-[#fef08a] hover:border-[#fde047] rounded-3xl p-6 flex items-center gap-4 transition-all cursor-pointer shadow-xs hover:shadow-md group"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-[#fefce8] text-[#ca8a04] flex items-center justify-center shrink-0 border border-[#fef9c3]">
+                <PauseCircle size={20} />
+              </div>
+              <div className="flex flex-col">
+                <h4 className="text-sm font-bold text-[#1a1a2e] group-hover:text-[#ca8a04] transition-colors">
+                  Pause Campaign
+                </h4>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <h4 className="text-sm font-bold text-[#1a1a2e] group-hover:text-[#ca8a04] transition-colors">
-                Pause Campaign
-              </h4>
+          )}
+
+          {canResume && (
+            <div
+              onClick={() => setActionModal({ isOpen: true, type: "resume" })}
+              className="bg-white border border-[#bbf7d0] hover:border-[#86efac] rounded-3xl p-6 flex items-center gap-4 transition-all cursor-pointer shadow-xs hover:shadow-md group"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-[#f0fdf4] text-[#16a34a] flex items-center justify-center shrink-0 border border-[#dcfce7]">
+                <PlayCircle size={20} />
+              </div>
+              <div className="flex flex-col">
+                <h4 className="text-sm font-bold text-[#1a1a2e] group-hover:text-[#16a34a] transition-colors">
+                  Resume Campaign
+                </h4>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Extend Deadline Card */}
           <div
@@ -804,13 +856,14 @@ export default function SocialImpactDetailsPage({
 
       {/* Action Modal Dialog */}
       <SocialImpactActionModal
+        key={`${actionModal.type}-${actionModal.isOpen}`}
         isOpen={actionModal.isOpen}
         onClose={() => setActionModal({ isOpen: false, type: "pause" })}
         actionType={actionModal.type}
         title={campaignData.title}
         onConfirm={handleActionConfirm}
         isLoading={
-          pauseMutation.isPending ||
+          statusMutation.isPending ||
           cancelMutation.isPending ||
           extendDeadlineMutation.isPending ||
           closeApplicationsMutation.isPending ||

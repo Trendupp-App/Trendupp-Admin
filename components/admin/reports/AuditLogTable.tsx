@@ -18,11 +18,7 @@ import { cn } from "@/lib/utils";
 import { useDebouncedValue } from "@/hooks/useDebounceValue";
 import { useAdminAuditActions, useAdminAuditLogs } from "@/hooks/useAdminAudit";
 import type { AuditLogItem } from "@/types/adminAudit";
-import {
-  MASTER_TRACKABLE_ACTIONS,
-  parseAuditDiff,
-  exportAuditLogsToCSV,
-} from "@/lib/adminAuditUtils";
+import { parseAuditDiff, exportAuditLogsToCSV } from "@/lib/adminAuditUtils";
 import { usePermission } from "@/hooks/usePermission";
 
 const PAGE_SIZE = 10;
@@ -157,7 +153,7 @@ export default function AuditLogTable() {
               )}
             </div>
 
-            {/* Action Dropdown Grouped by Module */}
+            {/* Action Dropdown populated ONLY from /api/v1/admin/audit-logs/actions API */}
             <div className="relative">
               <select
                 value={selectedAction}
@@ -173,26 +169,11 @@ export default function AuditLogTable() {
                 )}
               >
                 <option value="">Filter: Action</option>
-                {Object.entries(MASTER_TRACKABLE_ACTIONS).map(
-                  ([moduleName, actionList]) => (
-                    <optgroup key={moduleName} label={moduleName}>
-                      {actionList.map((act) => (
-                        <option key={act} value={act}>
-                          {act}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ),
-                )}
-                {backendActions.length > 0 && (
-                  <optgroup label="Other Logged Actions">
-                    {backendActions.map((act) => (
-                      <option key={act} value={act}>
-                        {actionLabel(act)}
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
+                {backendActions.map((act) => (
+                  <option key={act} value={act}>
+                    {actionLabel(act)}
+                  </option>
+                ))}
               </select>
               <ChevronDown
                 size={13}

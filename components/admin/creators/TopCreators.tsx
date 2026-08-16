@@ -39,7 +39,7 @@ export default function TopCreators() {
             : (c.totalEarnings ?? 0) >= 1_000
               ? `₦${((c.totalEarnings ?? 0) / 1_000).toFixed(0)}K`
               : `₦${(c.totalEarnings ?? 0).toLocaleString()}`,
-        campaigns: c.completedCampaigns ?? 0,
+        campaigns: c.campaignsCount ?? c.completedCampaigns ?? 0,
         initials: (c.name || "Creator")
           .split(" ")
           .map((n) => n[0])

@@ -17,7 +17,6 @@ import CampaignDeliverablesTab from "./CampaignDeliverablesTab";
 import CampaignAnalyticsTab from "./CampaignAnalyticsTab";
 import CampaignTimelineTab from "./CampaignTimelineTab";
 import CampaignActionsTab from "./CampaignActionsTab";
-import CampaignAuditLogTab from "./CampaignAuditLogTab";
 import CampaignCreatorDrawer, {
   type CreatorDrawerData,
 } from "./CampaignCreatorDrawer";
@@ -35,8 +34,7 @@ type TabType =
   | "Deliverables"
   | "Analytics"
   | "Activity Timeline"
-  | "Admin Actions"
-  | "Audit Log";
+  | "Admin Actions";
 
 const TABS: TabType[] = [
   "Campaign Details",
@@ -46,7 +44,6 @@ const TABS: TabType[] = [
   "Analytics",
   "Activity Timeline",
   "Admin Actions",
-  "Audit Log",
 ];
 
 export default function CampaignDetailDrawer({
@@ -254,28 +251,15 @@ export default function CampaignDetailDrawer({
                 {activeTab === "Applications" && (
                   <CampaignApplicationsTab
                     campaignId={campaign.id}
+                    currency={campaign.currency}
                     onViewApplicationDetails={setSelectedCreatorForDrawer}
                   />
                 )}
                 {activeTab === "Selected Creators" && (
                   <SelectedCreatorsTab
-                    confirmedIds={[]}
-                    creators={[]}
-                    onViewDetails={(id) => {
-                      setSelectedCreatorForDrawer({
-                        id,
-                        name: "Creator",
-                        handle: "@creator",
-                        rating: "4.9",
-                        location: "Nigeria",
-                        role: "Impact Advocate",
-                        initials: "CR",
-                        pitch: "",
-                        contentIdea: "",
-                        platforms: "Instagram",
-                        questionComment: "",
-                      });
-                    }}
+                    campaignId={campaign.id}
+                    currency={campaign.currency}
+                    onViewApplicationDetails={setSelectedCreatorForDrawer}
                   />
                 )}
                 {activeTab === "Deliverables" && (
@@ -293,10 +277,10 @@ export default function CampaignDetailDrawer({
                   <CampaignTimelineTab campaignId={campaign.id} />
                 )}
                 {activeTab === "Admin Actions" && (
-                  <CampaignActionsTab campaignId={campaign.id} />
-                )}
-                {activeTab === "Audit Log" && (
-                  <CampaignAuditLogTab campaignId={campaign.id} />
+                  <CampaignActionsTab
+                    campaignId={campaign.id}
+                    campaignStatus={campaign.status}
+                  />
                 )}
               </div>
             </div>

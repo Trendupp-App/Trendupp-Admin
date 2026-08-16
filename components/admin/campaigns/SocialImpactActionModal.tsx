@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   Calendar,
   PauseCircle,
+  PlayCircle,
   Ban,
   Clock,
   XCircle,
@@ -14,6 +15,7 @@ import { Portal } from "@/components/ui/portal";
 
 export type SocialActionType =
   | "pause"
+  | "resume"
   | "cancel"
   | "extend-deadline"
   | "close-applications"
@@ -24,7 +26,11 @@ interface SocialImpactActionModalProps {
   onClose: () => void;
   actionType: SocialActionType;
   title: string;
-  onConfirm: (data: { reason?: string; newDeadline?: string }) => Promise<void>;
+  onConfirm: (data: {
+    reason?: string;
+    newDeadline?: string;
+    action?: "pause" | "resume";
+  }) => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -38,21 +44,27 @@ export default function SocialImpactActionModal({
 }: SocialImpactActionModalProps) {
   const [reason, setReason] = useState("");
   const [newDeadline, setNewDeadline] = useState("");
+  const [statusAction, setStatusAction] = useState<"pause" | "resume">(
+    actionType === "resume" ? "resume" : "pause",
+  );
 
   if (!isOpen) return null;
 
-  const requiresReason =
-    actionType === "pause" ||
-    actionType === "cancel" ||
-    actionType === "close-applications" ||
-    actionType === "reject-participant";
+  const isStatusAction = actionType === "pause" || actionType === "resume";
+  const effectiveType = isStatusAction ? statusAction : actionType;
 
-  const requiresDeadline = actionType === "extend-deadline";
-  const allowsDeadline =
-    actionType === "pause" || actionType === "extend-deadline";
+  const requiresReason =
+    effectiveType === "pause" ||
+    effectiveType === "resume" ||
+    effectiveType === "cancel" ||
+    effectiveType === "close-applications" ||
+    effectiveType === "reject-participant";
+
+  const requiresDeadline = effectiveType === "extend-deadline";
+  const allowsDeadline = effectiveType === "extend-deadline";
 
   const getActionConfig = () => {
-    switch (actionType) {
+    switch (effectiveType) {
       case "pause":
         return {
           icon: PauseCircle,
@@ -62,6 +74,16 @@ export default function SocialImpactActionModal({
             "Temporarily suspend active submissions. Creators will be notified.",
           buttonText: "Pause Campaign",
           buttonBg: "bg-[#ea580c] hover:bg-[#c2410c]",
+        };
+      case "resume":
+        return {
+          icon: PlayCircle,
+          iconBg: "bg-[#f0fdf4] text-[#16a34a] border-[#dcfce7]",
+          headerTitle: `Resume ${title}?`,
+          subtitle:
+            "Reactivate this campaign so creators can continue submitting.",
+          buttonText: "Resume Campaign",
+          buttonBg: "bg-[#16a34a] hover:bg-[#15803d]",
         };
       case "cancel":
         return {
@@ -122,6 +144,7 @@ export default function SocialImpactActionModal({
     await onConfirm({
       reason: reason.trim() || undefined,
       newDeadline: newDeadline || undefined,
+      action: isStatusAction ? statusAction : undefined,
     });
     onClose();
   };
@@ -164,6 +187,24 @@ export default function SocialImpactActionModal({
             onSubmit={handleSubmit}
             className="flex flex-col gap-4 text-xs font-semibold text-[#1a1a2e]"
           >
+            {isStatusAction && (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
+                  Action <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={statusAction}
+                  onChange={(e) =>
+                    setStatusAction(e.target.value as "pause" | "resume")
+                  }
+                  className="h-10 w-full bg-[#faf9fc] border border-[#e8e6f0] rounded-xl px-3 text-xs focus:outline-none focus:border-brand-pink font-medium cursor-pointer"
+                >
+                  <option value="pause">Pause</option>
+                  <option value="resume">Resume</option>
+                </select>
+              </div>
+            )}
+
             {allowsDeadline && (
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a] flex items-center gap-1">
@@ -189,7 +230,7 @@ export default function SocialImpactActionModal({
                   rows={3}
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  placeholder="e.g. Compliance check initiated / Hashtag missing from caption"
+                  placeholder="e.g. Temporary administrative review"
                   required={requiresReason}
                   className="w-full bg-[#faf9fc] border border-[#e8e6f0] rounded-xl p-3 text-xs focus:outline-none focus:border-brand-pink font-medium resize-none"
                 />
