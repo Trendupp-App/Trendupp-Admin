@@ -6,7 +6,6 @@ import SignupGrowthChart from "@/components/admin/creators/SignupGrowthChart";
 import ActiveUsersChart from "@/components/admin/creators/ActiveUsersChart";
 import TopCreators from "@/components/admin/creators/TopCreators";
 import CreatorTiers from "@/components/admin/creators/CreatorTiers";
-import CreatorGender from "@/components/admin/creators/CreatorGender";
 import ProfileCompletionCard from "@/components/admin/creators/ProfileCompletionCard";
 import { CreatorCountryCard } from "@/components/admin/creators/CreatorDistributions";
 import CreatorTable from "@/components/admin/creators/CreatorTable";
@@ -57,14 +56,13 @@ export default function CreatorManagementPage() {
             <ActiveUsersChart />
           </div>
 
-          {/* Row 2: Top Creators (Left) & Tiers + Gender Breakdown (Right) */}
+          {/* Row 2: Top Creators (Left) & Tiers (Right) */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
             <div className="lg:col-span-5 flex flex-col">
               <TopCreators />
             </div>
             <div className="lg:col-span-7 flex flex-col gap-6 justify-between">
               <CreatorTiers />
-              <CreatorGender />
             </div>
           </div>
 
