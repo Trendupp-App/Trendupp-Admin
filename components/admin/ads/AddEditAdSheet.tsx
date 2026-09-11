@@ -350,68 +350,6 @@ function AdFormInner({
             </div>
           )}
         </div>
-
-        <div className="flex flex-col gap-2 mt-0.5">
-          <span className="text-[10px] font-semibold text-[#7a7a9a]">
-            Or paste image URL:
-          </span>
-          <input
-            type="text"
-            value={adImageUrl}
-            onChange={(e) => setAdImageUrl(e.target.value)}
-            placeholder="https://images.unsplash.com/photo-..."
-            className="w-full bg-[#f8f8fa] border border-[#ececf2] rounded-xl px-3.5 py-2 text-xs text-[#1a1a2e] placeholder:text-[#9a99b0] focus:outline-none focus:border-brand-pink focus:bg-white transition-all"
-          />
-
-          <div className="flex flex-col gap-1.5 mt-1">
-            <span className="text-[10px] font-bold text-[#55556a] uppercase tracking-wider">
-              Or pick a sample banner image:
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                {
-                  label: "Workshop",
-                  url: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=80",
-                },
-                {
-                  label: "Creator Studio",
-                  url: "https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?w=800&auto=format&fit=crop&q=80",
-                },
-                {
-                  label: "Brand Showcase",
-                  url: "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&auto=format&fit=crop&q=80",
-                },
-                {
-                  label: "Analytics & Growth",
-                  url: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80",
-                },
-              ].map((item) => (
-                <button
-                  key={item.label}
-                  type="button"
-                  onClick={() => setAdImageUrl(item.url)}
-                  className={cn(
-                    "flex items-center gap-2 p-1.5 rounded-xl border text-[11px] font-medium transition-all text-left cursor-pointer",
-                    adImageUrl === item.url
-                      ? "border-brand-pink bg-rose-50/40 text-brand-pink font-bold"
-                      : "border-[#ececf2] bg-[#f8f8fa] text-[#55556a] hover:bg-white hover:border-[#d0d0dc]",
-                  )}
-                >
-                  <div className="relative w-8 h-8 rounded-lg overflow-hidden shrink-0 bg-[#eee]">
-                    <Image
-                      src={item.url}
-                      alt={item.label}
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
-                  </div>
-                  <span className="truncate">{item.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Link URL */}

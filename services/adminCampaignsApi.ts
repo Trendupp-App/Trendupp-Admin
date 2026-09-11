@@ -25,17 +25,6 @@ export const adminCampaignsApi = {
       `/admin/campaigns/${id}/approve`,
     ),
 
-  pauseCampaign: (id: string, reason?: string) =>
-    apiClient.patch<AdminCampaignActionResponse>(
-      `/admin/campaigns/${id}/pause`,
-      reason ? { reason } : undefined,
-    ),
-
-  resumeCampaign: (id: string) =>
-    apiClient.patch<AdminCampaignActionResponse>(
-      `/admin/campaigns/${id}/resume`,
-    ),
-
   cancelCampaign: (id: string, reason?: string) =>
     apiClient.patch<AdminCampaignActionResponse>(
       `/admin/campaigns/${id}/cancel`,
