@@ -23,10 +23,12 @@ function buildNewsFormData(data: CreateNewsDto | UpdateNewsDto): FormData {
     formData.append("category", data.category);
   }
   if (data.status !== undefined && data.status !== "") {
-    const statusVal = data.status.toLowerCase();
-    // Backend enum only accepts 'draft', 'published', 'archived'. If 'scheduled', map to 'draft'
-    const validStatus = statusVal === "scheduled" ? "draft" : statusVal;
-    formData.append("status", validStatus);
+    // Backend enum accepts 'draft' | 'published' | 'scheduled'.
+    formData.append("status", data.status.toLowerCase());
+  }
+  // Required by the API whenever status is 'scheduled'.
+  if (data.scheduledAt !== undefined && data.scheduledAt !== "") {
+    formData.append("scheduledAt", data.scheduledAt);
   }
   if (data.isPlatformUpdate !== undefined) {
     formData.append("isPlatformUpdate", String(data.isPlatformUpdate));
@@ -49,10 +51,10 @@ function buildNewsFormData(data: CreateNewsDto | UpdateNewsDto): FormData {
 }
 
 export const adminNewsApi = {
-  // 1. Get News List — GET /news (auth-protected, returns all statuses for admin token)
-  // NOTE: GET /admin/news does NOT exist on this backend (404). Write ops go to /admin/news.
+  // 1. Get News List — GET /admin/news (admin only, returns every status
+  // including drafts and scheduled articles).
   getNews: (params?: NewsQueryParams) =>
-    apiClient.get<AdminNewsItem[] | PaginatedNewsResponse>("/news", {
+    apiClient.get<AdminNewsItem[] | PaginatedNewsResponse>("/admin/news", {
       params,
     }),
 
