@@ -22,7 +22,8 @@ import {
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Plus, GripVertical } from "lucide-react";
+import { Plus, GripVertical, Archive } from "lucide-react";
+import { cn } from "@/lib/utils";
 import AdSummaryCards from "./AdSummaryCards";
 import BannerAdCard from "./BannerAdCard";
 import AddEditAdSheet from "./AddEditAdSheet";
@@ -35,6 +36,8 @@ import {
   useCreateAd,
   useUpdateAd,
   useDeleteAd,
+  useArchiveAd,
+  useUnarchiveAd,
 } from "@/hooks/useAdminAds";
 import type { BannerAdItem, CreateAdDto } from "@/types/adminAds";
 
@@ -42,11 +45,13 @@ function SortableBannerAdCard({
   ad,
   onEdit,
   onToggleStatus,
+  onArchive,
   onDelete,
 }: {
   ad: BannerAdItem;
   onEdit: (ad: BannerAdItem) => void;
   onToggleStatus: (ad: BannerAdItem) => void;
+  onArchive: (ad: BannerAdItem) => void;
   onDelete: (ad: BannerAdItem) => void;
 }) {
   const {
@@ -69,6 +74,7 @@ function SortableBannerAdCard({
         ad={ad}
         onEdit={onEdit}
         onToggleStatus={onToggleStatus}
+        onArchive={onArchive}
         onDelete={onDelete}
         dragHandleProps={{ ...attributes, ...listeners }}
         isDragging={isDragging}
@@ -95,6 +101,7 @@ export default function BannerAdsView() {
   });
 
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   const { data: summary, isLoading: isSummaryLoading } = useAdSummary();
   const { data: ads = [], isLoading: isAdsLoading } = useAdminAds();
@@ -102,12 +109,25 @@ export default function BannerAdsView() {
   const createMutation = useCreateAd();
   const updateMutation = useUpdateAd();
   const deleteMutation = useDeleteAd();
+  const archiveMutation = useArchiveAd();
+  const unarchiveMutation = useUnarchiveAd();
+
+  const archivedCount = useMemo(
+    () =>
+      ads.filter((a) => (a.status || "").toLowerCase() === "archived").length,
+    [ads],
+  );
 
   const displayAds = useMemo(() => {
     if (!ads.length) return [];
-    if (!customOrderIds.length) return ads;
 
-    return [...ads].sort((a, b) => {
+    const visible = showArchived
+      ? ads
+      : ads.filter((a) => (a.status || "").toLowerCase() !== "archived");
+
+    if (!customOrderIds.length) return visible;
+
+    return [...visible].sort((a, b) => {
       const indexA = customOrderIds.indexOf(String(a.id));
       const indexB = customOrderIds.indexOf(String(b.id));
       if (indexA === -1 && indexB === -1) return 0;
@@ -115,7 +135,7 @@ export default function BannerAdsView() {
       if (indexB === -1) return 1;
       return indexA - indexB;
     });
-  }, [ads, customOrderIds]);
+  }, [ads, customOrderIds, showArchived]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -181,6 +201,14 @@ export default function BannerAdsView() {
       id: ad.id,
       data: { status: newStatus },
     });
+  };
+
+  const handleArchive = (ad: BannerAdItem) => {
+    if ((ad.status || "").toLowerCase() === "archived") {
+      unarchiveMutation.mutate(ad.id);
+    } else {
+      archiveMutation.mutate(ad.id);
+    }
   };
 
   const handleFormSubmit = (
@@ -275,15 +303,32 @@ export default function BannerAdsView() {
           </span>
         </div>
 
-        {canCreate && (
-          <button
-            onClick={handleOpenAddSheet}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-pink hover:bg-brand-pink/90 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
-          >
-            <Plus size={16} />
-            <span>Add New Banner</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2.5">
+          {(archivedCount > 0 || showArchived) && (
+            <button
+              onClick={() => setShowArchived((v) => !v)}
+              className={cn(
+                "flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer",
+                showArchived
+                  ? "bg-[#eef2ff] border-[#c7d2fe] text-[#4f46e5]"
+                  : "bg-white border-[#e8e6f0] text-[#7a7a9a] hover:bg-[#faf9fc]",
+              )}
+            >
+              <Archive size={14} />
+              {showArchived ? "Hide archived" : `Archived (${archivedCount})`}
+            </button>
+          )}
+
+          {canCreate && (
+            <button
+              onClick={handleOpenAddSheet}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-pink hover:bg-brand-pink/90 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+            >
+              <Plus size={16} />
+              <span>Add New Banner</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Top 4 KPI Metrics */}
@@ -332,6 +377,7 @@ export default function BannerAdsView() {
                     ad={ad}
                     onEdit={handleOpenEditSheet}
                     onToggleStatus={handleToggleStatus}
+                    onArchive={handleArchive}
                     onDelete={(a) => setDeletingAd(a)}
                   />
                 ))}
@@ -345,6 +391,7 @@ export default function BannerAdsView() {
                     ad={activeAdObj}
                     onEdit={() => {}}
                     onToggleStatus={() => {}}
+                    onArchive={() => {}}
                     onDelete={() => {}}
                   />
                 </div>

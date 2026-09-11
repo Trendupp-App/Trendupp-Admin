@@ -18,7 +18,7 @@ export interface BannerAdItem {
   linkUrl?: string;
   startDate: string;
   endDate: string;
-  status: "active" | "scheduled" | "paused" | "draft" | string;
+  status: "active" | "scheduled" | "paused" | "draft" | "archived" | string;
   impressions?: number;
   clicks?: number;
   ctr?: number | string;

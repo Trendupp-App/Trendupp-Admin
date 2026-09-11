@@ -99,6 +99,38 @@ export function useUpdateAd() {
   });
 }
 
+export function useArchiveAd() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => adminAdsApi.archiveAd(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-ads-list"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-ads-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-ad-details", id] });
+      toast.success("Ad archived successfully");
+    },
+    onError: (err: AxiosError<{ message?: string }>) => {
+      toast.error(err.response?.data?.message || "Failed to archive ad");
+    },
+  });
+}
+
+export function useUnarchiveAd() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => adminAdsApi.unarchiveAd(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-ads-list"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-ads-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-ad-details", id] });
+      toast.success("Ad restored to draft");
+    },
+    onError: (err: AxiosError<{ message?: string }>) => {
+      toast.error(err.response?.data?.message || "Failed to unarchive ad");
+    },
+  });
+}
+
 export function useDeleteAd() {
   const queryClient = useQueryClient();
   return useMutation({

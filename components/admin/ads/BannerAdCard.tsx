@@ -8,6 +8,8 @@ import {
   GripVertical,
   Pause,
   Play,
+  Archive,
+  ArchiveRestore,
   Users,
   Layout,
   Calendar,
@@ -20,6 +22,7 @@ interface BannerAdCardProps {
   ad: BannerAdItem;
   onEdit: (ad: BannerAdItem) => void;
   onToggleStatus: (ad: BannerAdItem) => void;
+  onArchive: (ad: BannerAdItem) => void;
   onDelete: (ad: BannerAdItem) => void;
   dragHandleProps?: Record<string, unknown>;
   isDragging?: boolean;
@@ -29,6 +32,7 @@ export default function BannerAdCard({
   ad,
   onEdit,
   onToggleStatus,
+  onArchive,
   onDelete,
   dragHandleProps,
   isDragging,
@@ -37,6 +41,7 @@ export default function BannerAdCard({
   const isPaused = statusLower === "paused";
   const isScheduled = statusLower === "scheduled";
   const isActive = statusLower === "active";
+  const isArchived = statusLower === "archived";
 
   const statusBadgeStyle = isPaused
     ? "bg-[#fff8e6] text-[#d68910]"
@@ -254,29 +259,56 @@ export default function BannerAdCard({
               Edit
             </button>
 
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleStatus(ad);
-              }}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer",
-                isPaused
-                  ? "bg-[#e8f8f0] text-[#1e8e3e] hover:bg-[#d6f2e3]"
-                  : "bg-[#fff8e6] text-[#d68910] hover:bg-[#fff0cb]",
-              )}
-            >
-              {isPaused ? (
-                <>
-                  <Play size={13} /> Resume
-                </>
-              ) : (
-                <>
-                  <Pause size={13} /> Pause
-                </>
-              )}
-            </button>
+            {isArchived ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onArchive(ad);
+                }}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer bg-[#eef2ff] text-[#4f46e5] hover:bg-[#e0e7ff]"
+              >
+                <ArchiveRestore size={13} /> Restore
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleStatus(ad);
+                  }}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer",
+                    isPaused
+                      ? "bg-[#e8f8f0] text-[#1e8e3e] hover:bg-[#d6f2e3]"
+                      : "bg-[#fff8e6] text-[#d68910] hover:bg-[#fff0cb]",
+                  )}
+                >
+                  {isPaused ? (
+                    <>
+                      <Play size={13} /> Resume
+                    </>
+                  ) : (
+                    <>
+                      <Pause size={13} /> Pause
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onArchive(ad);
+                  }}
+                  title="Archive Ad"
+                  className="p-2 rounded-xl text-[#9a99b0] hover:text-[#4f46e5] hover:bg-[#eef2ff] transition-colors cursor-pointer shrink-0"
+                >
+                  <Archive size={15} />
+                </button>
+              </>
+            )}
 
             <button
               type="button"
