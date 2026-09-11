@@ -6,12 +6,17 @@ import { Portal } from "@/components/ui/portal";
 
 interface AdminActionModalProps {
   action: string | null;
+  /** When false, the action can be confirmed without typing a reason. */
+  requiresReason?: boolean;
+  isPending?: boolean;
   onClose: () => void;
   onConfirm: (reason: string) => void;
 }
 
 export default function AdminActionModal({
   action,
+  requiresReason = true,
+  isPending = false,
   onClose,
   onConfirm,
 }: AdminActionModalProps) {
@@ -19,13 +24,18 @@ export default function AdminActionModal({
 
   if (!action) return null;
 
+  const handleClose = () => {
+    setReason("");
+    onClose();
+  };
+
   return (
     <Portal>
       <div className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[10vh] overflow-y-auto pb-6">
         {/* Backdrop */}
         <div
           className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
-          onClick={onClose}
+          onClick={handleClose}
         />
 
         {/* Modal Container */}
@@ -33,7 +43,7 @@ export default function AdminActionModal({
           <div className="flex justify-between items-center border-b border-[#e8e6f0]/40 pb-3">
             <h3 className="text-sm font-bold text-[#1a1a2e]">{action}</h3>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="p-1 rounded-full hover:bg-[#f4f3f6] text-[#7a7a9a] transition-colors cursor-pointer"
             >
               <X size={15} />
@@ -47,7 +57,7 @@ export default function AdminActionModal({
 
           <div className="flex flex-col gap-1.5 mt-1">
             <label className="text-[10px] font-bold text-[#1a1a2e] uppercase tracking-wider">
-              Reason (required) *
+              {requiresReason ? "Reason (required) *" : "Reason (optional)"}
             </label>
             <textarea
               rows={3}
@@ -60,20 +70,18 @@ export default function AdminActionModal({
 
           <div className="flex items-center justify-end gap-2.5 mt-2">
             <button
-              onClick={onClose}
-              className="px-4.5 py-2 border border-[#e8e6f0] text-xs font-bold text-[#5a5a7a] rounded-xl hover:bg-[#faf9fc] transition-colors cursor-pointer"
+              onClick={handleClose}
+              disabled={isPending}
+              className="px-4.5 py-2 border border-[#e8e6f0] text-xs font-bold text-[#5a5a7a] rounded-xl hover:bg-[#faf9fc] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
-              disabled={!reason.trim()}
-              onClick={() => {
-                onConfirm(reason);
-                setReason("");
-              }}
+              disabled={isPending || (requiresReason && !reason.trim())}
+              onClick={() => onConfirm(reason.trim())}
               className="px-4.5 py-2 bg-brand-pink text-white text-xs font-bold rounded-xl hover:opacity-90 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Confirm Action
+              {isPending ? "Processing..." : "Confirm Action"}
             </button>
           </div>
         </div>
