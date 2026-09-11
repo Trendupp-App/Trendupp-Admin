@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Info, RefreshCw, X, CheckCircle } from "lucide-react";
+import { Info, RefreshCw, X, CheckCircle, Pause, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   useApproveCampaign,
+  usePauseCampaign,
+  useResumeCampaign,
   useCancelCampaign,
 } from "@/hooks/useAdminCampaigns";
 import AdminActionModal from "./AdminActionModal";
@@ -14,7 +16,7 @@ interface CampaignActionsTabProps {
   campaignStatus?: string;
 }
 
-type ActionKey = "approve" | "cancel";
+type ActionKey = "approve" | "pause" | "resume" | "cancel";
 
 interface ActionDef {
   key: ActionKey;
@@ -41,6 +43,24 @@ const ACTION_DEFS: ActionDef[] = [
     visibleFor: (s) => s === "submitted" || s === "draft",
   },
   {
+    key: "pause",
+    title: "Pause Campaign",
+    desc: "Temporarily suspend all campaign activity",
+    icon: Pause,
+    color: "text-[#f59e0b] bg-[#fff7ed]",
+    requiresReason: true,
+    visibleFor: (s) => s === "live" || s === "active",
+  },
+  {
+    key: "resume",
+    title: "Resume Campaign",
+    desc: "Resume a paused campaign",
+    icon: Play,
+    color: "text-[#16a34a] bg-[#f0fdf4]",
+    requiresReason: true,
+    visibleFor: (s) => s === "paused",
+  },
+  {
     key: "cancel",
     title: "Cancel Campaign",
     desc: "Permanently cancel this campaign",
@@ -58,9 +78,15 @@ export default function CampaignActionsTab({
   const [activeAction, setActiveAction] = useState<ActionKey | null>(null);
 
   const approveCampaign = useApproveCampaign();
+  const pauseCampaign = usePauseCampaign();
+  const resumeCampaign = useResumeCampaign();
   const cancelCampaign = useCancelCampaign();
 
-  const isPending = approveCampaign.isPending || cancelCampaign.isPending;
+  const isPending =
+    approveCampaign.isPending ||
+    pauseCampaign.isPending ||
+    resumeCampaign.isPending ||
+    cancelCampaign.isPending;
 
   const status = (campaignStatus ?? "").toLowerCase();
   const activeDef = ACTION_DEFS.find((a) => a.key === activeAction);
@@ -73,6 +99,12 @@ export default function CampaignActionsTab({
     switch (activeAction) {
       case "approve":
         approveCampaign.mutate(campaignId, { onSuccess });
+        break;
+      case "pause":
+        pauseCampaign.mutate({ id: campaignId, reason }, { onSuccess });
+        break;
+      case "resume":
+        resumeCampaign.mutate({ id: campaignId, reason }, { onSuccess });
         break;
       case "cancel":
         cancelCampaign.mutate({ id: campaignId, reason }, { onSuccess });
