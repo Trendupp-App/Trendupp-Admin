@@ -169,7 +169,10 @@ function AdFormInner({
     statusAction: "published" | "draft" = "published",
   ) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim()) {
+      toast.error("Please enter an ad title.");
+      return;
+    }
 
     const formattedStartDate = startDate.includes("T")
       ? startDate
@@ -179,13 +182,26 @@ function AdFormInner({
       ? endDate
       : `${endDate}T23:59:59.000Z`;
 
-    let finalImageUrl = adImageUrl.trim();
+    const finalImageUrl = adImageUrl.trim();
     let localUploadedDataUrl: string | undefined = undefined;
 
+    // POST/PATCH /admin/ads is JSON-only and requires adImageUrl to be a
+    // string URL — it cannot accept a file. Until the endpoint takes
+    // multipart/form-data (as /admin/social-impact already does for
+    // coverImage), an uploaded file has nowhere to be hosted, so it is kept
+    // in localStorage for preview and the save is blocked rather than
+    // silently storing a placeholder every other admin would see instead.
     if (finalImageUrl.startsWith("data:")) {
       localUploadedDataUrl = finalImageUrl;
-      finalImageUrl =
-        "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&auto=format&fit=crop&q=80";
+      toast.error(
+        "Image uploads are not supported yet — the server has no endpoint to host the file. Paste a hosted image URL instead.",
+      );
+      return;
+    }
+
+    if (!finalImageUrl) {
+      toast.error("An ad image is required.");
+      return;
     }
 
     const payload: CreateAdDto = {
@@ -194,9 +210,7 @@ function AdFormInner({
       targetAudience:
         targetAudience.length > 0 ? targetAudience : ["All Creators"],
       placement: placement.length > 0 ? placement : ["Home Page"],
-      adImageUrl:
-        finalImageUrl ||
-        "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&auto=format&fit=crop&q=80",
+      adImageUrl: finalImageUrl,
       startDate: formattedStartDate,
       endDate: formattedEndDate,
       status: statusAction === "published" ? "active" : "draft",
@@ -349,6 +363,23 @@ function AdFormInner({
               </div>
             </div>
           )}
+        </div>
+
+        <div className="flex flex-col gap-1.5 mt-0.5">
+          <label className="text-[10px] font-semibold text-[#7a7a9a]">
+            Image URL
+          </label>
+          <input
+            type="text"
+            value={adImageUrl.startsWith("data:") ? "" : adImageUrl}
+            onChange={(e) => setAdImageUrl(e.target.value)}
+            placeholder="https://..."
+            className="w-full bg-[#f8f8fa] border border-[#ececf2] rounded-xl px-3.5 py-2 text-xs text-[#1a1a2e] placeholder:text-[#9a99b0] focus:outline-none focus:border-brand-pink focus:bg-white transition-all"
+          />
+          <span className="text-[10px] text-[#9a99b0] leading-relaxed">
+            Paste a hosted image URL. Direct file uploads are not saved to the
+            server yet, so an uploaded file would only be visible to you.
+          </span>
         </div>
       </div>
 

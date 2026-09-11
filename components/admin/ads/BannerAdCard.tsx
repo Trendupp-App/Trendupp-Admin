@@ -105,6 +105,12 @@ export default function BannerAdCard({
     return ad.adImageUrl;
   }, [ad.id, ad.adImageUrl]);
 
+  // Anything that isn't a real image source falls through to the branded
+  // placeholder below rather than a stock photo standing in for the real ad.
+  const isRenderableImage =
+    !!displayImageUrl &&
+    (displayImageUrl.startsWith("http") || displayImageUrl.startsWith("data:"));
+
   return (
     <div
       className={cn(
@@ -126,14 +132,9 @@ export default function BannerAdCard({
           </div>
         )}
 
-        {!imgError && displayImageUrl ? (
+        {!imgError && isRenderableImage ? (
           <Image
-            src={
-              displayImageUrl.startsWith("data:") ||
-              displayImageUrl.startsWith("http")
-                ? displayImageUrl
-                : `https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&auto=format&fit=crop&q=80`
-            }
+            src={displayImageUrl}
             alt={ad.title}
             fill
             className="object-cover"
