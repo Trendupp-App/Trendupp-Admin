@@ -29,7 +29,15 @@ export const adminAdsApi = {
   updateAd: (id: string, data: UpdateAdDto) =>
     apiClient.patch<BannerAdItem>(`/admin/ads/${id}`, data),
 
-  // 6. Delete Ad
+  // 6. Archive Ad (removes it from the active list, keeps the record)
+  archiveAd: (id: string) =>
+    apiClient.patch<BannerAdItem>(`/admin/ads/${id}/archive`),
+
+  // 7. Unarchive Ad (restores to draft status)
+  unarchiveAd: (id: string) =>
+    apiClient.patch<BannerAdItem>(`/admin/ads/${id}/unarchive`),
+
+  // 8. Delete Ad
   deleteAd: (id: string) =>
     apiClient.delete<{ message?: string }>(`/admin/ads/${id}`),
 };

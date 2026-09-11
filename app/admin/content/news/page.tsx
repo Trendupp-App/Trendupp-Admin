@@ -191,9 +191,9 @@ function SortableArticleRow({
 }
 
 export default function TrenduppNewsPage() {
-  const [activeTab, setActiveTab] = useState<"All" | "Published" | "Draft">(
-    "All",
-  );
+  const [activeTab, setActiveTab] = useState<
+    "All" | "Published" | "Scheduled" | "Draft"
+  >("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -256,12 +256,16 @@ export default function TrenduppNewsPage() {
   const draftCount = articles.filter(
     (a) => (a.status || "").toLowerCase() === "draft",
   ).length;
+  const scheduledCount = articles.filter(
+    (a) => (a.status || "").toLowerCase() === "scheduled",
+  ).length;
 
   // Filter list — operates on ordered array
   const filteredArticles = orderedArticles.filter((article) => {
     const statusLower = (article.status || "").toLowerCase();
 
     if (activeTab === "Published" && statusLower !== "published") return false;
+    if (activeTab === "Scheduled" && statusLower !== "scheduled") return false;
     if (activeTab === "Draft" && statusLower !== "draft") return false;
 
     if (searchQuery.trim() !== "") {
@@ -397,69 +401,37 @@ export default function TrenduppNewsPage() {
       {/* Tabs & Custom Date Range Filter */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 flex-wrap">
         <div className="flex flex-wrap gap-2 items-center">
-          <button
-            onClick={() => setActiveTab("All")}
-            className={cn(
-              "h-8 px-4 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
-              activeTab === "All"
-                ? "bg-brand-pink text-white"
-                : "bg-white border border-[#e8e6f0] text-[#7a7a9a] hover:bg-[#faf9fc]",
-            )}
-          >
-            All{" "}
-            <span
+          {(
+            [
+              { key: "All", label: "All", count: totalArticles },
+              { key: "Published", label: "Published", count: publishedCount },
+              { key: "Scheduled", label: "Scheduled", count: scheduledCount },
+              { key: "Draft", label: "Draft", count: draftCount },
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
               className={cn(
-                "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
-                activeTab === "All"
-                  ? "bg-white/20 text-white"
-                  : "bg-[#f4f3f6] text-[#7a7a9a]",
+                "h-8 px-4 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
+                activeTab === tab.key
+                  ? "bg-brand-pink text-white"
+                  : "bg-white border border-[#e8e6f0] text-[#7a7a9a] hover:bg-[#faf9fc]",
               )}
             >
-              {totalArticles}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab("Published")}
-            className={cn(
-              "h-8 px-4 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
-              activeTab === "Published"
-                ? "bg-brand-pink text-white"
-                : "bg-white border border-[#e8e6f0] text-[#7a7a9a] hover:bg-[#faf9fc]",
-            )}
-          >
-            Published{" "}
-            <span
-              className={cn(
-                "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
-                activeTab === "Published"
-                  ? "bg-white/20 text-white"
-                  : "bg-[#f4f3f6] text-[#7a7a9a]",
-              )}
-            >
-              {publishedCount}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab("Draft")}
-            className={cn(
-              "h-8 px-4 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
-              activeTab === "Draft"
-                ? "bg-brand-pink text-white"
-                : "bg-white border border-[#e8e6f0] text-[#7a7a9a] hover:bg-[#faf9fc]",
-            )}
-          >
-            Draft{" "}
-            <span
-              className={cn(
-                "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
-                activeTab === "Draft"
-                  ? "bg-white/20 text-white"
-                  : "bg-[#f4f3f6] text-[#7a7a9a]",
-              )}
-            >
-              {draftCount}
-            </span>
-          </button>
+              {tab.label}{" "}
+              <span
+                className={cn(
+                  "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+                  activeTab === tab.key
+                    ? "bg-white/20 text-white"
+                    : "bg-[#f4f3f6] text-[#7a7a9a]",
+                )}
+              >
+                {tab.count}
+              </span>
+            </button>
+          ))}
         </div>
 
         {/* Custom From/To Date Filter */}
