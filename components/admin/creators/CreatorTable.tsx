@@ -34,7 +34,6 @@ interface CreatorItem {
   country: string;
   tier: "Mega" | "Macro" | "Micro" | "Nano" | "";
   niche: string;
-  gender: "Male" | "Female" | "";
   platforms: ("IG" | "TikTok" | "YT" | "X" | "FB")[];
   completion: number;
   campaignsCount: number;
@@ -212,16 +211,6 @@ export default function CreatorTable() {
           extractedCountry = parts[parts.length - 1].trim();
         }
 
-        // ── Gender ───────────────────────────────────────────────────────────
-        // Normalize "male"/"female"/"Male"/"Female"/"MALE"/"FEMALE" → display label
-        let extractedGender: "Male" | "Female" | "" = "";
-        const rawGender = (c.gender || "").toLowerCase().trim();
-        if (rawGender === "male" || rawGender === "m") {
-          extractedGender = "Male";
-        } else if (rawGender === "female" || rawGender === "f") {
-          extractedGender = "Female";
-        }
-
         // ── Tier ─────────────────────────────────────────────────────────────
         const rawTier =
           c.tier ||
@@ -259,7 +248,6 @@ export default function CreatorTable() {
           country: extractedCountry,
           tier: extractedTier,
           niche: extractedNiche,
-          gender: extractedGender,
           platforms: parsedPlatforms,
           completion: parsedCompletion,
           campaignsCount: c.campaignsCount ?? c.completedCampaigns ?? 0,
@@ -376,7 +364,6 @@ export default function CreatorTable() {
       "Email",
       "Country",
       "Tier",
-      "Gender",
       "Platforms",
       "Profile",
       "Total Earnings",
@@ -392,7 +379,6 @@ export default function CreatorTable() {
       c.email,
       c.country,
       c.tier,
-      c.gender,
       `"${c.platforms.join(", ")}"`,
       `${c.completion}%`,
       c.totalEarnings,
@@ -691,9 +677,6 @@ export default function CreatorTable() {
                 <th className="pb-3.5 pt-1 px-3 min-w-[90px] whitespace-nowrap">
                   Tier
                 </th>
-                <th className="pb-3.5 pt-1 px-3 min-w-[90px] whitespace-nowrap">
-                  Gender
-                </th>
                 <th className="pb-3.5 pt-1 px-3 min-w-[100px] whitespace-nowrap">
                   Platforms
                 </th>
@@ -765,9 +748,6 @@ export default function CreatorTable() {
                     ) : (
                       <span className="text-[#9a99b0] text-[11px]">—</span>
                     )}
-                  </td>
-                  <td className="py-3 px-3 text-[#5a5a7a] whitespace-nowrap font-medium">
-                    {c.gender || <span className="text-[#9a99b0]">—</span>}
                   </td>
                   <td className="py-3 px-3 whitespace-nowrap">
                     {c.platforms.length === 0 ? (
