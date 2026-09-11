@@ -380,6 +380,15 @@ export default function CreateCampaignPage() {
           brands?: Array<{ id?: string; name?: string; brandName?: string }>;
           brand?: { id?: string; name?: string; brandName?: string };
           creatorTiers?: string[];
+          // GET /admin/social-impact/{id} nests these under `info`, unlike the
+          // flat shape the PATCH payload uses.
+          info?: {
+            goal?: string;
+            niche?: string;
+            creatorTiers?: string[];
+            preferredPlatforms?: string[];
+            endDate?: string;
+          };
           coverImageUrl?: string;
           coverImage?: string;
           image?: string;
@@ -392,15 +401,17 @@ export default function CreateCampaignPage() {
           guidelines?: { dos?: string[]; donts?: string[] };
           contentLink?: string;
           link?: string;
-          platforms?: string;
+          platforms?: string | string[];
           platform?: string;
+          preferredPlatforms?: string[];
           deadline?: string;
           endDate?: string;
           currentStep?: number;
         };
 
         if (anyDraft.title) setTitle(anyDraft.title);
-        if (anyDraft.goal) setGoal(anyDraft.goal);
+        const goalVal = anyDraft.goal || anyDraft.info?.goal;
+        if (goalVal) setGoal(goalVal);
 
         // Extract server brand IDs
         const serverBrandIds =
@@ -418,8 +429,11 @@ export default function CreateCampaignPage() {
           }
         }
 
-        if (anyDraft.creatorTiers && anyDraft.creatorTiers.length > 0) {
-          setSelectedTiers(anyDraft.creatorTiers);
+        const tiersVal = anyDraft.creatorTiers?.length
+          ? anyDraft.creatorTiers
+          : anyDraft.info?.creatorTiers;
+        if (tiersVal && tiersVal.length > 0) {
+          setSelectedTiers(tiersVal);
         }
 
         const img =
@@ -429,17 +443,27 @@ export default function CreateCampaignPage() {
         const linkVal = anyDraft.contentLink || anyDraft.link;
         if (linkVal) setContentLink(linkVal);
 
-        const platformVal = anyDraft.platforms || anyDraft.platform;
+        const platformVal =
+          anyDraft.info?.preferredPlatforms ||
+          anyDraft.preferredPlatforms ||
+          anyDraft.platforms ||
+          anyDraft.platform;
         if (platformVal) {
-          const parsed = String(platformVal)
-            .split(",")
-            .map((s) => s.trim())
+          const parsed = (
+            Array.isArray(platformVal)
+              ? platformVal
+              : String(platformVal).split(",")
+          )
+            .map((s) => String(s).trim())
             .filter(Boolean);
           if (parsed.length > 0) setSelectedPlatforms(parsed);
         }
 
-        const dateVal = anyDraft.deadline || anyDraft.endDate;
-        if (dateVal) setEndDate(dateVal);
+        const dateVal =
+          anyDraft.deadline || anyDraft.endDate || anyDraft.info?.endDate;
+        // <input type="date"> only accepts YYYY-MM-DD; an ISO timestamp
+        // renders as an empty field.
+        if (dateVal) setEndDate(String(dateVal).slice(0, 10));
 
         const briefVal = anyDraft.campaignBrief || anyDraft.brief;
         if (briefVal) setDesc(briefVal);
