@@ -553,6 +553,8 @@ function NewsDrawerFormInner({
   const [category, setCategory] = useState(article?.category || "Industry");
   const [source, setSource] = useState(article?.brand || "Trendupp Africa");
   const [authorName, setAuthorName] = useState(article?.authorName || "");
+  // Holds the existing cover image when editing, so saving without a new
+  // upload preserves it. Cleared as soon as a file is chosen.
   const [coverUrl, setCoverUrl] = useState(
     article?.coverImage || article?.image || "",
   );
@@ -758,28 +760,6 @@ function NewsDrawerFormInner({
             placeholder="e.g. Ikechukwu Nwe..."
             className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium text-[#1a1a2e]"
           />
-        </div>
-
-        {/* Cover Image URL */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
-            Cover Image URL
-          </label>
-          <input
-            type="text"
-            value={coverUrl}
-            onChange={(e) => {
-              setCoverUrl(e.target.value);
-              setCoverFile(null);
-              if (e.target.value.trim()) setPreviewImage(e.target.value);
-            }}
-            placeholder="https://..."
-            className="h-10 w-full bg-white border border-[#e8e6f0] rounded-xl px-4 text-xs focus:outline-none focus:ring-1 focus:ring-brand-pink/30 font-medium text-[#1a1a2e]"
-          />
-        </div>
-
-        <div className="text-center text-[10px] font-bold text-[#9a99b0] uppercase">
-          OR
         </div>
 
         {/* Drag and drop image */}
