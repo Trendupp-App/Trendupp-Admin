@@ -389,6 +389,9 @@ export default function CreateCampaignPage() {
             preferredPlatforms?: string[];
             endDate?: string;
           };
+          // The end date is stored under timeline.endDate. The PATCH response
+          // returns it, the GET detail response does not (yet).
+          timeline?: { endDate?: string };
           coverImageUrl?: string;
           coverImage?: string;
           image?: string;
@@ -460,7 +463,10 @@ export default function CreateCampaignPage() {
         }
 
         const dateVal =
-          anyDraft.deadline || anyDraft.endDate || anyDraft.info?.endDate;
+          anyDraft.deadline ||
+          anyDraft.endDate ||
+          anyDraft.info?.endDate ||
+          anyDraft.timeline?.endDate;
         // <input type="date"> only accepts YYYY-MM-DD; an ISO timestamp
         // renders as an empty field.
         if (dateVal) setEndDate(String(dateVal).slice(0, 10));
