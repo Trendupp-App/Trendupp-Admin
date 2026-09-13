@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { Link2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
@@ -17,11 +17,7 @@ interface AddEditAdSheetProps {
   isOpen: boolean;
   ad: BannerAdItem | null;
   onClose: () => void;
-  onSubmit: (
-    data: CreateAdDto,
-    statusAction?: "published" | "draft",
-    localDataUrl?: string,
-  ) => void;
+  onSubmit: (data: CreateAdDto, statusAction?: "published" | "draft") => void;
   isSubmitting?: boolean;
 }
 
@@ -36,51 +32,6 @@ const TARGET_AUDIENCE_OPTIONS = [
   "Brand",
 ];
 
-function compressImageFile(
-  file: File,
-  maxWidth = 1000,
-  maxHeight = 600,
-  quality = 0.75,
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = (err) => reject(err);
-    reader.onload = (e) => {
-      const img = new window.Image();
-      img.onerror = (err) => reject(err);
-      img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
-        }
-        if (height > maxHeight) {
-          width = Math.round((width * maxHeight) / height);
-          height = maxHeight;
-        }
-
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          resolve(e.target?.result as string);
-          return;
-        }
-
-        ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL("image/jpeg", quality);
-        resolve(dataUrl);
-      };
-      img.src = e.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
 function AdFormInner({
   ad,
   onSubmit,
@@ -93,17 +44,37 @@ function AdFormInner({
     return ad.targetAudience.map((a) => (a === "Advertisers" ? "Brand" : a));
   });
   const [placement] = useState<string[]>(ad?.placement || ["Home Page"]);
-  const [adImageUrl, setAdImageUrl] = useState(() => {
-    if (ad?.id && typeof window !== "undefined") {
-      try {
-        const custom = localStorage.getItem(`trendupp_ad_img_${ad.id}`);
-        if (custom) return custom;
-      } catch {
-        // ignore
-      }
+  // `adImageUrl` holds a hosted URL (existing ad or pasted link); `pickedImage`
+  // holds a freshly picked file that gets uploaded as multipart `adImage`,
+  // paired with the object URL used to preview it.
+  const [adImageUrl, setAdImageUrl] = useState(ad?.adImageUrl || "");
+  const [pickedImage, setPickedImage] = useState<{
+    file: File;
+    previewUrl: string;
+  } | null>(null);
+
+  // Object URLs must be revoked or they leak for the lifetime of the document.
+  // The URL is created together with the file and revoked when it is replaced
+  // or cleared, plus on unmount below.
+  const livePreviewUrlRef = useRef<string | null>(null);
+
+  const setPickedFile = (file: File | null) => {
+    const next = file ? { file, previewUrl: URL.createObjectURL(file) } : null;
+    if (livePreviewUrlRef.current) {
+      URL.revokeObjectURL(livePreviewUrlRef.current);
     }
-    return ad?.adImageUrl || "";
-  });
+    livePreviewUrlRef.current = next?.previewUrl ?? null;
+    setPickedImage(next);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (livePreviewUrlRef.current) {
+        URL.revokeObjectURL(livePreviewUrlRef.current);
+      }
+    };
+  }, []);
+
   const [linkUrl, setLinkUrl] = useState(ad?.linkUrl || "");
   const [startDate, setStartDate] = useState(
     ad?.startDate ? ad.startDate.split("T")[0] : "2026-06-01",
@@ -115,22 +86,21 @@ function AdFormInner({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const processFile = async (file: File) => {
+  const displayImage = pickedImage?.previewUrl || adImageUrl;
+
+  const processFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
       toast.error("Please select a valid image file");
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Image file size must be less than 10MB");
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image file size must be less than 5MB");
       return;
     }
-    try {
-      const compressedDataUrl = await compressImageFile(file);
-      setAdImageUrl(compressedDataUrl);
-      toast.success("Image file uploaded successfully");
-    } catch {
-      toast.error("Failed to process image file");
-    }
+    // The file itself is sent to the API on submit; clear any hosted URL so we
+    // do not send both.
+    setPickedFile(file);
+    setAdImageUrl("");
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -169,7 +139,14 @@ function AdFormInner({
     statusAction: "published" | "draft" = "published",
   ) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim()) {
+      toast.error("Please enter an ad title.");
+      return;
+    }
+    if (!pickedImage && !adImageUrl.trim()) {
+      toast.error("An ad image is required — upload a file or paste a URL.");
+      return;
+    }
 
     const formattedStartDate = startDate.includes("T")
       ? startDate
@@ -179,34 +156,29 @@ function AdFormInner({
       ? endDate
       : `${endDate}T23:59:59.000Z`;
 
-    let finalImageUrl = adImageUrl.trim();
-    let localUploadedDataUrl: string | undefined = undefined;
-
-    if (finalImageUrl.startsWith("data:")) {
-      localUploadedDataUrl = finalImageUrl;
-      finalImageUrl =
-        "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&auto=format&fit=crop&q=80";
-    }
-
     const payload: CreateAdDto = {
       title: title.trim(),
       adType: adType || "Banner",
       targetAudience:
         targetAudience.length > 0 ? targetAudience : ["All Creators"],
       placement: placement.length > 0 ? placement : ["Home Page"],
-      adImageUrl:
-        finalImageUrl ||
-        "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&auto=format&fit=crop&q=80",
       startDate: formattedStartDate,
       endDate: formattedEndDate,
       status: statusAction === "published" ? "active" : "draft",
     };
 
+    // A newly picked file wins; otherwise keep whatever hosted URL is set.
+    if (pickedImage) {
+      payload.adImage = pickedImage.file;
+    } else if (adImageUrl.trim()) {
+      payload.adImageUrl = adImageUrl.trim();
+    }
+
     if (linkUrl.trim()) {
       payload.linkUrl = linkUrl.trim();
     }
 
-    onSubmit(payload, statusAction, localUploadedDataUrl);
+    onSubmit(payload, statusAction);
   };
 
   return (
@@ -284,10 +256,14 @@ function AdFormInner({
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <label className="text-xs font-bold text-[#1a1a2e]">Ad Image *</label>
-          {adImageUrl && (
+          {displayImage && (
             <button
               type="button"
-              onClick={() => setAdImageUrl("")}
+              onClick={() => {
+                setAdImageUrl("");
+                setPickedFile(null);
+                if (fileInputRef.current) fileInputRef.current.value = "";
+              }}
               className="text-[11px] font-semibold text-rose-600 hover:underline flex items-center gap-1 cursor-pointer"
             >
               <X size={12} /> Remove Image
@@ -321,10 +297,10 @@ function AdFormInner({
               : "border-[#d0d0dc] hover:border-brand-pink/50 hover:bg-white",
           )}
         >
-          {adImageUrl ? (
+          {displayImage ? (
             <div className="relative w-full h-[120px] rounded-xl overflow-hidden group">
               <Image
-                src={adImageUrl}
+                src={displayImage}
                 alt="Ad preview"
                 fill
                 className="object-cover rounded-xl"
@@ -349,6 +325,24 @@ function AdFormInner({
               </div>
             </div>
           )}
+        </div>
+
+        <div className="flex flex-col gap-1.5 mt-0.5">
+          <label className="text-[10px] font-semibold text-[#7a7a9a]">
+            Or paste an image URL
+          </label>
+          <input
+            type="text"
+            value={adImageUrl}
+            onChange={(e) => {
+              setAdImageUrl(e.target.value);
+              // A pasted URL replaces a picked file.
+              setPickedFile(null);
+              if (fileInputRef.current) fileInputRef.current.value = "";
+            }}
+            placeholder="https://..."
+            className="w-full bg-[#f8f8fa] border border-[#ececf2] rounded-xl px-3.5 py-2 text-xs text-[#1a1a2e] placeholder:text-[#9a99b0] focus:outline-none focus:border-brand-pink focus:bg-white transition-all"
+          />
         </div>
       </div>
 
