@@ -44,7 +44,7 @@ function AdFormInner({
     return ad.targetAudience.map((a) => (a === "Advertisers" ? "Brand" : a));
   });
   const [placement] = useState<string[]>(ad?.placement || ["Home Page"]);
-  // `adImageUrl` holds a hosted URL (existing ad or pasted link); `pickedImage`
+  // `adImageUrl` holds the hosted URL of an existing ad's image; `pickedImage`
   // holds a freshly picked file that gets uploaded as multipart `adImage`,
   // paired with the object URL used to preview it.
   const [adImageUrl, setAdImageUrl] = useState(ad?.adImageUrl || "");
@@ -325,24 +325,6 @@ function AdFormInner({
               </div>
             </div>
           )}
-        </div>
-
-        <div className="flex flex-col gap-1.5 mt-0.5">
-          <label className="text-[10px] font-semibold text-[#7a7a9a]">
-            Or paste an image URL
-          </label>
-          <input
-            type="text"
-            value={adImageUrl}
-            onChange={(e) => {
-              setAdImageUrl(e.target.value);
-              // A pasted URL replaces a picked file.
-              setPickedFile(null);
-              if (fileInputRef.current) fileInputRef.current.value = "";
-            }}
-            placeholder="https://..."
-            className="w-full bg-[#f8f8fa] border border-[#ececf2] rounded-xl px-3.5 py-2 text-xs text-[#1a1a2e] placeholder:text-[#9a99b0] focus:outline-none focus:border-brand-pink focus:bg-white transition-all"
-          />
         </div>
       </div>
 
