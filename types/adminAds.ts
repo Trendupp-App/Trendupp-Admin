@@ -31,7 +31,10 @@ export interface CreateAdDto {
   adType: string;
   targetAudience: string[];
   placement: string[];
-  adImageUrl: string;
+  // Either upload a binary file via `adImage` or point at an already hosted
+  // image with `adImageUrl`. The API accepts both on multipart/form-data.
+  adImage?: File;
+  adImageUrl?: string;
   linkUrl?: string;
   startDate: string;
   endDate: string;
@@ -43,6 +46,7 @@ export interface UpdateAdDto {
   adType?: string;
   targetAudience?: string[];
   placement?: string[];
+  adImage?: File;
   adImageUrl?: string;
   linkUrl?: string;
   startDate?: string;

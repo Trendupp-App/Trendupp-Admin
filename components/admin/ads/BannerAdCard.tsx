@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import {
   Pencil,
@@ -93,23 +93,13 @@ export default function BannerAdCard({
 
   const [imgError, setImgError] = useState(false);
 
-  const displayImageUrl = useMemo(() => {
-    if (typeof window !== "undefined" && ad.id) {
-      try {
-        const customImg = localStorage.getItem(`trendupp_ad_img_${ad.id}`);
-        if (customImg) return customImg;
-      } catch {
-        // ignore
-      }
-    }
-    return ad.adImageUrl;
-  }, [ad.id, ad.adImageUrl]);
-
-  // Anything that isn't a real image source falls through to the branded
-  // placeholder below rather than a stock photo standing in for the real ad.
+  // Images are hosted by the API (multipart `adImage` upload), so the stored
+  // URL is the single source of truth for every viewer. Anything that isn't a
+  // real image source falls through to the branded placeholder below rather
+  // than a stock photo standing in for the real ad.
   const isRenderableImage =
-    !!displayImageUrl &&
-    (displayImageUrl.startsWith("http") || displayImageUrl.startsWith("data:"));
+    !!ad.adImageUrl &&
+    (ad.adImageUrl.startsWith("http") || ad.adImageUrl.startsWith("data:"));
 
   return (
     <div
@@ -134,7 +124,7 @@ export default function BannerAdCard({
 
         {!imgError && isRenderableImage ? (
           <Image
-            src={displayImageUrl}
+            src={ad.adImageUrl}
             alt={ad.title}
             fill
             className="object-cover"

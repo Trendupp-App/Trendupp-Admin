@@ -214,7 +214,6 @@ export default function BannerAdsView() {
   const handleFormSubmit = (
     formData: CreateAdDto,
     statusAction?: "published" | "draft",
-    localDataUrl?: string,
   ) => {
     const payload = {
       ...formData,
@@ -222,13 +221,6 @@ export default function BannerAdsView() {
     };
 
     if (editingAd) {
-      if (localDataUrl && editingAd.id) {
-        try {
-          localStorage.setItem(`trendupp_ad_img_${editingAd.id}`, localDataUrl);
-        } catch {
-          // ignore
-        }
-      }
       updateMutation.mutate(
         { id: editingAd.id, data: payload },
         {
@@ -243,16 +235,6 @@ export default function BannerAdsView() {
           const newAd =
             "data" in res && res.data ? res.data : (res as BannerAdItem);
           if (newAd?.id) {
-            if (localDataUrl) {
-              try {
-                localStorage.setItem(
-                  `trendupp_ad_img_${newAd.id}`,
-                  localDataUrl,
-                );
-              } catch {
-                // ignore
-              }
-            }
             setCustomOrderIds((prev) => {
               const updated = [
                 newAd.id,
