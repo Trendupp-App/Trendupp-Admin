@@ -101,12 +101,6 @@ export default function BannerAdCard({
     !!ad.adImageUrl &&
     (ad.adImageUrl.startsWith("http") || ad.adImageUrl.startsWith("data:"));
 
-  // Anything that isn't a real image source falls through to the branded
-  // placeholder below rather than a stock photo standing in for the real ad.
-  const isRenderableImage =
-    !!displayImageUrl &&
-    (displayImageUrl.startsWith("http") || displayImageUrl.startsWith("data:"));
-
   return (
     <div
       className={cn(
@@ -130,7 +124,7 @@ export default function BannerAdCard({
 
         {!imgError && isRenderableImage ? (
           <Image
-            src={displayImageUrl}
+            src={ad.adImageUrl}
             alt={ad.title}
             fill
             className="object-cover"
