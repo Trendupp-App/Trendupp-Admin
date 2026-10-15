@@ -32,6 +32,7 @@ import {
   useDeleteBrandNote,
   useSuspendBrand,
   useReactivateBrand,
+  useDeleteBrand,
 } from "@/hooks/useAdminBrands";
 
 interface BrandProfileDrawerProps {
@@ -104,6 +105,7 @@ export default function BrandProfileDrawer({
   const deleteNoteMutation = useDeleteBrandNote();
   const suspendBrandMutation = useSuspendBrand();
   const reactivateBrandMutation = useReactivateBrand();
+  const deleteBrandMutation = useDeleteBrand();
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
@@ -882,7 +884,7 @@ export default function BrandProfileDrawer({
                     <h4 className="text-xs font-bold text-[#1a1a2e]">
                       Account Actions
                     </h4>
-                    <div className="grid grid-cols-1 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <button
                         onClick={() => setActiveAction("suspend")}
                         className="p-4 bg-white border border-[#e8e6f0]/60 rounded-2xl flex items-center justify-between hover:bg-[#fef2f2] transition-colors cursor-pointer group"
@@ -896,7 +898,7 @@ export default function BrandProfileDrawer({
                               Suspend Brand
                             </span>
                             <span className="text-[10px] text-[#9a99b0]">
-                              Temporarily freeze advertiser campaigns
+                              Temporarily restrict brand access to the platform.
                             </span>
                           </div>
                         </div>
@@ -916,6 +918,26 @@ export default function BrandProfileDrawer({
                             </span>
                             <span className="text-[10px] text-[#9a99b0]">
                               Restore full account privileges
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => setActiveAction("delete")}
+                        className="p-4 bg-white border border-[#e8e6f0]/60 rounded-2xl flex items-center justify-between hover:bg-[#fef2f2] transition-colors cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-[#fee2e2] text-[#dc2626] flex items-center justify-center font-bold">
+                            <Trash2 size={18} />
+                          </div>
+                          <div className="flex flex-col text-left">
+                            <span className="text-xs font-bold text-[#dc2626]">
+                              Delete Brand Account
+                            </span>
+                            <span className="text-[10px] text-[#9a99b0]">
+                              Permanently delete account and all associated
+                              brand data.
                             </span>
                           </div>
                         </div>
@@ -948,6 +970,17 @@ export default function BrandProfileDrawer({
                           "You have successfully reactivated this brand account.",
                         );
                         setIsSuccessModalOpen(true);
+                      },
+                    });
+                  } else if (activeAction === "delete" && brandId) {
+                    deleteBrandMutation.mutate(brandId, {
+                      onSuccess: () => {
+                        setSuccessModalTitle("Account Deleted");
+                        setSuccessModalMessage(
+                          "You have successfully deleted this brand account.",
+                        );
+                        setIsSuccessModalOpen(true);
+                        onClose();
                       },
                     });
                   } else {

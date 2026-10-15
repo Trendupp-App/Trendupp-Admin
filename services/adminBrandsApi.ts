@@ -115,6 +115,10 @@ export const adminBrandsApi = {
   reactivateBrand: (id: string) =>
     apiClient.patch<{ message: string }>(`/admin/users/${id}/reactivate`),
 
+  // 9c. Delete Brand Account
+  deleteBrand: (id: string) =>
+    apiClient.delete<{ message?: string }>(`/admin/users/${id}`),
+
   // 10. Brand Campaign History
   getBrandCampaignHistory: (id: string, page = 1, limit = 10) =>
     apiClient.get<{

@@ -72,7 +72,7 @@ const formatLastLogin = (dateString?: string | null) => {
 const ROLE_TYPES = [
   {
     title: "Support Agent",
-    description: "Handles disputes, tickets, chat approvals.",
+    description: "Supports dispute communication, views platform information.",
   },
   {
     title: "Finance Admin",
@@ -80,7 +80,7 @@ const ROLE_TYPES = [
   },
   {
     title: "Moderator",
-    description: "Review content, reports, and flags.",
+    description: "Manages campaign, content, chat requests and dispute resolution.",
   },
   {
     title: "Super Admin",

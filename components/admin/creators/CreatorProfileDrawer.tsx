@@ -61,8 +61,7 @@ const ACTIONS = [
     desc: "Temporarily restrict creator access to the platform.",
     icon: Ban,
     color: "text-[#ea580c]",
-    border: "border-[#fde68a]",
-    bg: "bg-[#fffbeb]",
+    hover: "hover:bg-[#fffbeb]",
     iconBg: "bg-[#fff7ed]",
   },
   {
@@ -71,8 +70,7 @@ const ACTIONS = [
     desc: "Restrict creator from accessing or participating in any campaigns.",
     icon: ShieldOff,
     color: "text-[#ea580c]",
-    border: "border-[#fde68a]",
-    bg: "bg-[#fffbeb]",
+    hover: "hover:bg-[#fffbeb]",
     iconBg: "bg-[#fff7ed]",
   },
   {
@@ -81,8 +79,7 @@ const ACTIONS = [
     desc: "Restore full account privileges for this creator.",
     icon: ShieldCheck,
     color: "text-[#16a34a]",
-    border: "border-[#bbf7d0]",
-    bg: "bg-[#f0fdf4]",
+    hover: "hover:bg-[#f0fdf4]",
     iconBg: "bg-[#dcfce7]",
   },
   {
@@ -91,8 +88,7 @@ const ACTIONS = [
     desc: "Manually adjust creator tier level (Nano, Micro, Macro, Mega).",
     icon: Layers,
     color: "text-[#2f63eb]",
-    border: "border-[#dbeafe]",
-    bg: "bg-[#eff6ff]",
+    hover: "hover:bg-[#eff6ff]",
     iconBg: "bg-[#dbeafe]",
   },
   {
@@ -101,8 +97,7 @@ const ACTIONS = [
     desc: "Permanently delete account and all associated creator data.",
     icon: Trash2,
     color: "text-[#dc2626]",
-    border: "border-[#fecaca]",
-    bg: "bg-[#fef2f2]",
+    hover: "hover:bg-[#fef2f2]",
     iconBg: "bg-[#fee2e2]",
     destructive: true,
   },
@@ -1312,7 +1307,7 @@ export default function CreatorProfileDrawer({
                       trail.
                     </div>
 
-                    <div className="flex flex-col gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {ACTIONS.map((a) => {
                         const Icon = a.icon;
                         return (
@@ -1320,24 +1315,23 @@ export default function CreatorProfileDrawer({
                             key={a.actionType}
                             onClick={() => setActiveAction(a.actionType)}
                             className={cn(
-                              "w-full text-left p-4 rounded-2xl border flex items-start gap-3.5 transition-all cursor-pointer hover:shadow-xs",
-                              a.bg,
-                              a.border,
+                              "p-4 bg-white border border-[#e8e6f0]/60 rounded-2xl flex items-center gap-3 text-left transition-colors cursor-pointer",
+                              a.hover,
                             )}
                           >
                             <div
                               className={cn(
-                                "w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5",
+                                "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
                                 a.iconBg,
                                 a.color,
                               )}
                             >
-                              <Icon size={16} />
+                              <Icon size={18} />
                             </div>
-                            <div className="flex flex-col gap-0.5">
+                            <div className="flex flex-col">
                               <span
                                 className={cn(
-                                  "text-sm font-bold",
+                                  "text-xs font-bold",
                                   a.destructive
                                     ? "text-[#dc2626]"
                                     : "text-[#1a1a2e]",
@@ -1345,7 +1339,7 @@ export default function CreatorProfileDrawer({
                               >
                                 {a.label}
                               </span>
-                              <span className="text-[11px] text-[#9a99b0] leading-relaxed">
+                              <span className="text-[10px] text-[#9a99b0]">
                                 {a.desc}
                               </span>
                             </div>
