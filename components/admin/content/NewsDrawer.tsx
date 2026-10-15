@@ -553,6 +553,7 @@ function NewsDrawerFormInner({
   const [category, setCategory] = useState(article?.category || "Industry");
   const [source, setSource] = useState(article?.brand || "Trendupp Africa");
   const [authorName, setAuthorName] = useState(article?.authorName || "");
+  const [isTopNews, setIsTopNews] = useState(article?.isTopNews ?? false);
   // Holds the existing cover image when editing, so saving without a new
   // upload preserves it. Cleared as soon as a file is chosen.
   const [coverUrl, setCoverUrl] = useState(
@@ -645,6 +646,7 @@ function NewsDrawerFormInner({
       content: bodyContent || `<p>${title.trim()}</p>`,
       category,
       status: customStatus,
+      isTopNews,
       coverImage: coverFile || coverUrl || null,
       brand: source.trim() || "Trendupp Africa",
       authorName: authorName.trim(),
@@ -732,6 +734,36 @@ function NewsDrawerFormInner({
             <option value="Tips">Tips</option>
             <option value="Announcements">Announcements</option>
           </select>
+        </div>
+
+        {/* Top News */}
+        <div className="flex items-center justify-between gap-4 bg-white border border-[#e8e6f0] rounded-xl px-4 py-3">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a9a]">
+              Top News
+            </span>
+            <span className="text-[11px] text-[#7a7a9a]">
+              Feature this article as top news
+            </span>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isTopNews}
+            aria-label="Mark as top news"
+            onClick={() => setIsTopNews((prev) => !prev)}
+            className={cn(
+              "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors cursor-pointer",
+              isTopNews ? "bg-brand-pink" : "bg-[#e8e6f0]",
+            )}
+          >
+            <span
+              className={cn(
+                "inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform",
+                isTopNews ? "translate-x-4.5" : "translate-x-0.5",
+              )}
+            />
+          </button>
         </div>
 
         {/* Source */}

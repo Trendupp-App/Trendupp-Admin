@@ -128,6 +128,11 @@ function SortableArticleRow({
           >
             {article.category || "General"}
           </span>
+          {article.isTopNews && (
+            <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 text-brand-pink bg-rose-50">
+              Top News
+            </span>
+          )}
           <span
             className={cn(
               "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1",

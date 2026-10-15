@@ -222,6 +222,22 @@ export function useReactivateBrand() {
   });
 }
 
+export function useDeleteBrand() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => adminBrandsApi.deleteBrand(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-brands-list"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-brand-summary"] });
+    },
+    onError: (err: AxiosError<{ message?: string }>) => {
+      toast.error(
+        err.response?.data?.message || "Failed to delete brand account",
+      );
+    },
+  });
+}
+
 export function useBrandCampaignHistory(
   id: string | null,
   page = 1,
