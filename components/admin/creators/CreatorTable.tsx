@@ -32,6 +32,7 @@ interface CreatorItem {
   handle: string;
   email: string;
   country: string;
+  gender: string;
   tier: "Mega" | "Macro" | "Micro" | "Nano" | "";
   niche: string;
   platforms: ("IG" | "TikTok" | "YT" | "X" | "FB")[];
@@ -246,6 +247,9 @@ export default function CreatorTable() {
           handle: resolvedHandle,
           email: c.email || "—",
           country: extractedCountry,
+          gender: c.gender
+            ? c.gender.charAt(0).toUpperCase() + c.gender.slice(1).toLowerCase()
+            : "",
           tier: extractedTier,
           niche: extractedNiche,
           platforms: parsedPlatforms,
@@ -363,6 +367,7 @@ export default function CreatorTable() {
       "Handle",
       "Email",
       "Country",
+      "Gender",
       "Tier",
       "Platforms",
       "Profile",
@@ -378,6 +383,7 @@ export default function CreatorTable() {
       `"${c.handle.replace(/"/g, '""')}"`,
       c.email,
       c.country,
+      c.gender,
       c.tier,
       `"${c.platforms.join(", ")}"`,
       `${c.completion}%`,
@@ -659,7 +665,7 @@ export default function CreatorTable() {
         </div>
       ) : (
         <div className="w-full overflow-x-auto no-scrollbar">
-          <table className="w-full min-w-[1280px] text-left border-collapse text-xs">
+          <table className="w-full min-w-[1370px] text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-[#e8e6f0]/40 text-[10px] font-bold text-[#9a99b0] uppercase tracking-wider">
                 <th className="pb-3.5 pt-1 pl-2 pr-3 min-w-[110px] whitespace-nowrap">
@@ -673,6 +679,9 @@ export default function CreatorTable() {
                 </th>
                 <th className="pb-3.5 pt-1 px-3 min-w-[100px] whitespace-nowrap">
                   Country
+                </th>
+                <th className="pb-3.5 pt-1 px-3 min-w-[90px] whitespace-nowrap">
+                  Gender
                 </th>
                 <th className="pb-3.5 pt-1 px-3 min-w-[90px] whitespace-nowrap">
                   Tier
@@ -734,6 +743,11 @@ export default function CreatorTable() {
                   </td>
                   <td className="py-3 px-3 text-[#5a5a7a] whitespace-nowrap font-semibold">
                     {c.country}
+                  </td>
+                  <td className="py-3 px-3 text-[#5a5a7a] whitespace-nowrap">
+                    {c.gender || (
+                      <span className="text-[#9a99b0] text-[11px]">—</span>
+                    )}
                   </td>
                   <td className="py-3 px-3 whitespace-nowrap">
                     {c.tier ? (
