@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 
 import { useAdminBrandsList } from "@/hooks/useAdminBrands";
+import { useCreatorCategories } from "@/hooks/useCampaign";
 import {
   useCreateSocialImpactCampaign,
   useUpdateSocialImpactCampaign,
@@ -27,6 +28,17 @@ import type {
   CreateSocialImpactCampaignDto,
   UpdateSocialImpactCampaignDto,
 } from "@/types/adminSocialImpact";
+
+const compactNumber = new Intl.NumberFormat("en", {
+  notation: "compact",
+  maximumFractionDigits: 0,
+});
+
+function formatFollowerRange(min: number, max: number | null) {
+  return max === null
+    ? `${compactNumber.format(min)}+`
+    : `${compactNumber.format(min)}-${compactNumber.format(max)}`;
+}
 
 interface BrandOption {
   id: string;
@@ -123,6 +135,8 @@ export default function CreateCampaignPage() {
   const [isPlatformDropdownOpen, setIsPlatformDropdownOpen] = useState(false);
   const platformDropdownRef = useRef<HTMLDivElement>(null);
   const [isTierDropdownOpen, setIsTierDropdownOpen] = useState(false);
+  const { data: creatorCategories = [], isLoading: isLoadingTiers } =
+    useCreatorCategories();
   const tierDropdownRef = useRef<HTMLDivElement>(null);
 
   const handleTogglePlatform = (p: string) => {
@@ -860,14 +874,21 @@ export default function CreateCampaignPage() {
                     role="listbox"
                     className="absolute top-full left-0 right-0 z-30 mt-1 bg-white border border-[#e8e6f0] rounded-2xl overflow-hidden shadow-xl"
                   >
-                    {(
-                      [
-                        { t: "Nano", range: "1K-10K", min: "Minimum $50" },
-                        { t: "Micro", range: "10K-200K", min: "Minimum $150" },
-                        { t: "Macro", range: "200K-1M", min: "Minimum $400" },
-                        { t: "Mega", range: "1M+", min: "Minimum $2,000" },
-                      ] as { t: string; range: string; min: string }[]
-                    ).map(({ t, range, min }) => {
+                    {isLoadingTiers ? (
+                      <p className="px-4 py-3.5 text-[11px] font-medium text-[#9a99b0]">
+                        Loading tiers...
+                      </p>
+                    ) : creatorCategories.length === 0 ? (
+                      <p className="px-4 py-3.5 text-[11px] font-medium text-[#9a99b0]">
+                        No creator tiers available
+                      </p>
+                    ) : null}
+                    {creatorCategories.map((category) => {
+                      const t = category.name;
+                      const range = formatFollowerRange(
+                        category.minFollowers,
+                        category.maxFollowers,
+                      );
                       const isSelected = selectedTiers.includes(t);
                       return (
                         <button
@@ -901,9 +922,14 @@ export default function CreateCampaignPage() {
                               {range}
                             </span>
                           </span>
-                          {/* Minimum budget */}
-                          <span className="text-[11px] font-medium text-[#9a99b0] whitespace-nowrap">
-                            {min}
+                          {/* Reward tokens */}
+                          <span className="flex items-center gap-1 text-[11px] font-bold text-[#1a1a2e] whitespace-nowrap">
+                            {category.rewardTokens ?? 0}
+                            <img
+                              src="/token.svg"
+                              alt="tokens"
+                              className="w-3.5 h-3.5"
+                            />
                           </span>
                           <ChevronRight
                             size={14}
