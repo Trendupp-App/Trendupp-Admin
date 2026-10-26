@@ -72,6 +72,7 @@ export interface AdminBrandListItem {
     | null;
   city?: string | null;
   country?: string | null;
+  gender?: string | null;
   profileCompletion?: number;
   status: "ACTIVE" | "SUSPENDED" | "PENDING" | string;
   totalSpend?: number;
