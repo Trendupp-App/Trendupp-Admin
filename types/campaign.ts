@@ -15,6 +15,11 @@ export interface CreatorCategory extends BaseEntity {
   name: string;
   minFollowers: number;
   maxFollowers: number | null;
+  minCostCreateNaira?: number;
+  minCostCreateUsd?: number;
+  minCostAmplifyNaira?: number;
+  minCostAmplifyUsd?: number;
+  rewardTokens?: number;
 }
 
 // ── Enums (validated by API)

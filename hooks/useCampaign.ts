@@ -5,6 +5,14 @@ import type { AxiosError } from "axios";
 import { VetDraftPayload } from "@/types/submissions";
 import { CreateDisputePayload } from "@/types/dispute";
 
+export function useCreatorCategories() {
+  return useQuery({
+    queryKey: ["creator-categories"],
+    queryFn: () => campaignApi.getCreatorCategories().then((r) => r.data),
+    staleTime: 1000 * 60 * 10,
+  });
+}
+
 export function useCampaign(id: string | null) {
   return useQuery({
     queryKey: ["campaign", id],
