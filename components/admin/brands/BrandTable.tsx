@@ -111,6 +111,9 @@ export default function BrandTable() {
           repEmail,
           industry: b.industry || "General",
           location: formatLocation(b.location, b.city, b.country),
+          gender: b.gender
+            ? b.gender.charAt(0).toUpperCase() + b.gender.slice(1).toLowerCase()
+            : "",
           completion: b.profileCompletion ?? 0,
           status: normalizedStatus,
           totalSpend: b.totalSpend || 0,
@@ -217,6 +220,7 @@ export default function BrandTable() {
       "Email",
       "Industry",
       "Location",
+      "Gender",
       "Profile Completion",
       "Total Spend",
       "Status",
@@ -230,6 +234,7 @@ export default function BrandTable() {
       b.repEmail,
       b.industry,
       `"${b.location.replace(/"/g, '""')}"`,
+      b.gender,
       `${b.completion}%`,
       `"₦${b.totalSpend.toLocaleString()}"`,
       b.status,
@@ -408,7 +413,7 @@ export default function BrandTable() {
 
       {/* Directory Table */}
       <div className="w-full overflow-x-auto no-scrollbar rounded-2xl border border-[#e8e6f0]/60">
-        <table className="w-full min-w-[1100px] text-left border-collapse text-xs">
+        <table className="w-full min-w-[1190px] text-left border-collapse text-xs">
           <thead>
             <tr className="bg-[#faf9fc] border-b border-[#e8e6f0]/60 text-[10px] font-extrabold uppercase tracking-wider text-[#7a7a9a]">
               <th className="py-3.5 px-4 whitespace-nowrap">Brand ID</th>
@@ -416,6 +421,7 @@ export default function BrandTable() {
               <th className="py-3.5 px-4 whitespace-nowrap">Representative</th>
               <th className="py-3.5 px-4 whitespace-nowrap">Industry</th>
               <th className="py-3.5 px-4 whitespace-nowrap">Location</th>
+              <th className="py-3.5 px-4 whitespace-nowrap">Gender</th>
               <th className="py-3.5 px-4 whitespace-nowrap">
                 Profile Completion
               </th>
@@ -454,6 +460,9 @@ export default function BrandTable() {
                     <div className="w-20 h-3.5 bg-[#e8e6f0]/60 rounded-md" />
                   </td>
                   <td className="py-4 px-4">
+                    <div className="w-12 h-3.5 bg-[#e8e6f0]/60 rounded-md" />
+                  </td>
+                  <td className="py-4 px-4">
                     <div className="w-24 h-3 bg-[#e8e6f0]/60 rounded-md" />
                   </td>
                   <td className="py-4 px-4">
@@ -473,7 +482,7 @@ export default function BrandTable() {
             ) : filteredBrands.length === 0 ? (
               <tr>
                 <td
-                  colSpan={10}
+                  colSpan={11}
                   className="py-8 text-center text-[#9a99b0] text-xs"
                 >
                   No brands found matching your criteria.
@@ -521,6 +530,11 @@ export default function BrandTable() {
                   </td>
                   <td className="py-3.5 px-4 text-[#5a5a7a] font-medium">
                     {brand.location}
+                  </td>
+                  <td className="py-3.5 px-4 text-[#5a5a7a] font-medium whitespace-nowrap">
+                    {brand.gender || (
+                      <span className="text-[#9a99b0] text-[11px]">—</span>
+                    )}
                   </td>
                   <td className="py-3.5 px-4">
                     <div className="flex items-center gap-2 max-w-[120px]">
