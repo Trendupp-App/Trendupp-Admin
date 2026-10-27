@@ -15,6 +15,7 @@ import {
   Clock,
   XCircle,
   ExternalLink,
+  Link2,
   CheckCircle2,
   Star,
   ChevronDown,
@@ -34,6 +35,7 @@ import {
   useExtendSocialImpactDeadline,
   useCloseSocialImpactApplications,
 } from "@/hooks/useAdminSocialImpact";
+import type { SocialImpactParticipant } from "@/types/adminSocialImpact";
 import SocialImpactActionModal, {
   type SocialActionType,
 } from "@/components/admin/campaigns/SocialImpactActionModal";
@@ -82,6 +84,22 @@ export default function SocialImpactDetailsPage({
 
   const campaignData = campaign;
   const rawParticipantsList = participantsData?.data || [];
+  // API statuses: no_submission | pending_review | approved | rejected.
+  // A participant with no content link has nothing to review yet.
+  const getLinkHost = (url: string) => {
+    try {
+      return new URL(url).hostname.replace(/^www\./, "");
+    } catch {
+      return "External link";
+    }
+  };
+  const getParticipantStatus = (p: SocialImpactParticipant) => {
+    const status = (p.status || "").toLowerCase();
+    if (!p.contentLink || status === "no_submission") return "No Submission";
+    if (status === "approved") return "Approved";
+    if (status === "rejected") return "Rejected";
+    return "Pending Review";
+  };
   const liveParticipantsCount =
     participantsData?.total ??
     rawParticipantsList.length ??
@@ -157,12 +175,12 @@ export default function SocialImpactDetailsPage({
     ];
 
     const rows = rawParticipantsList.map((p) => [
-      p.creatorName || "N/A",
-      p.creatorHandle || "N/A",
-      p.creatorTier || "N/A",
-      p.status || "No Submission",
-      p.submissionUrl || "None",
-      p.tokensEarned ?? 0,
+      p.creator?.name || "N/A",
+      p.creator?.username || "N/A",
+      p.creator?.tier || "N/A",
+      getParticipantStatus(p),
+      p.contentLink || "None",
+      p.tokenReward ?? 0,
       campaignData.title,
       campaignData.brandName || "Trendupp",
       campaignData.goal || "Amplify Content",
@@ -652,53 +670,52 @@ export default function SocialImpactDetailsPage({
           ) : (
             <div className="flex flex-col gap-4 text-xs">
               {rawParticipantsList
-                .filter((p) => {
-                  if (subTab === "No Submission")
-                    return !p.submissionUrl || p.status === "No Submission";
-                  if (subTab === "Pending Review")
-                    return p.status === "Pending";
-                  if (subTab === "Approved") return p.status === "Approved";
-                  if (subTab === "Rejected") return p.status === "Rejected";
-                  return true;
-                })
+                .filter(
+                  (p) => subTab === "All" || getParticipantStatus(p) === subTab,
+                )
                 .map((p) => (
                   <div
-                    key={p.id}
+                    key={p.applicationId}
                     className="bg-white border border-[#e8e6f0] rounded-3xl p-5 flex flex-col gap-4 shadow-xs"
                   >
                     {/* Header Row */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                       <div className="flex items-center gap-3.5">
                         <UserAvatar
-                          initials={(p.creatorName || "Creator").slice(0, 2)}
+                          avatarUrl={p.creator?.avatarUrl}
+                          initials={(p.creator?.name || "Creator").slice(0, 2)}
                           size={42}
                         />
                         <div className="flex flex-col text-left gap-0.5">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-bold text-[#1a1a2e] text-sm">
-                              {p.creatorName || "Creator"}
+                              {p.creator?.name || "Creator"}
                             </span>
                             <span className="text-xs text-[#7a7a9a] font-medium">
-                              {p.creatorHandle || "@creator"}
+                              {p.creator?.username || "@creator"}
                             </span>
                             <span className="flex items-center gap-1 text-[11px] font-bold text-[#1a1a2e]">
                               <Star
                                 size={11}
                                 className="fill-[#f59e0b] text-[#f59e0b]"
                               />{" "}
-                              4.9
+                              {p.creator?.rating ?? "—"}
                             </span>
                             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#f5f3ff] text-[#7c3aed]">
-                              {p.creatorTier || "Micro"}
+                              {p.creator?.tier || "—"}
                             </span>
-                            <span className="text-[11px] text-[#7a7a9a] font-medium">
-                              180K followers
-                            </span>
-                            <span className="text-[11px] text-[#7a7a9a] font-medium">
-                              5.2% engagement
-                            </span>
+                            {p.creator?.followers && (
+                              <span className="text-[11px] text-[#7a7a9a] font-medium">
+                                {p.creator.followers} followers
+                              </span>
+                            )}
+                            {p.creator?.engagementRate && (
+                              <span className="text-[11px] text-[#7a7a9a] font-medium">
+                                {p.creator.engagementRate} engagement
+                              </span>
+                            )}
                             <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#fff0f5] text-brand-pink border border-[#fbcfe8] flex items-center gap-1">
-                              <Ticket size={11} /> 100 Tokens
+                              <Ticket size={11} /> {p.tokenReward ?? 0} Tokens
                             </span>
                           </div>
                         </div>
@@ -706,15 +723,15 @@ export default function SocialImpactDetailsPage({
 
                       {/* Status / Action Button */}
                       <div className="shrink-0 self-end sm:self-auto">
-                        {!p.submissionUrl || p.status === "No Submission" ? (
+                        {getParticipantStatus(p) === "No Submission" ? (
                           <span className="px-4 py-1.5 rounded-xl text-xs font-bold border border-[#e8e6f0] text-[#7a7a9a] bg-[#faf9fc]">
                             No Submission
                           </span>
-                        ) : p.status === "Approved" ? (
+                        ) : getParticipantStatus(p) === "Approved" ? (
                           <span className="px-4 py-1.5 rounded-xl text-xs font-bold border border-[#bbf7d0] text-[#16a34a] bg-[#f0fdf4] flex items-center gap-1.5">
                             <CheckCircle2 size={13} /> Accepted
                           </span>
-                        ) : p.status === "Rejected" ? (
+                        ) : getParticipantStatus(p) === "Rejected" ? (
                           <span className="px-4 py-1.5 rounded-xl text-xs font-bold border border-[#fecdd3] text-[#e11d48] bg-[#fff1f2] flex items-center gap-1.5">
                             <XCircle size={13} /> Rejected
                           </span>
@@ -725,7 +742,7 @@ export default function SocialImpactDetailsPage({
                               onClick={() =>
                                 approveMutation.mutate({
                                   campaignId: id,
-                                  participantId: p.id,
+                                  participantId: p.applicationId,
                                 })
                               }
                               className="h-8.5 px-4 bg-white border border-[#bbf7d0] text-[#16a34a] hover:bg-[#f0fdf4] text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
@@ -737,7 +754,7 @@ export default function SocialImpactDetailsPage({
                                 setActionModal({
                                   isOpen: true,
                                   type: "reject-participant",
-                                  participantId: p.id,
+                                  participantId: p.applicationId,
                                 })
                               }
                               className="h-8.5 px-4 bg-white border border-[#fecdd3] text-[#e11d48] hover:bg-[#fff1f2] text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
@@ -750,24 +767,37 @@ export default function SocialImpactDetailsPage({
                     </div>
 
                     {/* Submitted Content Link Card (Mockup Image 2) */}
-                    {p.submissionUrl && (
-                      <div className="border border-[#e8e6f0] rounded-2xl p-4 flex flex-col gap-1.5 bg-[#faf9fc]">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#9a99b0]">
-                          CONTENT LINK
+                    {p.contentLink && (
+                      <a
+                        href={p.contentLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={p.contentLink}
+                        className="group border border-[#e8e6f0] rounded-2xl p-3.5 flex items-center gap-3 bg-[#faf9fc] hover:bg-[#fff0f5] hover:border-[#fbcfe8] transition-colors"
+                      >
+                        <span className="w-9 h-9 rounded-xl bg-white border border-[#e8e6f0] text-brand-pink flex items-center justify-center shrink-0 group-hover:border-[#fbcfe8]">
+                          <Link2 size={16} />
                         </span>
-                        <a
-                          href={p.submissionUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs font-bold text-[#1a1a2e] hover:text-brand-pink flex items-center gap-1.5 break-all"
-                        >
-                          {p.submissionUrl}{" "}
-                          <ExternalLink
-                            size={13}
-                            className="shrink-0 text-[#9a99b0]"
-                          />
-                        </a>
-                      </div>
+                        <span className="flex-1 min-w-0 flex flex-col">
+                          <span className="text-xs font-bold text-[#1a1a2e]">
+                            View submitted content
+                          </span>
+                          <span className="text-[11px] font-medium text-[#9a99b0] truncate">
+                            {getLinkHost(p.contentLink)}
+                            {p.submittedAt &&
+                              ` • Submitted ${new Date(
+                                p.submittedAt,
+                              ).toLocaleDateString("en-GB", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}`}
+                          </span>
+                        </span>
+                        <span className="h-8 px-3.5 rounded-xl bg-brand-pink text-white text-xs font-bold flex items-center gap-1.5 shrink-0 group-hover:opacity-90">
+                          Open <ExternalLink size={12} />
+                        </span>
+                      </a>
                     )}
                   </div>
                 ))}

@@ -85,28 +85,40 @@ export interface UpdateSocialImpactCampaignDto {
   isDraft?: boolean;
 }
 
-export interface SocialImpactParticipant {
+export interface SocialImpactParticipantCreator {
   id: string;
-  campaignId: string;
-  creatorId: string;
-  creatorName: string;
-  creatorHandle: string;
-  creatorAvatar?: string | null;
-  creatorTier?: string | null;
-  status: "Pending" | "Approved" | "Rejected" | "No Submission";
-  submissionUrl?: string | null;
-  submissionNotes?: string | null;
-  tokensEarned?: number | null;
-  submittedAt?: string | null;
-  rejectionReason?: string | null;
+  name: string;
+  username: string;
+  avatarUrl: string | null;
+  rating: number;
+  tier: string;
+  followers: string;
+  engagementRate: string;
+}
+
+export type SocialImpactParticipantStatus =
+  | "no_submission"
+  | "pending_review"
+  | "approved"
+  | "rejected";
+
+export interface SocialImpactParticipant {
+  applicationId: string;
+  creator: SocialImpactParticipantCreator;
+  tokenReward: number;
+  contentLink: string | null;
+  status: SocialImpactParticipantStatus | string;
+  submittedAt: string | null;
 }
 
 export interface PaginatedParticipantsResponse {
   data: SocialImpactParticipant[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 export interface UpdateSocialImpactStatusDto {
