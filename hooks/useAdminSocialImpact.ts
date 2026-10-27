@@ -92,7 +92,7 @@ export function useAdminSocialImpactParticipants(
       if (Array.isArray(data)) {
         return { data, total: data.length, page: 1, limit: 20, totalPages: 1 };
       }
-      return data;
+      return { data: data.data ?? [], ...data.meta };
     },
     enabled: Boolean(campaignId) && enabled,
   });
