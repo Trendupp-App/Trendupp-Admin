@@ -19,7 +19,6 @@ import {
   ShieldX,
   RotateCcw,
   CheckCircle2,
-  Layers,
   Download,
   Zap,
 } from "lucide-react";
@@ -44,7 +43,6 @@ import {
   useSuspendCreatorAccount,
   useSetCreatorCampaignAccess,
   useReactivateCreatorAccount,
-  useChangeCreatorTier,
   useBanCreator,
 } from "@/hooks/useAdminCreators";
 
@@ -92,15 +90,6 @@ const ACTIONS = [
     color: "text-[#16a34a]",
     hover: "hover:bg-[#f0fdf4]",
     iconBg: "bg-[#dcfce7]",
-  },
-  {
-    label: "Change Creator Tier",
-    actionType: "changeTier" as const,
-    desc: "Manually adjust creator tier level (Nano, Micro, Macro, Mega).",
-    icon: Layers,
-    color: "text-[#2f63eb]",
-    hover: "hover:bg-[#eff6ff]",
-    iconBg: "bg-[#dbeafe]",
   },
   {
     label: "Ban Creator Account",
@@ -221,7 +210,6 @@ export default function CreatorProfileDrawer({
   const suspendAccountMutation = useSuspendCreatorAccount();
   const campaignAccessMutation = useSetCreatorCampaignAccess();
   const reactivateAccountMutation = useReactivateCreatorAccount();
-  const changeTierMutation = useChangeCreatorTier();
   const banAccountMutation = useBanCreator();
 
   useEffect(() => {
@@ -317,20 +305,6 @@ export default function CreatorProfileDrawer({
           },
         },
       );
-    } else if (activeAction === "changeTier") {
-      changeTierMutation.mutate(
-        { id: creatorId, tier: inputValue },
-        {
-          onSuccess: () => {
-            setSuccessModalTitle("Creator tier changed successfully");
-            setSuccessModalMessage(
-              `You have successfully changed the creator tier to ${inputValue}`,
-            );
-            setIsSuccessModalOpen(true);
-            setActiveAction(null);
-          },
-        },
-      );
     } else if (activeAction === "ban") {
       banAccountMutation.mutate(
         { id: creatorId, reason: inputValue },
@@ -352,7 +326,6 @@ export default function CreatorProfileDrawer({
     suspendAccountMutation.isPending ||
     campaignAccessMutation.isPending ||
     reactivateAccountMutation.isPending ||
-    changeTierMutation.isPending ||
     banAccountMutation.isPending;
 
   // Dynamic reviews array
@@ -1371,7 +1344,6 @@ export default function CreatorProfileDrawer({
               {/* Action confirmation Modal */}
               <CreatorActionModal
                 action={activeAction}
-                currentTier={creatorTier}
                 onClose={() => setActiveAction(null)}
                 onConfirm={handleConfirmAction}
                 isSubmitting={isActionSubmitting}
