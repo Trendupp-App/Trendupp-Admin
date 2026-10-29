@@ -13,11 +13,12 @@ import {
   Plus,
   Ban,
   ShieldCheck,
+  ShieldX,
   CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdminStatusBadge } from "../AdminStatusBadge";
-import BrandActionModal from "./BrandActionModal";
+import BrandActionModal, { type BrandAction } from "./BrandActionModal";
 import SuccessModal from "../creators/SuccessModal";
 import NoteModal from "../creators/NoteModal";
 import { Portal } from "@/components/ui/portal";
@@ -32,7 +33,7 @@ import {
   useDeleteBrandNote,
   useSuspendBrand,
   useReactivateBrand,
-  useDeleteBrand,
+  useBanBrand,
 } from "@/hooks/useAdminBrands";
 
 interface BrandProfileDrawerProps {
@@ -69,9 +70,7 @@ export default function BrandProfileDrawer({
   brandId,
 }: BrandProfileDrawerProps) {
   const [activeTab, setActiveTab] = useState<TabType>("Overview");
-  const [activeAction, setActiveAction] = useState<
-    "suspend" | "reactivate" | "delete" | null
-  >(null);
+  const [activeAction, setActiveAction] = useState<BrandAction | null>(null);
 
   /* Note Modal states */
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
@@ -105,7 +104,7 @@ export default function BrandProfileDrawer({
   const deleteNoteMutation = useDeleteBrandNote();
   const suspendBrandMutation = useSuspendBrand();
   const reactivateBrandMutation = useReactivateBrand();
-  const deleteBrandMutation = useDeleteBrand();
+  const banBrandMutation = useBanBrand();
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
@@ -924,20 +923,19 @@ export default function BrandProfileDrawer({
                       </button>
 
                       <button
-                        onClick={() => setActiveAction("delete")}
+                        onClick={() => setActiveAction("ban")}
                         className="p-4 bg-white border border-[#e8e6f0]/60 rounded-2xl flex items-center justify-between hover:bg-[#fef2f2] transition-colors cursor-pointer group"
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-xl bg-[#fee2e2] text-[#dc2626] flex items-center justify-center font-bold">
-                            <Trash2 size={18} />
+                            <ShieldX size={18} />
                           </div>
                           <div className="flex flex-col text-left">
                             <span className="text-xs font-bold text-[#dc2626]">
-                              Delete Brand Account
+                              Ban Brand Account
                             </span>
                             <span className="text-[10px] text-[#9a99b0]">
-                              Permanently delete account and all associated
-                              brand data.
+                              Permanently ban this brand from the platform.
                             </span>
                           </div>
                         </div>
@@ -951,17 +949,25 @@ export default function BrandProfileDrawer({
               <BrandActionModal
                 action={activeAction}
                 onClose={() => setActiveAction(null)}
-                onConfirm={() => {
+                isSubmitting={
+                  suspendBrandMutation.isPending ||
+                  reactivateBrandMutation.isPending ||
+                  banBrandMutation.isPending
+                }
+                onConfirm={(reason) => {
                   if (activeAction === "suspend" && brandId) {
-                    suspendBrandMutation.mutate(brandId, {
-                      onSuccess: () => {
-                        setSuccessModalTitle("Account Suspended");
-                        setSuccessModalMessage(
-                          "You have successfully suspended this brand account.",
-                        );
-                        setIsSuccessModalOpen(true);
+                    suspendBrandMutation.mutate(
+                      { id: brandId, reason },
+                      {
+                        onSuccess: () => {
+                          setSuccessModalTitle("Account Suspended");
+                          setSuccessModalMessage(
+                            "You have successfully suspended this brand account.",
+                          );
+                          setIsSuccessModalOpen(true);
+                        },
                       },
-                    });
+                    );
                   } else if (activeAction === "reactivate" && brandId) {
                     reactivateBrandMutation.mutate(brandId, {
                       onSuccess: () => {
@@ -972,23 +978,19 @@ export default function BrandProfileDrawer({
                         setIsSuccessModalOpen(true);
                       },
                     });
-                  } else if (activeAction === "delete" && brandId) {
-                    deleteBrandMutation.mutate(brandId, {
-                      onSuccess: () => {
-                        setSuccessModalTitle("Account Deleted");
-                        setSuccessModalMessage(
-                          "You have successfully deleted this brand account.",
-                        );
-                        setIsSuccessModalOpen(true);
-                        onClose();
+                  } else if (activeAction === "ban" && brandId) {
+                    banBrandMutation.mutate(
+                      { id: brandId, reason },
+                      {
+                        onSuccess: () => {
+                          setSuccessModalTitle("Account Banned");
+                          setSuccessModalMessage(
+                            "You have permanently banned this brand account.",
+                          );
+                          setIsSuccessModalOpen(true);
+                        },
                       },
-                    });
-                  } else {
-                    setSuccessModalTitle("Action Successful");
-                    setSuccessModalMessage(
-                      "The requested brand action has completed.",
                     );
-                    setIsSuccessModalOpen(true);
                   }
                   setActiveAction(null);
                 }}

@@ -1,4 +1,5 @@
 import apiClient from "@/lib/apiClient";
+import type { AdminUserActionResponse } from "@/types/adminUserActions";
 import type {
   AdminBrandSummaryResponseDto,
   BrandSignupGrowthDto,
@@ -110,14 +111,17 @@ export const adminBrandsApi = {
     apiClient.get<AdminBrandDetails>(`/admin/brands/${id}`),
 
   // 9b. Suspend & Reactivate Brand Account
-  suspendBrand: (id: string) =>
-    apiClient.patch<{ message: string }>(`/admin/users/${id}/suspend`),
+  suspendBrand: (id: string, payload: { reason: string }) =>
+    apiClient.patch<AdminUserActionResponse>(
+      `/admin/brands/${id}/suspend`,
+      payload,
+    ),
   reactivateBrand: (id: string) =>
-    apiClient.patch<{ message: string }>(`/admin/users/${id}/reactivate`),
+    apiClient.patch<AdminUserActionResponse>(`/admin/brands/${id}/reactivate`),
 
-  // 9c. Delete Brand Account
-  deleteBrand: (id: string) =>
-    apiClient.delete<{ message?: string }>(`/admin/users/${id}`),
+  // 9c. Permanently Ban Brand Account
+  banBrand: (id: string, payload: { reason: string }) =>
+    apiClient.post<AdminUserActionResponse>(`/admin/brands/${id}/ban`, payload),
 
   // 10. Brand Campaign History
   getBrandCampaignHistory: (id: string, page = 1, limit = 10) =>

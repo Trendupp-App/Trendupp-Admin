@@ -16,6 +16,8 @@ import {
   Ban,
   ShieldOff,
   ShieldCheck,
+  ShieldX,
+  RotateCcw,
   CheckCircle2,
   Layers,
   Download,
@@ -26,7 +28,7 @@ import { FaTiktok, FaInstagram, FaYoutube } from "react-icons/fa";
 import { cn } from "@/lib/utils";
 import UserAvatar from "@/shared/UserAvatar";
 import { AdminStatusBadge } from "../AdminStatusBadge";
-import CreatorActionModal from "./CreatorActionModal";
+import CreatorActionModal, { type ActionType } from "./CreatorActionModal";
 import NoteModal from "./NoteModal";
 import SuccessModal from "./SuccessModal";
 import { Portal } from "@/components/ui/portal";
@@ -40,10 +42,10 @@ import {
   useUpdateCreatorNote,
   useDeleteCreatorNote,
   useSuspendCreatorAccount,
-  useSuspendCreatorCampaignAccess,
+  useSetCreatorCampaignAccess,
   useReactivateCreatorAccount,
   useChangeCreatorTier,
-  useDeleteCreatorAccount,
+  useBanCreator,
 } from "@/hooks/useAdminCreators";
 
 interface CreatorProfileDrawerProps {
@@ -74,6 +76,15 @@ const ACTIONS = [
     iconBg: "bg-[#fff7ed]",
   },
   {
+    label: "Restore Campaign Access",
+    actionType: "restoreCampaign" as const,
+    desc: "Allow creator to apply to and participate in campaigns again.",
+    icon: RotateCcw,
+    color: "text-[#16a34a]",
+    hover: "hover:bg-[#f0fdf4]",
+    iconBg: "bg-[#dcfce7]",
+  },
+  {
     label: "Reactivate Account",
     actionType: "reactivate" as const,
     desc: "Restore full account privileges for this creator.",
@@ -92,10 +103,10 @@ const ACTIONS = [
     iconBg: "bg-[#dbeafe]",
   },
   {
-    label: "Delete Creator Account",
-    actionType: "delete" as const,
-    desc: "Permanently delete account and all associated creator data.",
-    icon: Trash2,
+    label: "Ban Creator Account",
+    actionType: "ban" as const,
+    desc: "Permanently ban this creator from the platform.",
+    icon: ShieldX,
     color: "text-[#dc2626]",
     hover: "hover:bg-[#fef2f2]",
     iconBg: "bg-[#fee2e2]",
@@ -174,14 +185,7 @@ export default function CreatorProfileDrawer({
   creatorId,
 }: CreatorProfileDrawerProps) {
   const [activeTab, setActiveTab] = useState<TabType>("Overview");
-  const [activeAction, setActiveAction] = useState<
-    | "suspend"
-    | "suspendCampaign"
-    | "reactivate"
-    | "delete"
-    | "changeTier"
-    | null
-  >(null);
+  const [activeAction, setActiveAction] = useState<ActionType | null>(null);
 
   /* Note Modal states */
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
@@ -215,10 +219,10 @@ export default function CreatorProfileDrawer({
 
   /* Actions Mutations */
   const suspendAccountMutation = useSuspendCreatorAccount();
-  const suspendCampaignAccessMutation = useSuspendCreatorCampaignAccess();
+  const campaignAccessMutation = useSetCreatorCampaignAccess();
   const reactivateAccountMutation = useReactivateCreatorAccount();
   const changeTierMutation = useChangeCreatorTier();
-  const deleteAccountMutation = useDeleteCreatorAccount();
+  const banAccountMutation = useBanCreator();
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
@@ -272,8 +276,8 @@ export default function CreatorProfileDrawer({
         },
       );
     } else if (activeAction === "suspendCampaign") {
-      suspendCampaignAccessMutation.mutate(
-        { id: creatorId, reason: inputValue },
+      campaignAccessMutation.mutate(
+        { id: creatorId, canApply: false, reason: inputValue },
         {
           onSuccess: () => {
             setSuccessModalTitle("Campaign Access Suspended");
@@ -285,9 +289,23 @@ export default function CreatorProfileDrawer({
           },
         },
       );
+    } else if (activeAction === "restoreCampaign") {
+      campaignAccessMutation.mutate(
+        { id: creatorId, canApply: true },
+        {
+          onSuccess: () => {
+            setSuccessModalTitle("Campaign Access Restored");
+            setSuccessModalMessage(
+              "This creator can now apply to campaigns again",
+            );
+            setIsSuccessModalOpen(true);
+            setActiveAction(null);
+          },
+        },
+      );
     } else if (activeAction === "reactivate") {
       reactivateAccountMutation.mutate(
-        { id: creatorId, reason: inputValue },
+        { id: creatorId },
         {
           onSuccess: () => {
             setSuccessModalTitle("Account Reactivated");
@@ -313,18 +331,17 @@ export default function CreatorProfileDrawer({
           },
         },
       );
-    } else if (activeAction === "delete") {
-      deleteAccountMutation.mutate(
-        { id: creatorId },
+    } else if (activeAction === "ban") {
+      banAccountMutation.mutate(
+        { id: creatorId, reason: inputValue },
         {
           onSuccess: () => {
-            setSuccessModalTitle("Account Deleted");
+            setSuccessModalTitle("Account Banned");
             setSuccessModalMessage(
-              "You have successfully deleted this creator account",
+              "You have permanently banned this creator account",
             );
             setIsSuccessModalOpen(true);
             setActiveAction(null);
-            onClose();
           },
         },
       );
@@ -333,10 +350,10 @@ export default function CreatorProfileDrawer({
 
   const isActionSubmitting =
     suspendAccountMutation.isPending ||
-    suspendCampaignAccessMutation.isPending ||
+    campaignAccessMutation.isPending ||
     reactivateAccountMutation.isPending ||
     changeTierMutation.isPending ||
-    deleteAccountMutation.isPending;
+    banAccountMutation.isPending;
 
   // Dynamic reviews array
   const displayReviews = useMemo(() => {

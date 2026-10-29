@@ -1,4 +1,5 @@
 import apiClient from "@/lib/apiClient";
+import type { AdminUserActionResponse } from "@/types/adminUserActions";
 import type {
   AdminCreatorSummaryResponseDto,
   SignupGrowthItemDto,
@@ -166,32 +167,35 @@ export const adminCreatorsApi = {
 
   // 18. Suspend Account
   suspendCreatorAccount: (id: string, payload: { reason: string }) =>
-    apiClient.patch<{ message?: string }>(
-      `/admin/users/${id}/suspend`,
+    apiClient.patch<AdminUserActionResponse>(
+      `/admin/creators/${id}/suspend`,
       payload,
     ),
 
-  // 19. Suspend Campaign Access
-  suspendCreatorCampaignAccess: (id: string, payload: { reason: string }) =>
-    apiClient.patch<{ message?: string }>(`/admin/users/${id}/suspend`, {
-      ...payload,
-      scope: "campaign",
-    }),
+  // 19. Suspend / Restore Campaign Access
+  setCreatorCampaignAccess: (
+    id: string,
+    payload: { canApply: boolean; reason?: string },
+  ) =>
+    apiClient.patch<AdminUserActionResponse>(
+      `/admin/creators/${id}/campaign-access`,
+      payload,
+    ),
 
   // 20. Reactivate Account
-  reactivateCreatorAccount: (id: string, payload: { reason: string }) =>
-    apiClient.patch<{ message?: string }>(
-      `/admin/users/${id}/reactivate`,
-      payload,
+  reactivateCreatorAccount: (id: string) =>
+    apiClient.patch<AdminUserActionResponse>(
+      `/admin/creators/${id}/reactivate`,
     ),
 
   // 21. Change Creator Tier
   changeCreatorTier: (id: string, payload: { tier: string }) =>
     apiClient.patch<{ message?: string }>(`/admin/users/${id}`, payload),
 
-  // 22. Delete Creator Account
-  deleteCreatorAccount: (id: string, payload?: { reason?: string }) =>
-    apiClient.delete<{ message?: string }>(`/admin/users/${id}`, {
-      data: payload,
-    }),
+  // 22. Permanently Ban Creator Account
+  banCreator: (id: string, payload: { reason: string }) =>
+    apiClient.post<AdminUserActionResponse>(
+      `/admin/creators/${id}/ban`,
+      payload,
+    ),
 };

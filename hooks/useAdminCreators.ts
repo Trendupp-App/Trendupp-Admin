@@ -363,11 +363,18 @@ export function useSuspendCreatorAccount() {
   });
 }
 
-export function useSuspendCreatorCampaignAccess() {
+export function useSetCreatorCampaignAccess() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
-      adminCreatorsApi.suspendCreatorCampaignAccess(id, { reason }),
+    mutationFn: ({
+      id,
+      canApply,
+      reason,
+    }: {
+      id: string;
+      canApply: boolean;
+      reason?: string;
+    }) => adminCreatorsApi.setCreatorCampaignAccess(id, { canApply, reason }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-creators-list"] });
       queryClient.invalidateQueries({ queryKey: ["admin-creator-summary"] });
@@ -378,7 +385,7 @@ export function useSuspendCreatorCampaignAccess() {
     onError: (err: AxiosError<{ message?: string }>) => {
       toast.error(
         err?.response?.data?.message ??
-          "Failed to suspend creator campaign access",
+          "Failed to update creator campaign access",
       );
     },
   });
@@ -387,8 +394,8 @@ export function useSuspendCreatorCampaignAccess() {
 export function useReactivateCreatorAccount() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
-      adminCreatorsApi.reactivateCreatorAccount(id, { reason }),
+    mutationFn: ({ id }: { id: string }) =>
+      adminCreatorsApi.reactivateCreatorAccount(id),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-creators-list"] });
       queryClient.invalidateQueries({ queryKey: ["admin-creator-summary"] });
@@ -426,18 +433,21 @@ export function useChangeCreatorTier() {
   });
 }
 
-export function useDeleteCreatorAccount() {
+export function useBanCreator() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
-      adminCreatorsApi.deleteCreatorAccount(id, { reason }),
-    onSuccess: () => {
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      adminCreatorsApi.banCreator(id, { reason }),
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-creators-list"] });
       queryClient.invalidateQueries({ queryKey: ["admin-creator-summary"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-creator-details", variables.id],
+      });
     },
     onError: (err: AxiosError<{ message?: string }>) => {
       toast.error(
-        err?.response?.data?.message ?? "Failed to delete creator account",
+        err?.response?.data?.message ?? "Failed to ban creator account",
       );
     },
   });
