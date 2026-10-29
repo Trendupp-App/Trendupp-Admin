@@ -348,7 +348,8 @@ export function useSuspendCreatorAccount() {
   return useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) =>
       adminCreatorsApi.suspendCreatorAccount(id, { reason }),
-    onSuccess: (_, variables) => {
+    onSuccess: (res, variables) => {
+      toast.success(res.data?.message || "Creator account suspended");
       queryClient.invalidateQueries({ queryKey: ["admin-creators-list"] });
       queryClient.invalidateQueries({ queryKey: ["admin-creator-summary"] });
       queryClient.invalidateQueries({
@@ -375,7 +376,8 @@ export function useSetCreatorCampaignAccess() {
       canApply: boolean;
       reason?: string;
     }) => adminCreatorsApi.setCreatorCampaignAccess(id, { canApply, reason }),
-    onSuccess: (_, variables) => {
+    onSuccess: (res, variables) => {
+      toast.success(res.data?.message || "Creator campaign access updated");
       queryClient.invalidateQueries({ queryKey: ["admin-creators-list"] });
       queryClient.invalidateQueries({ queryKey: ["admin-creator-summary"] });
       queryClient.invalidateQueries({
@@ -396,7 +398,8 @@ export function useReactivateCreatorAccount() {
   return useMutation({
     mutationFn: ({ id }: { id: string }) =>
       adminCreatorsApi.reactivateCreatorAccount(id),
-    onSuccess: (_, variables) => {
+    onSuccess: (res, variables) => {
+      toast.success(res.data?.message || "Creator account reactivated");
       queryClient.invalidateQueries({ queryKey: ["admin-creators-list"] });
       queryClient.invalidateQueries({ queryKey: ["admin-creator-summary"] });
       queryClient.invalidateQueries({
@@ -411,34 +414,13 @@ export function useReactivateCreatorAccount() {
   });
 }
 
-export function useChangeCreatorTier() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, tier }: { id: string; tier: string }) =>
-      adminCreatorsApi.changeCreatorTier(id, { tier }),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["admin-creators-list"] });
-      queryClient.invalidateQueries({
-        queryKey: ["admin-creator-tier-distribution"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["admin-creator-details", variables.id],
-      });
-    },
-    onError: (err: AxiosError<{ message?: string }>) => {
-      toast.error(
-        err?.response?.data?.message ?? "Failed to change creator tier",
-      );
-    },
-  });
-}
-
 export function useBanCreator() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) =>
       adminCreatorsApi.banCreator(id, { reason }),
-    onSuccess: (_, variables) => {
+    onSuccess: (res, variables) => {
+      toast.success(res.data?.message || "Creator account banned");
       queryClient.invalidateQueries({ queryKey: ["admin-creators-list"] });
       queryClient.invalidateQueries({ queryKey: ["admin-creator-summary"] });
       queryClient.invalidateQueries({

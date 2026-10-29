@@ -188,11 +188,7 @@ export const adminCreatorsApi = {
       `/admin/creators/${id}/reactivate`,
     ),
 
-  // 21. Change Creator Tier
-  changeCreatorTier: (id: string, payload: { tier: string }) =>
-    apiClient.patch<{ message?: string }>(`/admin/users/${id}`, payload),
-
-  // 22. Permanently Ban Creator Account
+  // 21. Permanently Ban Creator Account
   banCreator: (id: string, payload: { reason: string }) =>
     apiClient.post<AdminUserActionResponse>(
       `/admin/creators/${id}/ban`,

@@ -228,7 +228,8 @@ export function useBanBrand() {
   return useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) =>
       adminBrandsApi.banBrand(id, { reason }),
-    onSuccess: (_, { id }) => {
+    onSuccess: (res, { id }) => {
+      toast.success(res.data?.message || "Brand account banned");
       queryClient.invalidateQueries({
         queryKey: ["admin-brand-details", id],
       });
