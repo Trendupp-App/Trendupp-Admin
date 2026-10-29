@@ -1,12 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { X, AlertTriangle, Trash2, ChevronDown } from "lucide-react";
+import { X, AlertTriangle, ShieldX, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Portal } from "@/components/ui/portal";
 
 export type ActionType =
-  "suspend" | "suspendCampaign" | "reactivate" | "delete" | "changeTier";
+  | "suspend"
+  | "suspendCampaign"
+  | "restoreCampaign"
+  | "reactivate"
+  | "ban"
+  | "changeTier";
 
 interface CreatorActionModalProps {
   action: ActionType | null;
@@ -26,7 +31,8 @@ const CONFIG: Record<
     inputPlaceholder: string;
     confirmText: string;
     confirmClass: string;
-    requiresConfirmWord?: string;
+    // Confirmation only — the endpoint takes no reason.
+    noInput?: boolean;
   }
 > = {
   suspend: {
@@ -49,26 +55,37 @@ const CONFIG: Record<
     confirmText: "Continue Suspend",
     confirmClass: "bg-[#ea580c] hover:bg-[#c2410c] text-white",
   },
+  restoreCampaign: {
+    title: "Restore Campaign Access",
+    warning:
+      "Creator will be able to apply to and participate in campaigns again.",
+    warningColor: "bg-[#f0fdf4] border-[#bbf7d0] text-[#166534]",
+    inputLabel: "",
+    inputPlaceholder: "",
+    confirmText: "Restore Access",
+    confirmClass: "bg-[#16a34a] hover:bg-[#15803d] text-white",
+    noInput: true,
+  },
   reactivate: {
     title: "Reactivate Account",
     warning: "Creator will regain full platform access upon confirmation.",
     warningColor: "bg-[#f0fdf4] border-[#bbf7d0] text-[#166534]",
-    inputLabel: "Reason for Reactivation *",
-    inputPlaceholder: "Enter the reason for reactivating this account...",
+    inputLabel: "",
+    inputPlaceholder: "",
     confirmText: "Reactivate Account",
     confirmClass: "bg-[#16a34a] hover:bg-[#15803d] text-white",
+    noInput: true,
   },
-  delete: {
-    title: "Delete Account",
+  ban: {
+    title: "Ban Account",
     warning:
-      "This is irreversible. All creator jobs, campaigns, and history within our community deleted.",
+      "This is permanent. The creator will lose access to the platform and cannot be reactivated.",
     warningColor: "bg-[#fef2f2] border-[#fecaca] text-[#991b1b]",
-    inputLabel: "Type DELETE to confirm",
-    inputPlaceholder: "DELETE",
-    confirmText: "Permanently Delete",
+    inputLabel: "Reason for Ban *",
+    inputPlaceholder: "Describe the violation that led to this ban...",
+    confirmText: "Permanently Ban",
     confirmClass:
       "bg-[#dc2626] hover:bg-[#b91c1c] text-white disabled:opacity-40 disabled:cursor-not-allowed",
-    requiresConfirmWord: "DELETE",
   },
   changeTier: {
     title: "Change Creator Tier",
@@ -94,10 +111,9 @@ export default function CreatorActionModal({
   if (!action) return null;
 
   const cfg = CONFIG[action];
-  const isDelete = action === "delete";
+  const isBan = action === "ban";
   const isChangeTier = action === "changeTier";
-  const deleteReady = isDelete && inputValue === "DELETE";
-  const canSubmit = isDelete ? deleteReady : inputValue.trim().length > 0;
+  const canSubmit = cfg.noInput || inputValue.trim().length > 0;
 
   const handleClose = () => {
     setInputValue("");
@@ -124,9 +140,9 @@ export default function CreatorActionModal({
           <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-[#e8e6f0]/40">
             <div className="flex items-center gap-2.5">
               {!isChangeTier &&
-                (isDelete ? (
+                (isBan ? (
                   <div className="w-7 h-7 rounded-full bg-[#fee2e2] flex items-center justify-center">
-                    <Trash2 size={13} className="text-[#dc2626]" />
+                    <ShieldX size={13} className="text-[#dc2626]" />
                   </div>
                 ) : (
                   <div className="w-7 h-7 rounded-full bg-[#fff7ed] flex items-center justify-center">
@@ -201,23 +217,25 @@ export default function CreatorActionModal({
               </div>
 
               {/* Input */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-[#1a1a2e]">
-                  {cfg.inputLabel}
-                </label>
-                <input
-                  type="text"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  placeholder={cfg.inputPlaceholder}
-                  className={cn(
-                    "h-9 w-full px-3.5 rounded-xl border text-xs text-[#1a1a2e] placeholder-[#9a99b0] focus:outline-none focus:ring-1 transition-colors",
-                    isDelete && inputValue.length > 0 && !deleteReady
-                      ? "border-[#fecaca] focus:ring-red-300"
-                      : "border-[#e8e6f0] focus:ring-brand-pink/30",
-                  )}
-                />
-              </div>
+              {!cfg.noInput && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[#1a1a2e]">
+                    {cfg.inputLabel}
+                  </label>
+                  <input
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder={cfg.inputPlaceholder}
+                    className={cn(
+                      "h-9 w-full px-3.5 rounded-xl border text-xs text-[#1a1a2e] placeholder-[#9a99b0] focus:outline-none focus:ring-1 transition-colors",
+                      isBan
+                        ? "border-[#fecaca] focus:ring-red-300"
+                        : "border-[#e8e6f0] focus:ring-brand-pink/30",
+                    )}
+                  />
+                </div>
+              )}
             </div>
           )}
 

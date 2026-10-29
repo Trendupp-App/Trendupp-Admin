@@ -185,8 +185,9 @@ export function useBrandDetails(id: string | null, enabled: boolean = true) {
 export function useSuspendBrand() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => adminBrandsApi.suspendBrand(id),
-    onSuccess: (res, id) => {
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      adminBrandsApi.suspendBrand(id, { reason }),
+    onSuccess: (res, { id }) => {
       queryClient.invalidateQueries({
         queryKey: ["admin-brand-details", id],
       });
@@ -222,18 +223,20 @@ export function useReactivateBrand() {
   });
 }
 
-export function useDeleteBrand() {
+export function useBanBrand() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => adminBrandsApi.deleteBrand(id),
-    onSuccess: () => {
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      adminBrandsApi.banBrand(id, { reason }),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({
+        queryKey: ["admin-brand-details", id],
+      });
       queryClient.invalidateQueries({ queryKey: ["admin-brands-list"] });
       queryClient.invalidateQueries({ queryKey: ["admin-brand-summary"] });
     },
     onError: (err: AxiosError<{ message?: string }>) => {
-      toast.error(
-        err.response?.data?.message || "Failed to delete brand account",
-      );
+      toast.error(err.response?.data?.message || "Failed to ban brand account");
     },
   });
 }
