@@ -62,6 +62,7 @@ export interface AdminBrandListItem {
   representative?: {
     name?: string;
     email?: string;
+    gender?: string | null;
   };
   representativeName?: string;
   representativeEmail?: string;
