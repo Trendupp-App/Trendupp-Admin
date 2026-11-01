@@ -79,6 +79,7 @@ export default function BrandTable() {
           b.representative?.name || b.representativeName || brandName;
         const repEmail =
           b.representative?.email || b.representativeEmail || b.email || "";
+        const repGender = b.representative?.gender || b.gender;
         const advertiserId =
           b.displayId || b.brandId || `#AD-${b.id.slice(0, 4)}`;
         const joinedDate = b.joinDate || b.joinedAt;
@@ -111,8 +112,9 @@ export default function BrandTable() {
           repEmail,
           industry: b.industry || "General",
           location: formatLocation(b.location, b.city, b.country),
-          gender: b.gender
-            ? b.gender.charAt(0).toUpperCase() + b.gender.slice(1).toLowerCase()
+          repGender: repGender
+            ? repGender.charAt(0).toUpperCase() +
+              repGender.slice(1).toLowerCase()
             : "",
           completion: b.profileCompletion ?? 0,
           status: normalizedStatus,
@@ -220,7 +222,7 @@ export default function BrandTable() {
       "Email",
       "Industry",
       "Location",
-      "Gender",
+      "Rep Gender",
       "Profile Completion",
       "Total Spend",
       "Status",
@@ -234,7 +236,7 @@ export default function BrandTable() {
       b.repEmail,
       b.industry,
       `"${b.location.replace(/"/g, '""')}"`,
-      b.gender,
+      b.repGender,
       `${b.completion}%`,
       `"₦${b.totalSpend.toLocaleString()}"`,
       b.status,
@@ -421,7 +423,7 @@ export default function BrandTable() {
               <th className="py-3.5 px-4 whitespace-nowrap">Representative</th>
               <th className="py-3.5 px-4 whitespace-nowrap">Industry</th>
               <th className="py-3.5 px-4 whitespace-nowrap">Location</th>
-              <th className="py-3.5 px-4 whitespace-nowrap">Gender</th>
+              <th className="py-3.5 px-4 whitespace-nowrap">Rep Gender</th>
               <th className="py-3.5 px-4 whitespace-nowrap">
                 Profile Completion
               </th>
@@ -532,7 +534,7 @@ export default function BrandTable() {
                     {brand.location}
                   </td>
                   <td className="py-3.5 px-4 text-[#5a5a7a] font-medium whitespace-nowrap">
-                    {brand.gender || (
+                    {brand.repGender || (
                       <span className="text-[#9a99b0] text-[11px]">—</span>
                     )}
                   </td>
