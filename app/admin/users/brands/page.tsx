@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import BrandStats from "@/components/admin/brands/BrandStats";
 
 import BrandSignupGrowthChart from "@/components/admin/brands/BrandSignupGrowthChart";
@@ -12,7 +13,24 @@ import BrandTable from "@/components/admin/brands/BrandTable";
 import { cn } from "@/lib/utils";
 
 export default function BrandManagementPage() {
-  const [viewMode, setViewMode] = useState<"charts" | "tables">("charts");
+  return (
+    <Suspense>
+      <BrandManagementRoute />
+    </Suspense>
+  );
+}
+
+// `?brandId=` (from notification deep links) opens the table with that
+// brand's drawer. Keyed so a new id remounts with fresh state.
+function BrandManagementRoute() {
+  const brandId = useSearchParams().get("brandId");
+  return <BrandManagementContent key={brandId ?? "none"} brandId={brandId} />;
+}
+
+function BrandManagementContent({ brandId }: { brandId: string | null }) {
+  const [viewMode, setViewMode] = useState<"charts" | "tables">(
+    brandId ? "tables" : "charts",
+  );
 
   return (
     <div className="flex flex-col gap-6 p-6 md:p-8 animate-fade-in-up">
@@ -76,7 +94,7 @@ export default function BrandManagementPage() {
       )}
 
       {/* TABLES VIEW */}
-      {viewMode === "tables" && <BrandTable />}
+      {viewMode === "tables" && <BrandTable initialBrandId={brandId} />}
     </div>
   );
 }

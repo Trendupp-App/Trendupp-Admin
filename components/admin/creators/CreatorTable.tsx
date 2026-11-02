@@ -66,7 +66,12 @@ function formatDateOnly(dateStr?: string | null): string {
   });
 }
 
-export default function CreatorTable() {
+export default function CreatorTable({
+  initialCreatorId = null,
+}: {
+  // Opens this creator's profile drawer on mount (notification deep links).
+  initialCreatorId?: string | null;
+} = {}) {
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
   const [search, setSearch] = useState("");
   const [selectedTier, setSelectedTier] = useState("");
@@ -75,7 +80,7 @@ export default function CreatorTable() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [selectedCreatorId, setSelectedCreatorId] = useState<string | null>(
-    null,
+    initialCreatorId,
   );
   const [page, setPage] = useState(1);
 
