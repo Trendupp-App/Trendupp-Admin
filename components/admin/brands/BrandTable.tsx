@@ -6,11 +6,18 @@ import { cn } from "@/lib/utils";
 import { AdminStatusBadge } from "../AdminStatusBadge";
 import UserAvatar from "@/shared/UserAvatar";
 import { useAdminBrandsList } from "@/hooks/useAdminBrands";
+import { useDebouncedValue } from "@/hooks/useDebounceValue";
+import type { BrandListQueryParams } from "@/types/adminBrands";
 import BrandProfileDrawer from "./BrandProfileDrawer";
 import { CardFilterHeaderControls } from "../creators/CardFilterHeaderControls";
 import { CardDateRangeBar } from "../creators/CardDateRangeBar";
 
-export default function BrandTable() {
+export default function BrandTable({
+  initialBrandId = null,
+}: {
+  // Opens this brand's profile drawer on mount (notification deep links).
+  initialBrandId?: string | null;
+} = {}) {
   const [activeTab, setActiveTab] = useState<
     "All" | "Onboarded" | "Suspended" | "Pending"
   >("All");
@@ -22,24 +29,25 @@ export default function BrandTable() {
   const [toDate, setToDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedBrandId, setSelectedBrandId] = useState<string | null>(
+    initialBrandId,
+  );
+  const [isDrawerOpen, setIsDrawerOpen] = useState(Boolean(initialBrandId));
 
-  const queryStatus = useMemo(() => {
-    if (activeTab === "Onboarded") return "ACTIVE";
-    if (activeTab === "Suspended") return "SUSPENDED";
-    if (activeTab === "Pending") return "PENDING";
-    if (selectedStatus !== "All") return selectedStatus.toUpperCase();
-    return undefined;
-  }, [activeTab, selectedStatus]);
+  const debouncedSearch = useDebouncedValue(searchQuery.trim());
 
   const { data: apiData, isLoading } = useAdminBrandsList({
-    search: searchQuery || undefined,
-    status: queryStatus,
+    q: debouncedSearch || undefined,
+    tab:
+      activeTab === "All"
+        ? undefined
+        : (activeTab.toLowerCase() as BrandListQueryParams["tab"]),
+    status:
+      selectedStatus === "All"
+        ? undefined
+        : (selectedStatus.toLowerCase() as BrandListQueryParams["status"]),
     startDate: fromDate || undefined,
     endDate: toDate || undefined,
-    fromDate: fromDate || undefined,
-    toDate: toDate || undefined,
     limit: 1000,
   });
 
@@ -162,7 +170,7 @@ export default function BrandTable() {
         return false;
       }
 
-      if (activeTab === "Onboarded" && b.status !== "active") return false;
+      if (activeTab === "Onboarded" && b.completion < 100) return false;
       if (activeTab === "Suspended" && b.status !== "suspended") return false;
       if (activeTab === "Pending" && b.status !== "pending") return false;
 

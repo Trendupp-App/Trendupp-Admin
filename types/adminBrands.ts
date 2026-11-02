@@ -82,19 +82,18 @@ export interface AdminBrandListItem {
   joinDate?: string;
 }
 
+// Mirrors GET /admin/brands query params. The API rejects unknown params.
 export interface BrandListQueryParams {
-  search?: string;
-  status?: string;
-  industry?: string;
-  completion?: number | string;
-  country?: string;
-  period?: string;
+  q?: string;
+  tab?: "all" | "onboarded" | "suspended" | "pending";
+  status?: "active" | "suspended" | "pending";
+  industryId?: string;
+  countryId?: string;
+  gender?: string;
   page?: number;
   limit?: number;
   startDate?: string;
   endDate?: string;
-  fromDate?: string;
-  toDate?: string;
 }
 
 export interface PaginatedBrandsResponse {

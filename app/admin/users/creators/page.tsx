@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import CreatorStats from "@/components/admin/creators/CreatorStats";
 import SignupGrowthChart from "@/components/admin/creators/SignupGrowthChart";
 import ActiveUsersChart from "@/components/admin/creators/ActiveUsersChart";
@@ -14,7 +15,26 @@ import { cn } from "@/lib/utils";
 type ViewMode = "Charts" | "Tables";
 
 export default function CreatorManagementPage() {
-  const [viewMode, setViewMode] = useState<ViewMode>("Charts");
+  return (
+    <Suspense>
+      <CreatorManagementRoute />
+    </Suspense>
+  );
+}
+
+// `?creatorId=` (from notification deep links) opens the table with that
+// creator's drawer. Keyed so a new id remounts with fresh state.
+function CreatorManagementRoute() {
+  const creatorId = useSearchParams().get("creatorId");
+  return (
+    <CreatorManagementContent key={creatorId ?? "none"} creatorId={creatorId} />
+  );
+}
+
+function CreatorManagementContent({ creatorId }: { creatorId: string | null }) {
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    creatorId ? "Tables" : "Charts",
+  );
 
   return (
     <div className="flex flex-col gap-6 p-6 md:p-8 animate-fade-in-up">
@@ -74,7 +94,7 @@ export default function CreatorManagementPage() {
         </div>
       ) : (
         /* Creator Directory Table (Displayed when mode is Tables) */
-        <CreatorTable />
+        <CreatorTable initialCreatorId={creatorId} />
       )}
     </div>
   );
